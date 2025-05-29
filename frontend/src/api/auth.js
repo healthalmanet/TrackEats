@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "https://trackeats.onrender.com";
+const BASE_URL = "https://trackeats.onrender.com/api/auth";
 
 // Login API
 export const loginUser = (loginData) => {

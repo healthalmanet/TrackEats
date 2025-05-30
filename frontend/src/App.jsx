@@ -37,7 +37,7 @@ function App() {
           }/>
          
       </Routes>
-      {isAuthenticated && <DiabeticPage/>}
+      
 
       {isAuthenticated && <Chatbot/>}
     </>

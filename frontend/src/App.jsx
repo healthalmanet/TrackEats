@@ -11,6 +11,9 @@ import Navbar from "./components/components/Navbar";
 import ProtectedRoute from "./components/components/ProtectedRoute";
 import Chatbot from "./components/components/Chatbot";
 
+import DiabeticPage from "./components/components/diabetic";
+import DiabeticDashboard from "./components/components/diabetic/DiabeticDashboard";
+
 function App() {
 
   const { isAuthenticated } = useAuth();
@@ -19,6 +22,7 @@ function App() {
     <>
       {isAuthenticated && <Navbar />}
       <Routes>
+        
         <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />} />
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} />
@@ -30,9 +34,11 @@ function App() {
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          }
-        />
+          }/>
+         
       </Routes>
+      {isAuthenticated && <DiabeticPage/>}
+
       {isAuthenticated && <Chatbot/>}
     </>
   );

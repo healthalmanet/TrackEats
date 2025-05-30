@@ -1,6 +1,17 @@
--- 1. users – Profile + Health Data
-CREATE TABLE users (
+-- 1. auth – Login Credentials Table (Parent)
+CREATE TABLE auth (
+    auth_id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    auth_provider VARCHAR(50) DEFAULT 'local',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
+);
+
+-- 2. user_profile – Profile + Health Data (Child referencing auth)
+CREATE TABLE user_profile (
     user_id SERIAL PRIMARY KEY,
+    auth_id INTEGER UNIQUE REFERENCES auth(auth_id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     age INTEGER,
     gender VARCHAR(10),
@@ -11,21 +22,10 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. auth – Login Credentials Table
-CREATE TABLE auth (
-    auth_id SERIAL PRIMARY KEY,
-    user_id INTEGER UNIQUE REFERENCES users(user_id),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255),
-    auth_provider VARCHAR(50) DEFAULT 'local',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP
-);
-
 -- 3. meals – Meal Definitions
 CREATE TABLE meals (
     meal_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES user_profile(user_id) ON DELETE SET NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     image_url TEXT,
@@ -41,7 +41,7 @@ CREATE TABLE meals (
 -- 4. meal_logs – Meal Tracking
 CREATE TABLE meal_logs (
     log_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES user_profile(user_id) ON DELETE CASCADE,
     meal_id INTEGER REFERENCES meals(meal_id) ON DELETE CASCADE,
     date_logged DATE NOT NULL,
     quantity FLOAT DEFAULT 1,
@@ -51,7 +51,7 @@ CREATE TABLE meal_logs (
 -- 5. diet_plans – Custom/ML Diet Plans
 CREATE TABLE diet_plans (
     plan_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES user_profile(user_id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     total_calories FLOAT,
@@ -71,7 +71,7 @@ CREATE TABLE diet_plan_meals (
 -- 7. feedback – Meal/Plan Feedback
 CREATE TABLE feedback (
     feedback_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES user_profile(user_id) ON DELETE CASCADE,
     meal_id INTEGER REFERENCES meals(meal_id),
     plan_id INTEGER REFERENCES diet_plans(plan_id),
     rating INTEGER CHECK (rating BETWEEN 1 AND 5),
@@ -82,7 +82,7 @@ CREATE TABLE feedback (
 -- 8. ml_model_outputs – AI Meal Suggestions
 CREATE TABLE ml_model_outputs (
     model_output_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES user_profile(user_id) ON DELETE CASCADE,
     meal_id INTEGER REFERENCES meals(meal_id),
     model_version VARCHAR(50),
     confidence FLOAT,

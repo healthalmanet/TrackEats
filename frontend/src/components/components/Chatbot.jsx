@@ -26,7 +26,21 @@ const Chatbot = () => {
   return (
     <div style={{ position: "fixed", bottom: "10px", right: "10px" }}>
       {!isOpen ? (
-        <button onClick={() => setIsOpen(true)}>Chat</button>
+        <button
+  onClick={() => setIsOpen(true)}
+  style={{
+    padding: '8px 16px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  }}
+>
+  Chat
+</button>
+
       ) : (
         <div style={{ width: "300px", border: "1px solid black", backgroundColor: "white" }}>
           <div style={{ padding: "10px", backgroundColor: "lightgray" }}>

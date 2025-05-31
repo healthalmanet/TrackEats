@@ -38,7 +38,11 @@ function Dashboard() {
 
 
         <Route path="explore" element={<Explore/>} />
+
+        <Route path="diabetic" element={<DiabeticPage />} />
+
         <Route path="diabetic" element={<HealthSection/>} />
+
       </Routes>
     </div>
   );

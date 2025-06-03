@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { sendMessageToOpenAI } from "../../api/openai";
 
+// Ritik ka code push krenge github pr
+
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([

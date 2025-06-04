@@ -11,6 +11,7 @@ import Navbar from "./components/components/Navbar";
 import ProtectedRoute from "./components/components/ProtectedRoute";
 import Chatbot from "./components/components/Chatbot";
 import DiabeticPage from "./components/components/diabetic";
+import Caloriesbar from "./components/components/Caloriesbar";
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -45,6 +46,7 @@ function App() {
 
      
       {isAuthenticated && <Chatbot />}
+       
     </>
   );
 }

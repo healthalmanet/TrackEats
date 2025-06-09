@@ -1,75 +1,88 @@
-// src/components/Chatbot.jsx
 import React, { useState } from "react";
-import { sendMessageToOpenAI } from "../../api/openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import ReactMarkdown from "react-markdown";
+import { FaRocketchat } from "react-icons/fa";
 
-const Chatbot = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { from: "bot", text: "Hi! I'm your AI nutrition assistant. Ask me anything!" }
-  ]);
-  const [userInput, setUserInput] = useState("");
+// ⚠️ In production, move this to a .env file
+const API_KEY = "AIzaSyB8ZLcao8qK2CIND2EpTxpETYJhvZuxk6c";
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+const App = () => {
+  const [question, setQuestion] = useState("");
+  const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  const handleUserInput = async () => {
-    if (!userInput.trim()) return;
-
-    const newMessages = [...messages, { from: "user", text: userInput }];
-    setMessages(newMessages);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!question.trim()) return;
     setLoading(true);
+    setResponse("");
 
-    const botReply = await sendMessageToOpenAI(userInput);
-    setMessages([...newMessages, { from: "bot", text: botReply }]);
-    setUserInput("");
-    setLoading(false);
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const result = await model.generateContent(question);
+      const text = result.response.text();
+      setResponse(text);
+    } catch (err) {
+      console.error(err);
+      setResponse("❌ Error fetching response.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{ position: "fixed", bottom: "10px", right: "10px" }}>
-      {!isOpen ? (
-        <button
-  onClick={() => setIsOpen(true)}
-  style={{
-    padding: '8px 16px',
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '16px',
-  }}
->
-  Chat
-</button>
+    <>
+      {/* Floating Chat Button */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div
+          onClick={() => setShowModal(true)}
+          className="bg-green-600 hover:bg-green-700 rounded-full p-3 flex items-center gap-2 shadow-lg cursor-pointer transition-all duration-200 hover:scale-105"
+        >
+          <FaRocketchat className="text-white" />
+          <span className="text-white font-medium">Let's Chat</span>
+        </div>
+      </div>
 
-      ) : (
-        <div style={{ width: "300px", border: "1px solid black", backgroundColor: "white" }}>
-          <div style={{ padding: "10px", backgroundColor: "lightgray" }}>
-            <span>AI Chatbot</span>
-            <button onClick={() => setIsOpen(false)} style={{ float: "right" }}>X</button>
-          </div>
-          <div style={{ height: "200px", overflowY: "scroll", padding: "10px" }}>
-            {messages.map((msg, index) => (
-              <div key={index} style={{ textAlign: msg.from === "user" ? "right" : "left" }}>
-                {msg.text}
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0  flex justify-end items-end z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md relative">
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-2 right-2 text-gray-600 hover:text-black"
+            >
+              ❌
+            </button>
+
+            <h2 className="text-xl font-bold mb-4">Ask a Question</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Type your question..."
+                className="w-full border border-gray-300 p-2 rounded-md"
+              />
+              <button
+                type="submit"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                {loading ? "Loading..." : "Submit"}
+              </button>
+            </form>
+
+            {response && (
+              <div className="mt-4 border-t pt-4 max-h-60 overflow-y-auto">
+                <ReactMarkdown>{response}</ReactMarkdown>
               </div>
-            ))}
-            {loading && <div>Thinking...</div>}
-          </div>
-          <div style={{ display: "flex" }}>
-            <input
-              type="text"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleUserInput()}
-              placeholder="Ask something..."
-              style={{ flex: 1 }}
-            />
-            <button onClick={handleUserInput}>Send</button>
+            )}
           </div>
         </div>
       )}
-    </div>
-  );
+    </>
+  );  
 };
 
-export default Chatbot;
+export default App;

@@ -36,7 +36,7 @@ function Dashboard() {
         <Route path="tools/nutrition-search" element={<NutritionSearch />} />
         <Route path="tools/weight-tracker" element={<WeightTracker />} />
         <Route path="tools/water-tracker" element={<WaterTracker />} />
-        <Route path="custom-reminder" element={<CustomReminder />} />
+        <Route path="tools/custom-reminder" element={<CustomReminder />} />
         <Route path="explore" element={<Explore />} />
         <Route path="diabetic" element={<DiabeticPage />} />
         <Route path="health-section" element={<HealthSection />} />

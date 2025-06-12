@@ -13,7 +13,9 @@ from .views import (
     OperatorReportView,
     DietRecommendationListCreateView,
     DietRecommendationDetailView,
-    UserDietRecommendationListView
+    WeeklyDietRecommendationView,
+    DailyDietRecommendationView,
+    RegenerateDailyDietRecommendationView,
     
 )
 from rest_framework_simplejwt.views import (
@@ -88,7 +90,17 @@ urlpatterns = [
     path('nutritionist/diet-recommendations/<int:pk>/', DietRecommendationDetailView.as_view(), name='diet-recommendation-detail'),
 
     #User Diet Recommendations
-    path('user/diet-recommendations/', UserDietRecommendationListView.as_view(), name='user-diet-recommendations'),
+    path('diet/week/', WeeklyDietRecommendationView.as_view(), name='weekly-diet'),
+    path('diet/daily/', DailyDietRecommendationView.as_view(), name='daily-diet'),
+    path('diet/daily/regenerate/', RegenerateDailyDietRecommendationView.as_view(), name='regenerate-daily-diet'),
+
+
+
+    # # ✅ Nutritionist Approve (POST)
+    # path('approve/<int:recommendation_id>/', ApproveDietRecommendationAPIView.as_view(), name='approve-diet'),
+
+    # # ⭐ User Feedback on Diet (POST)
+    # path('feedback/<int:recommendation_id>/', SubmitDietFeedbackAPIView.as_view(), name='diet-feedback'),
 ]
 
 

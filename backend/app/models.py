@@ -3,7 +3,9 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils import timezone
 from django.utils.timezone import now
 from django.conf import settings
+from django.contrib.postgres.fields import JSONField
 from django.contrib.postgres.fields import ArrayField
+
 
 # ---------------------- User Authentication ----------------------
 class UserManager(BaseUserManager):
@@ -223,7 +225,6 @@ class AppReport(models.Model):
 
 
 # ------------------------# Patient Reminders
-
 class PatientReminder(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, default="General Reminder")
@@ -275,26 +276,27 @@ class NutritionistProfile(models.Model):
 # # ------------------------
 
 class DietRecommendation(models.Model):
-    TYPE_CHOICES = [
-        ('general', 'General Recommendation'),
-        ('diabetic', 'Diabetic-Specific Recommendation'),
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recommended_foods = models.ManyToManyField(FoodItem)
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='general')
-    created_at = models.DateTimeField(default=timezone.now)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_recommendations')
-    notes = models.TextField(blank=True)
-    reason = models.TextField(help_text="ML/logic-based reason")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Monday of the week
+    for_week_starting = models.DateField(default=timezone.now)
+    meals = models.JSONField(default=dict)  #   # Structure: { 'Monday': {'breakfast': ..., 'lunch': ..., 'dinner': ...}, ... }
     
-    # Diabetic-specific
-    sugar_limit_g = models.FloatField(null=True, blank=True, help_text="For diabetic recommendations")
-    glycemic_index_note = models.TextField(blank=True)
+    
+    calories = models.FloatField(default=0)
+    protein = models.FloatField(default=0)
+    carbs = models.FloatField(default=0)
+    fats = models.FloatField(default=0)
+    
+    approved_by_nutritionist = models.BooleanField(default=False)
+    nutritionist_comment = models.TextField(blank=True, null=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_dietrecommendations')
 
-    class Meta:
-        indexes = [models.Index(fields=["user", "created_at"])]
-        unique_together = ('user', 'created_at')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.get_type_display()} for {self.user.email} on {self.created_at.date()}"
+class DietFeedback(models.Model):
+    recommendation = models.ForeignKey(DietRecommendation, on_delete=models.CASCADE, related_name='feedbacks')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    day = models.CharField(max_length=10)  # e.g., 'Monday'
+    feedback = models.TextField()
+    rating = models.PositiveSmallIntegerField(default=0)  # 1 to 5 stars
+    created_at = models.DateTimeField(auto_now_add=True)

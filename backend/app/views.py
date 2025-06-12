@@ -3,9 +3,11 @@ from rest_framework.decorators import api_view, permission_classes
 from django.db.models import Sum
 from django.db.models import Count
 from rest_framework.exceptions import ValidationError   
-from utils.utils import UNIT_TO_GRAMS,role_required
+from utils.utils import UNIT_TO_GRAMS,role_required,generate_diet_recommendation
+from .ml_diet.predict import recommend_meals
 from datetime import datetime, time
 from rest_framework.views import APIView
+from rest_framework import views
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
@@ -15,7 +17,7 @@ from django.utils.timezone import now
 from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework import generics, permissions
-from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem,PatientReminder, NutritionistProfile, DietRecommendation
+from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem,PatientReminder, NutritionistProfile, DietRecommendation,DietFeedback
 from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer,PatientReminderSerializer, NutritionistProfileSerializer, DietRecommendationSerializer
 
 
@@ -446,15 +448,137 @@ class DietRecommendationDetailView(generics.RetrieveUpdateDestroyAPIView):
         self.check_object_permissions(self.request, obj)
         return obj
 
-# For Users - List only their own recommendations
-class UserDietRecommendationListView(generics.ListAPIView):
-    serializer_class = DietRecommendationSerializer
+
+###########################################DIET RECOMMENDATION API ENDPOINTS###########################################
+# 🗓️ Weekly API (GET)
+class WeeklyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return DietRecommendation.objects.filter(user=self.request.user).order_by('-created_at')
+    def get(self, request):
+        try:
+            profile = request.user.userprofile
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found.'}, status=404)
 
-    queryset = DietRecommendation.objects.all()
-    serializer_class = DietRecommendationSerializer
-    permission_classes = [permissions.IsAuthenticated, IsNutritionistWithAccess]
-    # permission_classes = [permissions.IsAuthenticated]
+        generated = recommend_meals(profile)
+
+        return Response({
+            'week_starting': str(now().date() - timedelta(days=now().weekday())),
+            'meals': generated['meals'],
+            'daily_nutrition': generated['daily_nutrition'],  # changed from 'nutrition_summary'
+        })
+
+# 📅 Daily API (GET specific day)
+class DailyDietRecommendationView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        date_str = request.query_params.get('date')
+        if not date_str:
+            return Response({'error': 'date parameter required (YYYY-MM-DD)'}, status=400)
+
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format'}, status=400)
+
+        weekday = target_date.strftime('%A')
+
+        try:
+            profile = request.user.userprofile
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found.'}, status=404)
+
+        generated = recommend_meals(profile)
+
+        return Response({
+            'date': date_str,
+            'day': weekday,
+            'meals': {weekday: generated['meals'].get(weekday)},
+            'nutrition': {weekday: generated['daily_nutrition'].get(weekday)},  # changed
+        })
+# 🔁 Daily Regenerate API (POST)
+class RegenerateDailyDietRecommendationView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        try:
+            profile = user.userprofile
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found.'}, status=404)
+
+        today = now().date()
+        week_start = today - timedelta(days=today.weekday())
+
+        generated = recommend_meals(profile)
+        nutrition = generated['daily_nutrition']
+        daily_nutrition = generated['daily_nutrition']
+        nutrition = {
+        'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 7, 2),
+        'protein': round(sum(day['protein'] for day in daily_nutrition.values()) / 7, 2),
+        'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 7, 2),
+        'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 7, 2),
+        }
+
+
+        # Save or update recommendation for this week
+        DietRecommendation.objects.update_or_create(
+        user=user,
+        for_week_starting=week_start,
+        defaults={
+            'meals': {'generated_on': str(today), 'meals': generated['meals']},
+            'calories': nutrition['calories'],
+            'protein': nutrition['protein'],
+            'carbs': nutrition['carbs'],
+            'fats': nutrition['fats'],
+        }
+        )
+
+        return Response({
+       'status': 'success',
+       'generated_for_week': str(week_start),
+       'meals': generated['meals'],
+       'daily_nutrition': daily_nutrition,  # <-- this is the change
+}, status=200)
+
+
+
+
+class ApproveDietRecommendationAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, recommendation_id):
+        if not request.user.groups.filter(name='Nutritionists').exists():
+            return Response({'error': 'Only nutritionists can approve.'}, status=403)
+
+        try:
+            recommendation = DietRecommendation.objects.get(id=recommendation_id)
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'Recommendation not found.'}, status=404)
+
+        recommendation.approved_by_nutritionist = True
+        recommendation.reviewed_by = request.user
+        recommendation.nutritionist_comment = request.data.get("comment", "")
+        recommendation.save()
+
+        return Response({'message': 'Diet approved by nutritionist.'})
+
+class SubmitDietFeedbackAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, recommendation_id):
+        day = request.data.get("day")
+        feedback_text = request.data.get("feedback")
+        rating = request.data.get("rating", 0)
+
+        recommendation = DietRecommendation.objects.get(id=recommendation_id)
+
+        DietFeedback.objects.create(
+            recommendation=recommendation,
+            user=request.user,
+            day=day,
+            feedback=feedback_text,
+            rating=rating
+        )
+        return Response({'message': 'Feedback submitted successfully.'})

@@ -5,16 +5,28 @@ import { useAuth } from "./components/context/AuthContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard"; // Handles nested routes
+
+import OwnerPage from "./pages/OwnerPage";
+import OperatorPage from "./pages/OperatorPage";
+import NutritionistPage from "./pages/NutritionistPage";
+
+import Dashboard from "./pages/Dashboard";
 
 import Navbar from "./components/components/Navbar";
 import ProtectedRoute from "./components/components/ProtectedRoute";
 import Chatbot from "./components/components/Chatbot";
-import DiabeticPage from "./components/components/diabetic";
-import Caloriesbar from "./components/components/Caloriesbar";
+
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Determine where to redirect based on user role
+  const getRedirectPath = () => {
+    if (user && user.role) {
+      return `/${user.role.toLowerCase()}`;
+    }
+    return "/dashboard"; // Default for standard users
+  };
 
   return (
     <>
@@ -23,17 +35,52 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Home />}
-        />
-        <Route
-          path="/login"
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
-        />
-        <Route
-          path="/register"
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />}
+          element={
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Home />
+          }
         />
 
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Login />
+          }
+        />
+
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Register />
+          }
+        />
+
+        {/* Protected routes based on user role */}
+        <Route
+          path="/owner"
+          element={
+            <ProtectedRoute requiredRole="Owner">
+              <OwnerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/operator"
+          element={
+            <ProtectedRoute requiredRole="Operator">
+              <OperatorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/nutritionist"
+          element={
+            <ProtectedRoute requiredRole="Nutritionist">
+              <NutritionistPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Generic dashboard for standard users */}
         <Route
           path="/dashboard/*"
           element={
@@ -44,10 +91,11 @@ function App() {
         />
       </Routes>
 
-     
+
       {isAuthenticated && <Chatbot />}
-       
+
     </>
+
   );
 }
 

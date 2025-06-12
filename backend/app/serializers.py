@@ -66,12 +66,6 @@ class PatientReminderSerializer(serializers.ModelSerializer):
         model = PatientReminder
         fields = '__all__'
 
-
-
-
-
-
-
 # Serializer for FoodItem model to handle food items
 class FoodItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -88,21 +82,9 @@ class NutritionistProfileSerializer(serializers.ModelSerializer):
 
 # Serializer for DietRecommendation model to handle diet recommendations
 class DietRecommendationSerializer(serializers.ModelSerializer):
-    recommended_foods = FoodItemSerializer(many=True, read_only=True)
-    recommended_foods_ids = serializers.PrimaryKeyRelatedField(
-        queryset=FoodItem.objects.all(), many=True, write_only=True, source='recommended_foods'
-    )
-    created_by = serializers.StringRelatedField(read_only=True)
-    user = serializers.StringRelatedField(read_only=True)
-    user_id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True, source='user')
-
     class Meta:
         model = DietRecommendation
-        fields = [
-            'id', 'user', 'user_id', 'recommended_foods', 'recommended_foods_ids', 'type',
-            'created_at', 'created_by', 'notes', 'reason', 'sugar_limit_g', 'glycemic_index_note'
-        ]
-
+        fields = '__all__'
 
 
 

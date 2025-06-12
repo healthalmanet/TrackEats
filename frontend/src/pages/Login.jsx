@@ -11,29 +11,34 @@ function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+
     try {
       const res = await loginUser({ username, password });
+
       const accessToken = res.data.access;
       const refreshToken = res.data.refresh;
 
-      login(accessToken);
+      const userInfo = res.data.user || { username };
+      const role = userInfo.role;
+
+      login(accessToken, userInfo);
       localStorage.setItem("refreshToken", refreshToken);
 
       alert("You are logged in successfully!");
-      navigate("/dashboard");
+
+      // Redirect based on actual role
+      if (role === "Owner" || role === "Operator" || role === "Nutritionist") {
+        navigate(`/${role.toLowerCase()}`);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
-      alert("Login failed");
+      alert("Login failed. Please check your credentials.");
       console.error("Login error:", error);
     }
   };
 
   return (
-
-
-
-
-
     <form onSubmit={handleLogin}>
       <h2>Login to Your Account</h2>
 
@@ -66,10 +71,7 @@ function Login() {
         Don't have an account? <Link to="/register">Register here</Link>
       </p>
     </form>
-
-
-
-);
+  );
 }
 
 export default Login;

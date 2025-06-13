@@ -4,7 +4,7 @@ import { loginUser } from "../api/auth";
 import { useAuth } from "../components/context/AuthContext";
 
 function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -13,12 +13,12 @@ function Login() {
     e.preventDefault();
 
     try {
-      const res = await loginUser({ username, password });
+      const res = await loginUser({ email, password });
 
       const accessToken = res.data.access;
       const refreshToken = res.data.refresh;
 
-      const userInfo = res.data.user || { username };
+      const userInfo = res.data.user || { email };
       const role = userInfo.role;
 
       login(accessToken, userInfo);
@@ -41,7 +41,7 @@ function Login() {
   return (
     <form onSubmit={handleLogin}>
       <h2>Login to Your Account</h2>
-
+{/* 
       <div>
         <label htmlFor="username">Username</label>
         <input
@@ -51,7 +51,20 @@ function Login() {
           placeholder="Username"
           required
         />
-      </div>
+      </div> */}
+
+      <div>
+  <label htmlFor="email">Email</label>
+  <input
+    id="email"
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    placeholder="Email"
+    required
+  />
+</div>
+
 
       <div>
         <label htmlFor="password">Password</label>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/auth";
 
 function Register() {
-  const [username, setUsername] = useState("");
+  // const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
@@ -19,7 +19,7 @@ function Register() {
     }
 
     try {
-      const res = await registerUser({ username, email, password, password2 });
+      const res = await registerUser({/* username,*/ email, password, password2 });
       console.log("Registered successfully:", res.data);
 
       alert("You are registered successfully!"); // ✅ Show success alert
@@ -50,7 +50,7 @@ function Register() {
           Create an Account
         </h2>
 
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <label htmlFor="username" className="block mb-1 text-gray-700">
             Username
           </label>
@@ -63,7 +63,7 @@ function Register() {
             onChange={(e) => setUsername(e.target.value)}
             required
           />
-        </div>
+        </div> */}
 
         <div className="mb-4">
           <label htmlFor="email" className="block mb-1 text-gray-700">

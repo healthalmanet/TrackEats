@@ -160,7 +160,7 @@ const CustomReminder = () => {
       {/* Floating Add Button */}
       <button
         onClick={() => setShowForm(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors text-2xl"
+        className="fixed bottom-6 left-6 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors text-2xl"
       >
         +
       </button>

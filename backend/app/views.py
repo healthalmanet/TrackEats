@@ -18,7 +18,7 @@ from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework import generics, permissions
 from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem,PatientReminder, NutritionistProfile, DietRecommendation,DietFeedback
-from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer,PatientReminderSerializer, NutritionistProfileSerializer, DietRecommendationSerializer
+from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer,PatientReminderSerializer, DietRecommendationSerializer, DietFeedbackSerializer
 
 
 # Create your views here.
@@ -173,7 +173,7 @@ class UserMealViewSet(viewsets.ModelViewSet):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
-#------------------CALORIE RECOMMEND API ENDPOINTS----------------
+#------------------CALORIE RECOMMEND API ENDPOINTS---------------- to get calorie,carbs,protein,fats etc
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def recommend_calories(request):
@@ -187,42 +187,64 @@ def recommend_calories(request):
         activity_level = profile.activity_level
         goal = profile.goal
 
-        # Calculate BMR
+        # Calculate BMR (Mifflin-St Jeor)
         if gender == "male":
             bmr = 10 * weight + 6.25 * height - 5 * age + 5
         else:
             bmr = 10 * weight + 6.25 * height - 5 * age - 161
 
-        # Activity multipliers
+        # Activity multipliers (reduce slightly for realism)
         activity_multipliers = {
             "sedentary": 1.2,
-            "light": 1.375,
-            "moderate": 1.55,
-            "active": 1.725,
-            "very_active": 1.9,
+            "light": 1.3,
+            "moderate": 1.45,
+            "active": 1.6,
+            "very_active": 1.75,
         }
 
         activity_multiplier = activity_multipliers.get(activity_level, 1.2)
 
-        # Adjust for goal
+        # Maintenance calories
         maintenance_calories = bmr * activity_multiplier
 
+        # Goal-based adjustment (percentage instead of hard -500)
         if goal == "lose_weight":
-            recommended_calories = maintenance_calories - 500
+            recommended_calories = maintenance_calories * 0.8   # 20% deficit
         elif goal == "gain_weight":
-            recommended_calories = maintenance_calories + 500
+            recommended_calories = maintenance_calories * 1.15  # 15% surplus
         else:
             recommended_calories = maintenance_calories
 
+        # Protein grams per kg of body weight (1.6g - 2.2g is ideal for fat loss/muscle maintenance)
+        protein_grams = round(weight * 1.8)
+
+        # Fats: ~0.8g per kg body weight (can be tweaked)
+        fats_grams = round(weight * 0.8)
+
+        # Calculate calories from protein & fats
+        protein_calories = protein_grams * 4
+        fats_calories = fats_grams * 9
+
+        # Remaining calories for carbs
+        carbs_calories = recommended_calories - (protein_calories + fats_calories)
+        carbs_grams = round(carbs_calories / 4) if carbs_calories > 0 else 0
+
         return Response({
+            "bmr": round(bmr),
+            "maintenance_calories": round(maintenance_calories),
             "recommended_calories": round(recommended_calories),
+            "macronutrients": {
+                "protein_g": protein_grams,
+                "carbs_g": carbs_grams,
+                "fats_g": fats_grams,
+            },
             "goal": goal,
             "activity_level": activity_level,
-            "bmr": round(bmr),
         })
 
     except UserProfile.DoesNotExist:
         return Response({"error": "User profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 ##########################CALORIE TRACKER API ENDPOINTS END##########################
 class DailyCalorieSummaryView(APIView):
@@ -460,12 +482,22 @@ class WeeklyDietRecommendationView(views.APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'User profile not found.'}, status=404)
 
+        week_start = now().date() - timedelta(days=now().weekday())
+
+        # Try fetching existing recommendation
+        recommendation, created = DietRecommendation.objects.get_or_create(
+            user=request.user,
+            for_week_starting=week_start,
+            defaults={'meals': {}, 'calories': 0, 'protein': 0, 'carbs': 0, 'fats': 0}
+        )
+
         generated = recommend_meals(profile)
 
         return Response({
-            'week_starting': str(now().date() - timedelta(days=now().weekday())),
+            'id': recommendation.id,  # Include recommendation ID here
+            'week_starting': str(week_start),
             'meals': generated['meals'],
-            'daily_nutrition': generated['daily_nutrition'],  # changed from 'nutrition_summary'
+            'daily_nutrition': generated['daily_nutrition'],
         })
 
 # 📅 Daily API (GET specific day)
@@ -489,13 +521,22 @@ class DailyDietRecommendationView(views.APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'User profile not found.'}, status=404)
 
+        week_start = target_date - timedelta(days=target_date.weekday())
+
+        recommendation, created = DietRecommendation.objects.get_or_create(
+            user=request.user,
+            for_week_starting=week_start,
+            defaults={'meals': {}, 'calories': 0, 'protein': 0, 'carbs': 0, 'fats': 0}
+        )
+
         generated = recommend_meals(profile)
 
         return Response({
+            'id': recommendation.id,  # Include recommendation ID here
             'date': date_str,
             'day': weekday,
             'meals': {weekday: generated['meals'].get(weekday)},
-            'nutrition': {weekday: generated['daily_nutrition'].get(weekday)},  # changed
+            'nutrition': {weekday: generated['daily_nutrition'].get(weekday)},
         })
 # 🔁 Daily Regenerate API (POST)
 class RegenerateDailyDietRecommendationView(views.APIView):
@@ -512,38 +553,34 @@ class RegenerateDailyDietRecommendationView(views.APIView):
         week_start = today - timedelta(days=today.weekday())
 
         generated = recommend_meals(profile)
-        nutrition = generated['daily_nutrition']
         daily_nutrition = generated['daily_nutrition']
+
         nutrition = {
-        'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 7, 2),
-        'protein': round(sum(day['protein'] for day in daily_nutrition.values()) / 7, 2),
-        'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 7, 2),
-        'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 7, 2),
+            'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 7, 2),
+            'protein': round(sum(day['protein'] for day in daily_nutrition.values()) / 7, 2),
+            'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 7, 2),
+            'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 7, 2),
         }
 
-
-        # Save or update recommendation for this week
-        DietRecommendation.objects.update_or_create(
-        user=user,
-        for_week_starting=week_start,
-        defaults={
-            'meals': {'generated_on': str(today), 'meals': generated['meals']},
-            'calories': nutrition['calories'],
-            'protein': nutrition['protein'],
-            'carbs': nutrition['carbs'],
-            'fats': nutrition['fats'],
-        }
+        recommendation, created = DietRecommendation.objects.update_or_create(
+            user=user,
+            for_week_starting=week_start,
+            defaults={
+                'meals': {'generated_on': str(today), 'meals': generated['meals']},
+                'calories': nutrition['calories'],
+                'protein': nutrition['protein'],
+                'carbs': nutrition['carbs'],
+                'fats': nutrition['fats'],
+            }
         )
 
         return Response({
-       'status': 'success',
-       'generated_for_week': str(week_start),
-       'meals': generated['meals'],
-       'daily_nutrition': daily_nutrition,  # <-- this is the change
-}, status=200)
-
-
-
+            'id': recommendation.id,  # Include ID in response
+            'status': 'success',
+            'generated_for_week': str(week_start),
+            'meals': generated['meals'],
+            'daily_nutrition': daily_nutrition,
+        }, status=200)
 
 class ApproveDietRecommendationAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -582,3 +619,24 @@ class SubmitDietFeedbackAPIView(APIView):
             rating=rating
         )
         return Response({'message': 'Feedback submitted successfully.'})
+
+
+
+
+
+#User diet feedback model
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_diet_feedback(request):
+    serializer = DietFeedbackSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(user=request.user)
+        return Response({"message": "Feedback submitted successfully."}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_feedback_for_recommendation(request, recommendation_id):
+    feedbacks = DietFeedback.objects.filter(recommendation_id=recommendation_id, user=request.user)
+    serializer = DietFeedbackSerializer(feedbacks, many=True)
+    return Response(serializer.data)

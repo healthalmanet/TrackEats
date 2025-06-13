@@ -294,6 +294,16 @@ class DietRecommendation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class DietFeedback(models.Model):
+    DAY_CHOICES = [
+    ('Monday', 'Monday'),
+    ('Tuesday', 'Tuesday'),
+    ('Wednesday', 'Wednesday'),
+    ('Thursday', 'Thursday'),
+    ('Friday', 'Friday'),
+    ('Saturday', 'Saturday'),
+    ('Sunday', 'Sunday'),
+    ]
+    
     recommendation = models.ForeignKey(DietRecommendation, on_delete=models.CASCADE, related_name='feedbacks')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     day = models.CharField(max_length=10)  # e.g., 'Monday'

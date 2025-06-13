@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, UserProfile, DiabeticProfile,UserMeal, PatientReminder, FoodItem, NutritionistProfile, DietRecommendation
+from .models import User, UserProfile, DiabeticProfile,UserMeal, PatientReminder, FoodItem, NutritionistProfile, DietRecommendation, DietFeedback
 
 
 
@@ -87,8 +87,11 @@ class DietRecommendationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
-
+class DietFeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DietFeedback
+        fields = ['id', 'recommendation', 'user', 'day', 'feedback', 'rating', 'created_at']
+        read_only_fields = ['id', 'created_at', 'user']
 
 
 

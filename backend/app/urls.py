@@ -16,6 +16,8 @@ from .views import (
     WeeklyDietRecommendationView,
     DailyDietRecommendationView,
     RegenerateDailyDietRecommendationView,
+    submit_diet_feedback,
+    get_feedback_for_recommendation,
     
 )
 from rest_framework_simplejwt.views import (
@@ -58,9 +60,9 @@ urlpatterns = [
     path('diabetic-reports/<int:pk>/', DiabeticProfileDetailView.as_view(), name='diabetic-reports-detail'),
 
 
-    # #Calorie recommendation endpoint
+    # #Calorie recommendation endpoint also fat,protein,carbs
     path('recommend-calories/', recommend_calories, name='recommend_calories'),
-    ######calorie tracking ########
+    ######calorie tracking ######## also fat,protein,carbs
     path('daily-calorie-summary/', DailyCalorieSummaryView.as_view(), name='daily_calorie_summary'),
 
  
@@ -94,6 +96,8 @@ urlpatterns = [
     path('diet/daily/', DailyDietRecommendationView.as_view(), name='daily-diet'),
     path('diet/daily/regenerate/', RegenerateDailyDietRecommendationView.as_view(), name='regenerate-daily-diet'),
 
+    path('diet/feedback/', submit_diet_feedback, name='submit_diet_feedback'),
+    path('diet/feedback/<int:recommendation_id>/', get_feedback_for_recommendation, name='get_feedback_for_recommendation'),
 
 
     # # ✅ Nutritionist Approve (POST)

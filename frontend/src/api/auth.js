@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "https://trackeats.onrender.com/api/auth";
+const BASE_URL = "https://trackeats.onrender.com/api";
 
 // ✅ Login API - Calls real backend only
 export const loginUser = (loginData) => {
@@ -11,7 +11,7 @@ export const loginUser = (loginData) => {
 
 // ✅ Register API - Calls real backend
 export const registerUser = (userData) => {
-  return axios.post(`${BASE_URL}/register/`, userData, {
+  return axios.post(`${BASE_URL}/signup/`, userData, {
     headers: { "Content-Type": "application/json" },
   });
 };

@@ -15,21 +15,25 @@ import DiabeticPage from "../components/components/diabetic";
 import HealthSection from "./dashboard/Tools/HealthSection";
 import Caloriesbar from "../components/components/Caloriesbar";
 import HeroSection from "../components/components/HeroSection";
+import QuickMealLogger from "../components/components/MealLogger/QuickMealLogger";
+import WaterIntakeWidget from "../components/components/WaterTracker/WaterWidget"; // ✅ ADD THIS
 
 function Dashboard() {
   const location = useLocation();
 
   return (
     <div>
-      {location.pathname === "/dashboard" && <HeroSection />}
-      <Routes>
-       
+      {location.pathname === "/dashboard" && (
+        <>
+          <HeroSection />
+          <QuickMealLogger />
+          <WaterIntakeWidget/> {/* ✅ ADD THIS */}
+        </>
+      )}
 
-        {/* Other Routes */}
+      <Routes>
         <Route path="user-profile" element={<UserProfileForm />} />
-  
         <Route path="tools" element={<Tools />} />
-  
         <Route path="tools/bmi" element={<BmiCalculator />} />
         <Route path="tools/bmi-result" element={<BmiResult />} />
         <Route path="tools/fat-calculator" element={<FatCalculator />} />
@@ -43,9 +47,6 @@ function Dashboard() {
         <Route path="diabetic" element={<DiabeticPage />} />
         <Route path="health-section" element={<HealthSection />} />
       </Routes>
-      <Caloriesbar/>
-
-      
     </div>
   );
 }

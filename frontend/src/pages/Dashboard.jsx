@@ -14,12 +14,14 @@ import CustomReminder from "./dashboard/Tools/CustomReminder";
 import DiabeticPage from "../components/components/diabetic";
 import HealthSection from "./dashboard/Tools/HealthSection";
 import Caloriesbar from "../components/components/Caloriesbar";
+import HeroSection from "../components/components/HeroSection";
 
 function Dashboard() {
   const location = useLocation();
 
   return (
     <div>
+      {location.pathname === "/dashboard" && <HeroSection />}
       <Routes>
        
 
@@ -41,9 +43,9 @@ function Dashboard() {
         <Route path="diabetic" element={<DiabeticPage />} />
         <Route path="health-section" element={<HealthSection />} />
       </Routes>
+      <Caloriesbar/>
 
-      {/* Only show Caloriesbar on the root home page (e.g. /dashboard or /dashboard/) */}
-      {location.pathname === "/dashboard" && <Caloriesbar />}
+      
     </div>
   );
 }

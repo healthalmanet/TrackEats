@@ -24,7 +24,7 @@ const QuickMealLogger = () => {
     <div className="w-full max-w-7xl mx-auto px-4 pt-10">
       <div className="text-center mb-10">
         <h2 className="text-3xl font-bold text-gray-800">Quick Meal Logger</h2>
-        <p className="text-sm text-gray-500 mt-1">Track your nutrition smartly & simply</p>
+        <p className="text-sm  font-semibold text-gray-500 mt-1">Track your nutrition smartly & simply</p>
       </div>
 
       <div className="mx-auto w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">

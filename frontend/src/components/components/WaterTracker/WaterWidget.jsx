@@ -41,7 +41,7 @@ const WaterIntakeWidget = () => {
         </div>
 
         {/* Progress Text */}
-        <p className="text-center text-gray-600 mb-4">
+        <p className="text-center font-semibold text-gray-600 mb-4">
           {totalGlasses} out of {maxGlasses} glasses completed
         </p>
 

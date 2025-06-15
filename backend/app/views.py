@@ -1,5 +1,6 @@
 from django.shortcuts import render, HttpResponse
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import BasePermission
 from django.db.models import Sum
 from django.db.models import Count
 from rest_framework.exceptions import ValidationError   
@@ -9,6 +10,7 @@ from datetime import datetime, time
 from rest_framework.views import APIView
 from rest_framework import views
 from rest_framework.permissions import IsAuthenticated
+import copy
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets
@@ -17,9 +19,21 @@ from django.utils.timezone import now
 from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework import generics, permissions
-from .models import User, UserProfile, DiabeticProfile,UserMeal,FoodItem,PatientReminder, NutritionistProfile, DietRecommendation,DietFeedback
-from .serializers import RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,UserMealSerializer,PatientReminderSerializer, DietRecommendationSerializer, DietFeedbackSerializer
-
+from .models import (
+    User, UserProfile, DiabeticProfile,UserMeal,
+    FoodItem,PatientReminder, NutritionistProfile,
+    DietRecommendation,DietFeedback,
+    PatientAssignment, UserMeal, DietRecommendationFeedback
+    )
+from .serializers import (
+        RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,
+        UserMealSerializer,PatientReminderSerializer,
+        DietRecommendationSerializer,
+        DietFeedbackSerializer,
+        DietRecommendationPatchSerializer
+    )
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import MyTokenObtainPairSerializer
 
 # Create your views here.
 
@@ -32,6 +46,9 @@ def home(request):
     Useful for testing if the server is running.
     """
     return HttpResponse("Hello, world! This is the home page.")
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -412,67 +429,37 @@ class OperatorReportView(APIView):
 #########################################################################################################################################
 
 ############ Nutritionist Dashboard View
-class IsNutritionistWithAccess(permissions.BasePermission):
-    """
-    Allow only Nutritionists with proper expert_level to access assigned users' diet recommendations.
-    """
-
-    def has_permission(self, request, view):
-        return hasattr(request.user, 'nutritionistprofile')
-
-    def has_object_permission(self, request, view, obj):
-        profile = request.user.nutritionistprofile
-        if profile.expert_level == 1:
-            return obj.user.id in range(1, 11)
-        elif profile.expert_level == 2:
-            return obj.user.id in range(11, 21)
-        return False
-
-# For Nutritionist - List + Create
-class DietRecommendationListCreateView(generics.ListCreateAPIView):
-    queryset = DietRecommendation.objects.all().order_by('-created_at')
-    serializer_class = DietRecommendationSerializer
-    permission_classes = [permissions.IsAuthenticated, IsNutritionistWithAccess]
-
-    def get_queryset(self):
-        profile = self.request.user.nutritionistprofile
-        if profile.expert_level == 1:
-            return self.queryset.filter(user__id__range=(1, 10))
-        elif profile.expert_level == 2:
-            return self.queryset.filter(user__id__range=(11, 20))
-        return DietRecommendation.objects.none()
-
-    def perform_create(self, serializer):
-        user_id = self.request.data.get('user_id')
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            raise ValidationError("User with provided ID does not exist.")
-
-        # Check access before allowing creation
-        profile = self.request.user.nutritionistprofile
-        if profile.expert_level == 1 and user.id not in range(1, 11):
-            raise ValidationError("You do not have access to this user.")
-        elif profile.expert_level == 2 and user.id not in range(11, 21):
-            raise ValidationError("You do not have access to this user.")
-        
-        serializer.save(created_by=self.request.user, user=user)
-
-
-# For Nutritionist - Retrieve, Update, Delete
-class DietRecommendationDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = DietRecommendation.objects.all()
-    serializer_class = DietRecommendationSerializer
-    permission_classes = [permissions.IsAuthenticated, IsNutritionistWithAccess]
-
-    def get_object(self):
-        obj = super().get_object()
-        self.check_object_permissions(self.request, obj)
-        return obj
 
 
 ###########################################DIET RECOMMENDATION API ENDPOINTS###########################################
-# 🗓️ Weekly API (GET)
+# Weekly API (GET)
+# class WeeklyDietRecommendationView(views.APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get(self, request):
+#         try:
+#             profile = request.user.userprofile
+#         except UserProfile.DoesNotExist:
+#             return Response({'error': 'User profile not found.'}, status=404)
+
+#         week_start = now().date() - timedelta(days=now().weekday())
+
+#         # Try fetching existing recommendation
+#         recommendation, created = DietRecommendation.objects.get_or_create(
+#             user=request.user,
+#             for_week_starting=week_start,
+#             defaults={'meals': {}, 'calories': 0, 'protein': 0, 'carbs': 0, 'fats': 0}
+#         )
+
+#         generated = recommend_meals(profile)
+
+#         return Response({
+#             'id': recommendation.id,  # Include recommendation ID here
+#             'week_starting': str(week_start),
+#             'meals': generated['meals'],
+#             'daily_nutrition': generated['daily_nutrition'],
+#         })
+
 class WeeklyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -484,23 +471,31 @@ class WeeklyDietRecommendationView(views.APIView):
 
         week_start = now().date() - timedelta(days=now().weekday())
 
-        # Try fetching existing recommendation
-        recommendation, created = DietRecommendation.objects.get_or_create(
-            user=request.user,
-            for_week_starting=week_start,
-            defaults={'meals': {}, 'calories': 0, 'protein': 0, 'carbs': 0, 'fats': 0}
-        )
+        try:
+            recommendation = DietRecommendation.objects.get(user=request.user, for_week_starting=week_start)
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'No diet recommendation generated yet.'}, status=404)
 
-        generated = recommend_meals(profile)
+        if not recommendation.approved_by_nutritionist:
+            return Response({'error': 'Your diet recommendation is pending approval.'}, status=403)
 
         return Response({
-            'id': recommendation.id,  # Include recommendation ID here
+            'id': recommendation.id,
             'week_starting': str(week_start),
-            'meals': generated['meals'],
-            'daily_nutrition': generated['daily_nutrition'],
+            'meals': recommendation.meals,
+            'daily_nutrition': {
+                'calories': recommendation.calories,
+                'protein': recommendation.protein,
+                'carbs': recommendation.carbs,
+                'fats': recommendation.fats,
+            },
+            'nutritionist_comment': recommendation.nutritionist_comment,
+            'reviewed_by': recommendation.reviewed_by.email if recommendation.reviewed_by else None,
+            'approved': recommendation.approved_by_nutritionist,
         })
 
-# 📅 Daily API (GET specific day)
+
+#  Daily API (GET specific day)
 class DailyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -538,7 +533,7 @@ class DailyDietRecommendationView(views.APIView):
             'meals': {weekday: generated['meals'].get(weekday)},
             'nutrition': {weekday: generated['daily_nutrition'].get(weekday)},
         })
-# 🔁 Daily Regenerate API (POST)
+#  Daily Regenerate API (POST)
 class RegenerateDailyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -582,44 +577,6 @@ class RegenerateDailyDietRecommendationView(views.APIView):
             'daily_nutrition': daily_nutrition,
         }, status=200)
 
-class ApproveDietRecommendationAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, recommendation_id):
-        if not request.user.groups.filter(name='Nutritionists').exists():
-            return Response({'error': 'Only nutritionists can approve.'}, status=403)
-
-        try:
-            recommendation = DietRecommendation.objects.get(id=recommendation_id)
-        except DietRecommendation.DoesNotExist:
-            return Response({'error': 'Recommendation not found.'}, status=404)
-
-        recommendation.approved_by_nutritionist = True
-        recommendation.reviewed_by = request.user
-        recommendation.nutritionist_comment = request.data.get("comment", "")
-        recommendation.save()
-
-        return Response({'message': 'Diet approved by nutritionist.'})
-
-class SubmitDietFeedbackAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, recommendation_id):
-        day = request.data.get("day")
-        feedback_text = request.data.get("feedback")
-        rating = request.data.get("rating", 0)
-
-        recommendation = DietRecommendation.objects.get(id=recommendation_id)
-
-        DietFeedback.objects.create(
-            recommendation=recommendation,
-            user=request.user,
-            day=day,
-            feedback=feedback_text,
-            rating=rating
-        )
-        return Response({'message': 'Feedback submitted successfully.'})
-
 
 
 
@@ -637,6 +594,170 @@ def submit_diet_feedback(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_feedback_for_recommendation(request, recommendation_id):
+
     feedbacks = DietFeedback.objects.filter(recommendation_id=recommendation_id, user=request.user)
     serializer = DietFeedbackSerializer(feedbacks, many=True)
     return Response(serializer.data)
+
+
+
+
+########################------Nutritionist Dashboard View------########################
+
+
+class IsNutritionist(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == 'nutritionist'
+
+#Assign patients to nutritionists{POST}
+class AssignPatientAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def post(self, request):
+        patient_id = request.data.get('patient_id')
+        try:
+            patient = User.objects.get(id=patient_id)
+            PatientAssignment.objects.get_or_create(nutritionist=request.user, patient=patient)
+            return Response({'message': 'Patient assigned successfully'})
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid patient ID'}, status=404)
+
+# List assigned patients {get}
+class AssignedPatientsView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def get(self, request):
+        assigned = PatientAssignment.objects.filter(nutritionist=request.user)
+        data = [{'id': p.patient.id, 'email': p.patient.email} for p in assigned]
+        return Response(data)
+
+#Patient Profile View
+class PatientProfileDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def get(self, request, patient_id):
+        try:
+            assignment = PatientAssignment.objects.get(nutritionist=request.user, patient_id=patient_id)
+            user_profile = UserProfile.objects.get(user_id=patient_id)
+            diabetic_profile = DiabeticProfile.objects.get(user_profile=user_profile)
+
+            return Response({
+                'user_profile': {
+                    'age': user_profile.age,
+                    'weight': user_profile.weight_kg,
+                    'height': user_profile.height_cm,
+                    'activity_level': user_profile.activity_level,
+                    'health_conditions': user_profile.health_conditions
+                },
+                'diabetic_profile': {
+                    'hba1c': diabetic_profile.hba1c,
+                    'fasting_blood_sugar': diabetic_profile.fasting_blood_sugar,
+                    'medications': diabetic_profile.medications,
+                }
+            })
+        except (PatientAssignment.DoesNotExist, UserProfile.DoesNotExist, DiabeticProfile.DoesNotExist):
+            return Response({'error': 'Data not found or not assigned'}, status=404)
+
+#Patient Meal Log View
+class PatientMealLogView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def get(self, request, patient_id):
+        if not PatientAssignment.objects.filter(nutritionist=request.user, patient_id=patient_id).exists():
+            return Response({'error': 'Unauthorized'}, status=403)
+
+        meals = UserMeal.objects.filter(user_id=patient_id).order_by('-date')
+        return Response([
+            {
+                'meal_type': meal.meal_type,
+                'food': meal.food_name,
+                'calories': meal.calories,
+                'date': meal.date,
+                'time': meal.consumed_at.strftime('%H:%M:%S') if meal.consumed_at else None,
+            }
+            for meal in meals
+        ])
+
+#Approve reject edit diet plan
+class ApproveOrRejectDietView(APIView):
+
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def post(self, request, recommendation_id):
+        action = request.data.get("action")  # 'approve' or 'reject'
+        comment = request.data.get("comment", "")
+
+        try:
+            recommendation = DietRecommendation.objects.get(id=recommendation_id)
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'Recommendation not found'}, status=404)
+
+        if action == "approve":
+            recommendation.approved_by_nutritionist = True
+        elif action == "reject":
+            recommendation.approved_by_nutritionist = False
+        else:
+            return Response({'error': 'Invalid action'}, status=400)
+
+        recommendation.reviewed_by = request.user
+        recommendation.nutritionist_comment = comment
+        recommendation.save()
+        return Response({'message': f'Diet {action}d successfully'})
+
+#feeback + rating 
+class NutritionistFeedbackOnDiet(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def post(self, request, recommendation_id):
+        feedback = request.data.get("feedback", "")
+        approved = request.data.get("approved", False)
+
+        try:
+            recommendation = DietRecommendation.objects.get(id=recommendation_id)
+            DietRecommendationFeedback.objects.create(
+                recommendation=recommendation,
+                nutritionist=request.user,
+                feedback=feedback,
+                approved_for_training=approved
+            )
+            return Response({'message': 'Feedback submitted for retraining'})
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'Recommendation not found'}, status=404)
+
+#edit diet plant
+class EditDietPlanView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def patch(self, request, pk):
+        try:
+            recommendation = DietRecommendation.objects.get(pk=pk, user=request.user)
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'Diet recommendation not found'}, status=404)
+
+        data = request.data.copy()
+
+        # Deep merge for meals
+        if 'meals' in data:
+            current_meals = copy.deepcopy(recommendation.meals or {})
+            for day, meals in data['meals'].items():
+                if day in current_meals:
+                    current_meals[day].update(meals)
+                else:
+                    current_meals[day] = meals
+            data['meals'] = current_meals
+
+        # Deep merge for daily_nutrition
+        if 'daily_nutrition' in data:
+            current_nutrition = copy.deepcopy(recommendation.daily_nutrition or {})
+            for day, nutrition in data['daily_nutrition'].items():
+                if day in current_nutrition:
+                    current_nutrition[day].update(nutrition)
+                else:
+                    current_nutrition[day] = nutrition
+            data['daily_nutrition'] = current_nutrition
+
+        serializer = DietRecommendationPatchSerializer(recommendation, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)

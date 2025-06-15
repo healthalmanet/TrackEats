@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Scale, Calculator, Zap, Search, Droplets, Bell, Plus, Menu, ChevronRight } from 'lucide-react';
 
-const HealthTracker = () => {
+const Tools = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [weight, setWeight] = useState('');
   const [waterIntake, setWaterIntake] = useState(0);

@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import User, UserProfile, DiabeticProfile, UserMeal, FoodItem,Feedback,PatientReminder,NutritionistProfile,DietRecommendation
+from .models import (
+    User, UserProfile, DiabeticProfile, UserMeal,
+      FoodItem,Feedback,PatientReminder,
+      NutritionistProfile,DietRecommendation,
+      
+
+)
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 

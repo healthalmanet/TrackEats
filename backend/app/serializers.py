@@ -1,53 +1,220 @@
 from rest_framework import serializers
-from .models import User, UserProfile, DiabeticProfile,UserMeal, PatientReminder, FoodItem, NutritionistProfile, DietRecommendation, DietFeedback
+from .models import (
+    User, UserProfile, DiabeticProfile,UserMeal,
+    PatientReminder, FoodItem, NutritionistProfile,
+    DietRecommendation, DietFeedback,
+    PatientAssignment, UserMeal, DietRecommendationFeedback
+    
+)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+
+# #jwt token add user role
+# class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+#     @classmethod
+#     def get_token(cls, user):
+#         token = super().get_token(user)
+#         # Add custom claims
+#         token['role'] = user.role
+#         token['email'] = user.email
+#         return token
+
+#     def validate(self, attrs):
+#         data = super().validate(attrs)
+#         data['role'] = self.user.role  # ✅ Include in response directly
+#         data['email'] = self.user.email
+#         return data
+
+# # Serializer for UserProfile model to convert it to JSON and validate incoming data
+# class UserProfileSerializer(serializers.ModelSerializer):
+#     """
+#     Serializer for UserProfile model.
+#     Converts UserProfile model instances to JSON and validates incoming data.
+#     Excludes the 'user' field because it's set automatically in the view.
+#     """
+#     class Meta:
+#         model = UserProfile
+#         exclude = ['user']  # Exclude the user field since it's linked automatically
+
+# # Serializer for User model registration
+# class RegisterSerializer(serializers.ModelSerializer):
+#     """
+#     Serializer for User model registration.
+#     Includes nested UserProfileSerializer to create both User and UserProfile in one request.
+#     """
+
+#     class Meta:
+#         model = User
+#         fields = ['email', 'password']  # Include email, password, and profile
+#         extra_kwargs = {'password': {'write_only': True}}  # Password write-only for security
+
+#     def create(self, validated_data):
+#         """ 
+#         Create a new User instance and related UserProfile instance.
+#         - Extract nested profile data from validated_data.
+#         - Create the user using custom user manager.
+#         - Create the user profile linked to the created user.
+#         """
+#         user = User.objects.create_user(**validated_data)  # Create user with email and password
+#         return user
+
+# # Serializer to convert DiabeticProfile model to JSON and validate incoming data
+# class DiabeticProfileSerializer(serializers.ModelSerializer):
+#     user_profile = serializers.PrimaryKeyRelatedField(read_only=True)
+#     class Meta:
+#         model = DiabeticProfile
+#         fields = '__all__'  # Includes all fields from the model
+
+# # Serializer for UserMeal model to handle meal logging
+# class UserMealSerializer(serializers.ModelSerializer):
+    
+#     food_name = serializers.CharField()
+#     meal_type = serializers.ChoiceField(choices=["lunch", "breakfast", "dinner", "snack"])
+
+#     class Meta:
+#         model = UserMeal
+#         fields = [
+#             "id", "food_name", "meal_type", "unit", "quantity", "calories",
+#             "protein", "carbs", "fats", "sugar", "fiber",
+#             "consumed_at", "remarks", "date"
+#         ]
+#         read_only_fields = [
+#             "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at", "date"
+#         ]
+
+# # Serializer for PatientReminder model to handle reminders
+# class PatientReminderSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = PatientReminder
+#         fields = '__all__'
+
+# # Serializer for FoodItem model to handle food items
+# class FoodItemSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = FoodItem
+#         fields = ['id', 'name', 'calories']
+
+# # Serializer for NutritionistProfile model to handle nutritionist profiles
+# class NutritionistProfileSerializer(serializers.ModelSerializer):
+#     user = serializers.StringRelatedField(read_only=True)
+
+#     class Meta:
+#         model = NutritionistProfile
+#         fields = ['id', 'user', 'expert_level']
+
+# # Serializer for DietRecommendation model to handle diet recommendations
+# class DietRecommendationSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DietRecommendation
+#         fields = '__all__'
+
+
+# class DietFeedbackSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DietFeedback
+#         fields = ['id', 'recommendation', 'user', 'day', 'feedback', 'rating', 'created_at']
+#         read_only_fields = ['id', 'created_at', 'user']
+
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ['id', 'email', 'first_name', 'last_name']
+
+# class PatientAssignmentSerializer(serializers.ModelSerializer):
+#     patient = UserSerializer()
+
+#     class Meta:
+#         model = PatientAssignment
+#         fields = ['id', 'patient']
+
+# class UserProfileSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = UserProfile
+#         exclude = ['user']
+
+# class DiabeticProfileSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DiabeticProfile
+#         exclude = ['user']
+
+# class MealLogSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = MealLog
+#         fields = '__all__'
+
+# class DietRecommendationSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DietRecommendation
+#         fields = '__all__'
+
+# class DietFeedbackSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DietFeedback
+#         fields = '__all__'
+
+# class DietRecommendationFeedbackSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DietRecommendationFeedback
+#         fields = '__all__'
 
 
 
-# Serializer for UserProfile model to convert it to JSON and validate incoming data
-class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for UserProfile model.
-    Converts UserProfile model instances to JSON and validates incoming data.
-    Excludes the 'user' field because it's set automatically in the view.
-    """
-    class Meta:
-        model = UserProfile
-        exclude = ['user']  # Exclude the user field since it's linked automatically
 
-# Serializer for User model registration
+
+# JWT Serializer with additional claims
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['role'] = user.role
+        token['email'] = user.email
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['role'] = self.user.role
+        data['email'] = self.user.email
+        return data
+
+
+# User Registration
 class RegisterSerializer(serializers.ModelSerializer):
-    """
-    Serializer for User model registration.
-    Includes nested UserProfileSerializer to create both User and UserProfile in one request.
-    """
-
     class Meta:
         model = User
-        fields = ['email', 'password']  # Include email, password, and profile
-        extra_kwargs = {'password': {'write_only': True}}  # Password write-only for security
+        fields = ['email', 'password']
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        """ 
-        Create a new User instance and related UserProfile instance.
-        - Extract nested profile data from validated_data.
-        - Create the user using custom user manager.
-        - Create the user profile linked to the created user.
-        """
-        user = User.objects.create_user(**validated_data)  # Create user with email and password
-        return user
+        return User.objects.create_user(**validated_data)
 
-# Serializer to convert DiabeticProfile model to JSON and validate incoming data
+
+# User Profile Serializer
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        exclude = ['user']
+
+
+# Diabetic Profile Serializer
 class DiabeticProfileSerializer(serializers.ModelSerializer):
-    user_profile = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = DiabeticProfile
-        fields = '__all__'  # Includes all fields from the model
+        exclude = ['user']
 
-# Serializer for UserMeal model to handle meal logging
+
+# Nutritionist Profile Serializer
+class NutritionistProfileSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = NutritionistProfile
+        fields = ['id', 'user']
+
+
+# User Meal Logging
 class UserMealSerializer(serializers.ModelSerializer):
-    
     food_name = serializers.CharField()
-    meal_type = serializers.ChoiceField(choices=["lunch", "breakfast", "dinner", "snack"])
+    meal_type = serializers.ChoiceField(choices=["breakfast", "lunch", "dinner", "snack"])
 
     class Meta:
         model = UserMeal
@@ -60,33 +227,29 @@ class UserMealSerializer(serializers.ModelSerializer):
             "calories", "protein", "carbs", "fats", "sugar", "fiber", "consumed_at", "date"
         ]
 
-# Serializer for PatientReminder model to handle reminders
+
+# Patient Reminders
 class PatientReminderSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientReminder
         fields = '__all__'
 
-# Serializer for FoodItem model to handle food items
+
+# Food Items
 class FoodItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodItem
         fields = ['id', 'name', 'calories']
 
-# Serializer for NutritionistProfile model to handle nutritionist profiles
-class NutritionistProfileSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
 
-    class Meta:
-        model = NutritionistProfile
-        fields = ['id', 'user', 'expert_level']
-
-# Serializer for DietRecommendation model to handle diet recommendations
+# Diet Recommendation (For users and nutritionists)
 class DietRecommendationSerializer(serializers.ModelSerializer):
     class Meta:
         model = DietRecommendation
         fields = '__all__'
 
 
+# Diet Feedback (from patients)
 class DietFeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = DietFeedback
@@ -94,10 +257,48 @@ class DietFeedbackSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'user']
 
 
+# Diet Recommendation Feedback (from nutritionists for retraining)
+class DietRecommendationFeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DietRecommendationFeedback
+        fields = '__all__'
 
 
+# Patient Assignment Serializer (to map patients to nutritionists)
+class PatientAssignmentSerializer(serializers.ModelSerializer):
+    patient = serializers.StringRelatedField()
+
+    class Meta:
+        model = PatientAssignment
+        fields = ['id', 'patient']
 
 
+# User Serializer (used for brief user representation)
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name']
 
 
+# Meal Log Serializer (used for nutritionist viewing logs)
+class MealLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserMeal
+        fields = '__all__'
 
+
+# Diet Recommendation Patch Serializer (for nutritionists to update recommendations)
+class DietRecommendationPatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DietRecommendation
+        fields = [
+            'meals', 
+            'daily_nutrition',
+            'calories', 
+            'protein', 
+            'carbs', 
+            'fats', 
+            'approved_by_nutritionist', 
+            'nutritionist_comment'
+        ]
+        extra_kwargs = {field: {'required': False} for field in fields}

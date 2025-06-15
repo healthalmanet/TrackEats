@@ -11,13 +11,20 @@ from .views import (
     SendReminderView,
     UserContactListView,
     OperatorReportView,
-    DietRecommendationListCreateView,
-    DietRecommendationDetailView,
     WeeklyDietRecommendationView,
     DailyDietRecommendationView,
     RegenerateDailyDietRecommendationView,
     submit_diet_feedback,
     get_feedback_for_recommendation,
+    MyTokenObtainPairView,
+    
+    AssignPatientAPIView,
+    AssignedPatientsView,
+    PatientProfileDetailView,
+    PatientMealLogView,
+    ApproveOrRejectDietView,
+    NutritionistFeedbackOnDiet,
+    EditDietPlanView,
     
 )
 from rest_framework_simplejwt.views import (
@@ -40,7 +47,7 @@ urlpatterns = [
     path('signup/', RegisterView.as_view(), name='signup'),
 
     # JWT login endpoint - returns access and refresh tokens after user credentials verified
-    path('login/', TokenObtainPairView.as_view(), name='login'),
+    path('login/', MyTokenObtainPairView.as_view(), name='login'),
 
     # Refresh JWT access token endpoint using a valid refresh token
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -88,8 +95,6 @@ urlpatterns = [
     ##################################################################################################
 
     ###########Nutritionist APIs########################
-    path('nutritionist/diet-recommendations/', DietRecommendationListCreateView.as_view(), name='nutritionist-diet-recommendations'),
-    path('nutritionist/diet-recommendations/<int:pk>/', DietRecommendationDetailView.as_view(), name='diet-recommendation-detail'),
 
     #User Diet Recommendations
     path('diet/week/', WeeklyDietRecommendationView.as_view(), name='weekly-diet'),
@@ -105,6 +110,29 @@ urlpatterns = [
 
     # # ⭐ User Feedback on Diet (POST)
     # path('feedback/<int:recommendation_id>/', SubmitDietFeedbackAPIView.as_view(), name='diet-feedback'),
+
+
+    # POST - Assign a patient to nutritionist
+    path('nutritionist/assign-patient/', AssignPatientAPIView.as_view()),
+
+    #  GET - Get all patients assigned to the logged-in nutritionist
+    path('nutritionist/patients/', AssignedPatientsView.as_view()),
+
+    # GET - Detailed profile of a specific patient
+    path('nutritionist/patient/<int:patient_id>/profile/', PatientProfileDetailView.as_view()),
+
+    # GET - Meal logs for a specific patient
+    path('nutritionist/patient/<int:patient_id>/meals/', PatientMealLogView.as_view()),
+
+    #  POST - Approve or Reject a specific diet plan
+    path('nutritionist/diet/<int:recommendation_id>/review/', ApproveOrRejectDietView.as_view()),
+
+    # POST - Submit feedback for retraining (nutritionist)
+    path('nutritionist/diet/<int:recommendation_id>/feedback/', NutritionistFeedbackOnDiet.as_view()),
+
+    #  PUT - Edit/update a specific diet plan (nutritionist)
+    path('nutritionist/diet/<int:recommendation_id>/edit/', EditDietPlanView.as_view()),
+
 ]
 
 

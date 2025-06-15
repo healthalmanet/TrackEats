@@ -6,7 +6,6 @@ from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 from django.contrib.postgres.fields import ArrayField
 
-
 # ---------------------- User Authentication ----------------------
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None):
@@ -261,14 +260,20 @@ class Feedback(models.Model):
 ##############Nutritionist Recommendations
 class NutritionistProfile(models.Model):
     EXPERTISE_CHOICES = [
-        (1, 'Basic Nutritionist'),   # Handles User IDs 1-10
-        (2, 'Senior Nutritionist'),  # Handles User IDs 11-20
+        (1, 'Basic Nutritionist'),
+        (2, 'Senior Nutritionist'),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='nutritionist_profile')
     expert_level = models.IntegerField(choices=EXPERTISE_CHOICES, default=1)
 
     def __str__(self):
-        return f"{self.user.email} - {self.get_expert_level_display()}"
+        return f"{self.user.email} - {self.get_expert_level_display()}" # type: ignore
+#Patient Nutritionist Assignment
+class PatientAssignment(models.Model):
+    nutritionist = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_patients')  # user with nutritionist group
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_nutritionist')
+    assigned_at = models.DateTimeField(auto_now_add=True)
 
 
 # # ------------------------
@@ -293,6 +298,7 @@ class DietRecommendation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+#User Diet Feedback
 class DietFeedback(models.Model):
     DAY_CHOICES = [
     ('Monday', 'Monday'),
@@ -309,4 +315,19 @@ class DietFeedback(models.Model):
     day = models.CharField(max_length=10)  # e.g., 'Monday'
     feedback = models.TextField()
     rating = models.PositiveSmallIntegerField(default=0)  # 1 to 5 stars
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ModelRetrainLog(models.Model):
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    feedbacks_used = models.IntegerField(default=0)
+    accuracy_score = models.FloatField(null=True, blank=True)
+    initiated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+#Nutrionist Feedback for Retraining
+class DietRecommendationFeedback(models.Model):
+    recommendation = models.ForeignKey(DietRecommendation, on_delete=models.CASCADE, related_name="retraining_feedbacks")
+    nutritionist = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={"role": "nutritionist"})
+    feedback = models.TextField()
+    approved_for_training = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

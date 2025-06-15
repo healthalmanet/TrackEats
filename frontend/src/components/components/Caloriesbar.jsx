@@ -14,7 +14,6 @@ const CalorieProgressBar = ({
   const isOverTarget = currentCalories > targetCalories;
   const excessCalories = currentCalories - targetCalories;
   
- 
   useEffect(() => {
     const timer = setTimeout(() => {
       setAnimatedProgress(progressPercentage);
@@ -23,7 +22,6 @@ const CalorieProgressBar = ({
     return () => clearTimeout(timer);
   }, [progressPercentage]);
 
-  
   const formatNumber = (num) => {
     return new Intl.NumberFormat('en-IN').format(num);
   };
@@ -46,9 +44,7 @@ const CalorieProgressBar = ({
         <div className="mb-4">
           <div className="w-full bg-gray-200 rounded-full h-3 sm:h-4 overflow-hidden">
             <div 
-              className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                isOverTarget ? 'bg-red-500' : 'bg-red-400'
-              }`}
+              className={`h-full rounded-full transition-all duration-1000 ease-out ${isOverTarget ? 'bg-red-500' : 'bg-red-400'}`}
               style={{ 
                 width: `${animatedProgress}%`,
                 boxShadow: isOverTarget ? '0 0 8px rgba(239, 68, 68, 0.5)' : 'none'
@@ -59,10 +55,8 @@ const CalorieProgressBar = ({
 
         {/* Status Text */}
         <div className="text-center mb-2">
-          <span className={`text-base sm:text-lg font-semibold ${
-            isOverTarget ? 'text-red-600' : 'text-gray-700'
-          }`}>
-            {isOverTarget ? `${Math.round(progressPercentage)}%` : '100%'} Complete
+          <span className={`text-base sm:text-lg font-semibold ${isOverTarget ? 'text-red-600' : 'text-gray-700'}`}>
+            {Math.round(progressPercentage)}% Complete
           </span>
         </div>
 
@@ -71,7 +65,8 @@ const CalorieProgressBar = ({
           <div className="flex items-center justify-center gap-2 text-gray-600 text-sm sm:text-base">
             <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
             <span>
-             <span className="font-semibold">{formatNumber(excessCalories)}</span></span>
+              <span className="font-semibold">{formatNumber(excessCalories)}</span> calories over target
+            </span>
           </div>
         )}
         
@@ -85,20 +80,19 @@ const CalorieProgressBar = ({
   );
 };
 
-
 const CalorieProgress = () => {
   const [calorieData, setCalorieData] = useState({
     current: 1200,
     target: 1995
   });
 
-   const simulateDataUpdate = () => {
+  const simulateDataUpdate = () => {
     const scenarios = [
       { current: 1200, target: 1995 },
-      { current: 1995, target: 1995 }, // Exact target
-      { current: 2500, target: 1995 }, // Over target
-      { current: 434348447, target: 1995 }, // Way over target (like your image)
-      { current: 800, target: 1995 }, // Under target
+      { current: 1995, target: 1995 },
+      { current: 2500, target: 1995 },
+      { current: 434348447, target: 1995 },
+      { current: 800, target: 1995 },
     ];
     
     const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
@@ -107,22 +101,21 @@ const CalorieProgress = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      
       <div className="max-w-2xl mx-auto space-y-8">
-        {/* Header */}
+        
         <div className="text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-            Calorie bar
+            Calorie Bar
           </h1>
-          <p className="text-gray-600 mb-6">
-           
-          </p>
-         </div>
-        {/* Progress Bar Component */}
+          <p className="text-gray-600 mb-6"></p>
+        </div>
+
         <CalorieProgressBar 
           currentCalories={calorieData.current}
           targetCalories={calorieData.target}
         />
-     </div>
+      </div>
     </div>
   );
 };

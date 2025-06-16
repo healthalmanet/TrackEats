@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Scale, Calculator, Zap, Search, Droplets, Bell, Plus, Menu, ChevronRight } from 'lucide-react';
-
+import { Scale, Calculator, Zap, Search, Droplets, Bell, Plus, Menu, ChevronRight, Wrench, Book, Percent, } from 'lucide-react';
+import { FaWeight } from "react-icons/fa";
+import { FaDroplet } from "react-icons/fa6";
 const Tools = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [weight, setWeight] = useState('');
@@ -15,28 +16,31 @@ const Tools = () => {
       id: 'meal-log',
       name: 'Meal Log',
       description: 'Track your daily meals and monitor nutritional intake with detailed logging.',
-      icon: <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center"><div className="w-4 h-4 bg-green-500 rounded"></div></div>,
+      icon: <div className="w-6 flex items-center justify-center h-6 bg-green-100 rounded">< Book className='h-4 w-4 text-green-500 ' /></div>,
       color: 'green'
     },
     {
       id: 'bmi-calculator',
       name: 'BMI Calculator',
       description: 'Calculate your Body Mass Index and understand your health status.',
-      icon: <Calculator className="w-8 h-8 text-yellow-500" />,
+      icon: <div className="w-6 flex items-center justify-center h-6 bg-orange-100 rounded"><Calculator className="w-4 h-4 text-yellow-500" /></div>,
+     
       color: 'yellow'
     },
     {
       id: 'fat-calculator',
       name: 'Fat Calculator',
       description: 'Analyze your body fat percentage and composition metrics.',
-      icon: <Zap className="w-8 h-8 text-orange-500" />,
+      icon:  <div className="w-6 flex items-center justify-center h-6 bg-orange-100 rounded"><Percent className="w-4 h-4 text-yellow-500" /></div>
+     ,
       color: 'orange'
     },
     {
       id: 'nutrition-search',
       name: 'Nutrition Search',
       description: 'Search and explore nutritional information for countless products.',
-      icon: <Search className="w-8 h-8 text-green-500" />,
+      icon:  <div className="w-6 flex items-center justify-center h-6 bg-green-100 rounded"><Search className="w-4 h-4 text-green-500" /></div>
+     ,
       color: 'green'
     }
   ];
@@ -46,14 +50,17 @@ const Tools = () => {
       id: 'weight-tracker',
       name: 'Weight Tracker',
       description: 'Monitor your weight progress with detailed charts and history.',
-      icon: <Scale className="w-8 h-8 text-blue-500" />,
+      icon: <div className="w-6 flex items-center justify-center h-6 bg-green-100 rounded"><FaWeight className=" text-blue-500" /></div>
+    
+,
       color: 'blue'
     },
     {
       id: 'water-tracker',
       name: 'Water Tracker',
       description: 'Stay hydrated by tracking your daily water intake goals.',
-      icon: <Droplets className="w-8 h-8 text-cyan-500" />,
+      icon: <div className="w-6 flex items-center justify-center h-6 bg-green-100 rounded"><FaDroplet className=" text-blue-500" /></div>
+,
       color: 'cyan'
     }
   ];
@@ -127,10 +134,11 @@ const Tools = () => {
       {/* Tools Section */}
       <div>
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <div className="w-4 h-4 bg-green-500 rounded"></div>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+            <div className="w-5 h-5 bg-green-500 rounded justify-items-center flex p-0.5"><Wrench  className='w-3 h-3 m-0.5 text-white '/></div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Tools</h2>
+         
+          <h2 className="text-2xl font-bold text-gray-900">  Tools</h2>
         </div>
         <div className="grid md:grid-cols-2 gap-6">
           {tools.map((tool) => (

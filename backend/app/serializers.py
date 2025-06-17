@@ -3,7 +3,8 @@ from .models import (
     User, UserProfile, DiabeticProfile,UserMeal,
     PatientReminder, FoodItem, NutritionistProfile,
     DietRecommendation, DietFeedback,
-    PatientAssignment, UserMeal, DietRecommendationFeedback
+    PatientAssignment, UserMeal, DietRecommendationFeedback,
+    Feedback,
     
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -199,8 +200,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class DiabeticProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = DiabeticProfile
-        exclude = ['user']
-
+        fields = '__all__'
+        extra_kwargs = {
+            'user_profile': {'read_only': True}  # ✅ prevent user from needing to provide it
+        }
 
 # Nutritionist Profile Serializer
 class NutritionistProfileSerializer(serializers.ModelSerializer):
@@ -302,3 +305,12 @@ class DietRecommendationPatchSerializer(serializers.ModelSerializer):
             'nutritionist_comment'
         ]
         extra_kwargs = {field: {'required': False} for field in fields}
+
+
+#User Application FeedBack
+class FeedbackSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Feedback
+        fields = ['id', 'user_email', 'message', 'rating', 'created_at']

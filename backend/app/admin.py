@@ -3,6 +3,8 @@ from .models import (
     User, UserProfile, DiabeticProfile, UserMeal,
       FoodItem,Feedback,PatientReminder,
       NutritionistProfile,DietRecommendation,
+      PatientAssignment, AppReport, DietRecommendationFeedback, DietFeedback,
+      
       
 
 )
@@ -45,3 +47,7 @@ admin.site.register(Feedback)
 admin.site.register(PatientReminder)
 admin.site.register(NutritionistProfile)
 admin.site.register(DietRecommendation)
+admin.site.register(PatientAssignment)
+admin.site.register(AppReport)
+admin.site.register(DietRecommendationFeedback)
+admin.site.register(DietFeedback)

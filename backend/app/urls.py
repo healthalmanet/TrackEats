@@ -25,6 +25,7 @@ from .views import (
     ApproveOrRejectDietView,
     NutritionistFeedbackOnDiet,
     EditDietPlanView,
+    FeedbackCreateView,
     
 )
 from rest_framework_simplejwt.views import (
@@ -104,12 +105,7 @@ urlpatterns = [
     path('diet/feedback/', submit_diet_feedback, name='submit_diet_feedback'),
     path('diet/feedback/<int:recommendation_id>/', get_feedback_for_recommendation, name='get_feedback_for_recommendation'),
 
-
-    # # ✅ Nutritionist Approve (POST)
-    # path('approve/<int:recommendation_id>/', ApproveDietRecommendationAPIView.as_view(), name='approve-diet'),
-
-    # # ⭐ User Feedback on Diet (POST)
-    # path('feedback/<int:recommendation_id>/', SubmitDietFeedbackAPIView.as_view(), name='diet-feedback'),
+   
 
 
     # POST - Assign a patient to nutritionist
@@ -132,6 +128,10 @@ urlpatterns = [
 
     #  PUT - Edit/update a specific diet plan (nutritionist)
     path('nutritionist/diet/<int:recommendation_id>/edit/', EditDietPlanView.as_view()),
+
+
+    # # # ⭐ User Feedback on Diet (POST)
+    path('feedback/create/', FeedbackCreateView.as_view(), name='feedback-create'),
 
 ]
 

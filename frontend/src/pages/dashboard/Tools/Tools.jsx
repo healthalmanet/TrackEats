@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Scale, Calculator, Zap, Search, Droplets, Bell, Plus, Menu, ChevronRight, Wrench, Book, Percent, } from 'lucide-react';
 import { FaWeight } from "react-icons/fa";
 import { FaDroplet } from "react-icons/fa6";
+import { MdOutlineWatchLater } from "react-icons/md";
+import Footer from '../../../components/components/Footer';
+
 const Tools = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [weight, setWeight] = useState('');
@@ -173,15 +176,19 @@ const Tools = () => {
       {/* Reminder Section */}
       <div>
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-            <Bell className="w-4 h-4 text-orange-600" />
+          <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
+            <Bell className="w-4 h-4 text-white" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Reminder</h2>
         </div>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-start gap-4">
             <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Bell className="w-4 h-4 text-purple-600" />
+              <div className=' rounded-[90%]  bg-purple-600 '>
+
+                <MdOutlineWatchLater className='text-white text-3xl'/>
+              </div>
+       
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900 mb-2">Custom Reminder</h3>
@@ -366,42 +373,7 @@ const Tools = () => {
         {activeSection === 'water-tracker' && renderWaterTracker()}
         {activeSection === 'bmi-calculator' && renderBMICalculator()}
         
-        {/* Footer */}
-        {activeSection === 'dashboard' && (
-          <footer className="mt-16 pt-12 border-t border-gray-200">
-            <div className="grid md:grid-cols-4 gap-8 text-sm">
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 bg-green-500 rounded"></div>
-                  <span className="font-bold text-gray-900">TrackEats</span>
-                </div>
-                <p className="text-gray-600">Smart nutrition tracking for a healthier lifestyle. Monitor, analyze, and optimize your daily nutrition intake.
-
-</p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Quick Links</h4>
-                <ul className="space-y-2 text-gray-600">
-                  <li>Dashboard</li>
-                  <li>Tools</li>
-                  <li>Tracker</li>
-                  <li>Support</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Legal</h4>
-                <ul className="space-y-2 text-gray-600">
-                  <li>Privacy Policy</li>
-                  <li>Terms of Service</li>
-                  <li>Contact</li>
-                </ul>
-              </div>
-              <div className="text-right text-gray-500">
-                <p>© 2024 • TrackEats • All rights reserved.</p>
-              </div>
-            </div>
-          </footer>
-        )}
+      <Footer/>
       </div>
     </div>
   );

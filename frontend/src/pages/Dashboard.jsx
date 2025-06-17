@@ -14,20 +14,30 @@ import CustomReminder from "./dashboard/Tools/CustomReminder";
 import DiabeticPage from "../components/components/diabetic";
 import HealthSection from "./dashboard/Tools/HealthSection";
 import Caloriesbar from "../components/components/Caloriesbar";
+import HeroSection from "../components/components/HeroSection";
+import QuickMealLogger from "../components/components/MealLogger/QuickMealLogger";
+import WaterIntakeWidget from "../components/components/WaterTracker/WaterWidget"; // ✅ ADD THIS
+import HealthTools from "../components/components/HealthSection";
+import DietRecommendations from "../components/components/RecommendationSection";
 
 function Dashboard() {
   const location = useLocation();
 
   return (
     <div>
-      <Routes>
-       
+      {location.pathname === "/dashboard" && (
+        <>
+          <HeroSection />
+          <QuickMealLogger />
+          <WaterIntakeWidget/> 
+          <HealthTools/> 
+          <DietRecommendations/>
+        </>
+      )}
 
-        {/* Other Routes */}
+      <Routes>
         <Route path="user-profile" element={<UserProfileForm />} />
-  
         <Route path="tools" element={<Tools />} />
-  
         <Route path="tools/bmi" element={<BmiCalculator />} />
         <Route path="tools/bmi-result" element={<BmiResult />} />
         <Route path="tools/fat-calculator" element={<FatCalculator />} />
@@ -36,14 +46,11 @@ function Dashboard() {
         <Route path="tools/nutrition-search" element={<NutritionSearch />} />
         <Route path="tools/weight-tracker" element={<WeightTracker />} />
         <Route path="tools/water-tracker" element={<WaterTracker />} />
-        <Route path="custom-reminder" element={<CustomReminder />} />
-        <Route path="explore" element={<Explore />} />
+        <Route path="tools/custom-reminder" element={<CustomReminder />} />
+       
         <Route path="diabetic" element={<DiabeticPage />} />
         <Route path="health-section" element={<HealthSection />} />
       </Routes>
-
-      {/* Only show Caloriesbar on the root home page (e.g. /dashboard or /dashboard/) */}
-      {location.pathname === "/dashboard" && <Caloriesbar />}
     </div>
   );
 }

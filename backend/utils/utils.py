@@ -6,15 +6,16 @@ UNIT_TO_GRAMS = {
     "kg": 1000,
     "ml": 1,
     "l": 1000,
-    "cup": 240,
-    "bowl": 300,
+    "cup": 200,        # for Indian gravies
+    "bowl": 150,       # was 300 → now 150g per bowl
     "piece": 100,
     "tbsp": 15,
     "tsp": 5,
     "slice": 30,
+    "plate": 350,      # optional
+    "katori": 100,     # smaller serving bowl (desi households)
     "other": 100,
 }
-
 
 def role_required(allowed_roles):
     def decorator(view_func):

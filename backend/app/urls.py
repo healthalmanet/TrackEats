@@ -23,7 +23,7 @@ from .views import (
     PatientProfileDetailView,
     PatientMealLogView,
     ApproveOrRejectDietView,
-    NutritionistFeedbackOnDiet,
+    NutritionistFeedbackOnDiet, UserListForNutritionistView,
     EditDietPlanView,
     FeedbackCreateView,
     WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet
@@ -100,7 +100,6 @@ urlpatterns = [
     path("operator/reports/", OperatorReportView.as_view(), name="operator-report"),
     ##################################################################################################
 
-    ###########Nutritionist APIs########################
 
     #User Diet Recommendations
     path('diet/week/', WeeklyDietRecommendationView.as_view(), name='weekly-diet'),
@@ -111,7 +110,9 @@ urlpatterns = [
     path('diet/feedback/<int:recommendation_id>/', get_feedback_for_recommendation, name='get_feedback_for_recommendation'),
 
    
+    ###########Nutritionist APIs########################
 
+    path('nutritionist/users/', UserListForNutritionistView.as_view(), name='nutritionist-user-list'),
 
     # POST - Assign a patient to nutritionist
     path('nutritionist/assign-patient/', AssignPatientAPIView.as_view()),
@@ -135,7 +136,7 @@ urlpatterns = [
     path('nutritionist/diet/<int:recommendation_id>/edit/', EditDietPlanView.as_view()),
 
 
-    # # # ⭐ User Feedback on Diet (POST)
+    # # # ⭐ User Feedback on Application (POST)
     path('feedback/create/', FeedbackCreateView.as_view(), name='feedback-create'),
 
 ]

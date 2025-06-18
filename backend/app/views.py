@@ -8,6 +8,7 @@ from utils.utils import UNIT_TO_GRAMS,role_required,generate_diet_recommendation
 from .ml_diet.predict import recommend_meals
 from datetime import datetime, time
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework import views
 from rest_framework.permissions import IsAuthenticated
 import copy
@@ -862,6 +863,23 @@ def get_feedback_for_recommendation(request, recommendation_id):
 class IsNutritionist(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == 'nutritionist'
+
+#to view all users
+class UserListForNutritionistView(ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    
+    # ✅ Filter fields (e.g., active users only)
+    filterset_fields = ['is_active']
+    
+    # ✅ Search fields (email or full name)
+    search_fields = ['email', 'full_name']
+    
+    # ✅ Ordering fields (default = by 'date_joined')
+    ordering_fields = ['date_joined', 'email']
 
 #Assign patients to nutritionists{POST}
 class AssignPatientAPIView(APIView):

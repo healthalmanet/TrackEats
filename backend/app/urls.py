@@ -26,6 +26,7 @@ from .views import (
     NutritionistFeedbackOnDiet,
     EditDietPlanView,
     FeedbackCreateView,
+    WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet
     
 )
 from rest_framework_simplejwt.views import (
@@ -38,6 +39,10 @@ router = DefaultRouter()
 
 #LogMeals API endpoint
 router.register(r'logmeals', UserMealViewSet, basename='user-meals')
+
+router.register(r'weight', WeightLogViewSet, basename='weight-log')
+router.register(r'water', WaterIntakeLogViewSet, basename='water-log')
+router.register(r'reminders', CustomReminderViewSet, basename='reminder')
 
 urlpatterns = [
 

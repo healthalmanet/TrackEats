@@ -7,20 +7,24 @@ from django.contrib.postgres.fields import JSONField
 from django.contrib.postgres.fields import ArrayField
 
 # ---------------------- User Authentication ----------------------
+
 class UserManager(BaseUserManager):
-    def create_user(self, email, password=None):
+    def create_user(self, email, full_name, password=None):
         if not email:
             raise ValueError("Email is required")
-        user = self.model(email=self.normalize_email(email))
+        if not full_name:
+            raise ValueError("Full name is required")
+        user = self.model(email=self.normalize_email(email), full_name=full_name)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None):
-        user = self.create_user(email, password)
+    def create_superuser(self, email, full_name, password=None):
+        user = self.create_user(email, full_name, password)
         user.is_admin = True
         user.save(using=self._db)
         return user
+
 
 class User(AbstractBaseUser):
     ROLE_CHOICES = [
@@ -32,16 +36,19 @@ class User(AbstractBaseUser):
     ]
 
     email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=255)  # ✅ New field added here
     date_joined = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
 
     objects = UserManager()
+
     USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['full_name']  # ✅ Required when creating superuser
 
     def __str__(self):
-        return f"{self.email} ({self.role})"
+        return f"{self.full_name} ({self.email} - {self.role})"
 
     def has_perm(self, perm, obj=None):
         return self.is_admin or self.role == 'admin'
@@ -52,7 +59,6 @@ class User(AbstractBaseUser):
     @property
     def is_staff(self):
         return self.is_admin or self.role in ['admin', 'owner']
-
 # ------------------------
 # User Profile
 # ------------------------
@@ -112,13 +118,28 @@ class UserProfile(models.Model):
 
 # ---------------------- Diabetes-Specific Table ----------------------
     
-class DiabeticProfile(models.Model):
+class DiabeticProfile(models.Model): 
+    DIABETES_TYPE_CHOICES = [
+        ('type1', 'Type 1 Diabetes'),
+        ('type2', 'Type 2 Diabetes'),
+
+        ('prediabetes','Prediabetes'),
+        ('gestational', 'Gestational Diabetes'),
+        ('other', 'Other'),
+    ]
+
+
     user_profile = models.ForeignKey('UserProfile', on_delete=models.CASCADE, related_name='diabetic_reports')
     hba1c = models.FloatField(help_text="HbA1c level (%)")
     fasting_blood_sugar = models.FloatField(help_text="Fasting Blood Sugar (mg/dL)")
     insulin_dependent = models.BooleanField(default=False)
     medications = models.TextField(blank=True, null=True)
     diagnosis_date = models.DateField()
+
+    diabetes_type = models.CharField(max_length=20, choices=DIABETES_TYPE_CHOICES, default='type2')
+
+    total_cholesterol = models.FloatField(help_text="Total Cholesterol (mg/dL)", null=True, blank=True)
+
 
     def __str__(self):
         return f"Diabetes Profile for {self.user_profile.name}"
@@ -331,3 +352,48 @@ class DietRecommendationFeedback(models.Model):
     feedback = models.TextField()
     approved_for_training = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+#################################-----------Tools Section Models----------------------------####################
+#Water, Weight, and Custom Reminders
+class WeightLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField()
+    weight_kg = models.FloatField()
+    time_logged = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user} - {self.date} - {self.weight_kg} kg"
+
+
+
+class WaterIntakeLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='water_logs')
+    amount_ml = models.PositiveIntegerField()
+    date = models.DateField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.amount_ml} ml on {self.date}"
+
+
+class CustomReminder(models.Model):
+    FREQUENCY_CHOICES = [
+        ('once', 'Once'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('custom', 'Custom')
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reminders')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    reminder_time = models.TimeField()
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, default='daily')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.user.email}"

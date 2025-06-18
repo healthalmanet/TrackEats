@@ -11,6 +11,8 @@ from rest_framework.views import APIView
 from rest_framework import views
 from rest_framework.permissions import IsAuthenticated
 import copy
+from rest_framework.decorators import action
+from django.utils import timezone
 from rest_framework.exceptions import NotFound
 from rapidfuzz import process, fuzz
 from rest_framework.response import Response
@@ -31,6 +33,7 @@ from .models import (
     DietRecommendation,DietFeedback,
     PatientAssignment, UserMeal, DietRecommendationFeedback,
     Feedback,
+    WeightLog,WaterIntakeLog,CustomReminder,
     )
 from .serializers import (
         RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,
@@ -39,6 +42,8 @@ from .serializers import (
         DietFeedbackSerializer,
         DietRecommendationPatchSerializer,
         FeedbackSerializer,
+        WeightLogSerializer,CustomReminderSerializer,WaterIntakeLogSerializer,
+        UserSerializer,
     )
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import MyTokenObtainPairSerializer
@@ -197,7 +202,7 @@ class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
 #         return Response(response_data, status=status.HTTP_201_CREATED)
 
 class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 4
+    page_size = 5
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -333,6 +338,21 @@ def recommend_calories(request):
         carbs_calories = recommended_calories - (protein_calories + fats_calories)
         carbs_grams = round(carbs_calories / 4) if carbs_calories > 0 else 0
 
+
+             # ✅ Calculate recommended water intake
+        base_water_ml = weight * 35  # 35 ml per kg
+
+        # Activity adjustment (ml)
+        activity_water_bonus = {
+            "sedentary": 0,
+            "light": 250,
+            "moderate": 500,
+            "active": 750,
+            "very_active": 1000,
+        }
+        water_adjustment = activity_water_bonus.get(activity_level, 0)
+        recommended_water_ml = base_water_ml + water_adjustment
+
         return Response({
             "bmr": round(bmr),
             "maintenance_calories": round(maintenance_calories),
@@ -341,6 +361,9 @@ def recommend_calories(request):
                 "protein_g": protein_grams,
                 "carbs_g": carbs_grams,
                 "fats_g": fats_grams,
+            },
+            "water": {
+                "recommended_ml": round(recommended_water_ml),
             },
             "goal": goal,
             "activity_level": activity_level,
@@ -1000,6 +1023,91 @@ class EditDietPlanView(APIView):
 class FeedbackCreateView(generics.CreateAPIView):
     serializer_class = FeedbackSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+###########--------------Tools(Weight,water,CUstom reminder)------------------##############
+
+class WeightLogViewSet(viewsets.ModelViewSet):
+    serializer_class = WeightLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = WeightLog.objects.all()
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['date']
+    ordering_fields = ['date', 'time_logged']
+    ordering = ['-time_logged']
+
+    def get_queryset(self):
+        return WeightLog.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class WaterIntakeLogViewSet(viewsets.ModelViewSet):
+    queryset = WaterIntakeLog.objects.all()
+    serializer_class = WaterIntakeLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['date']  # Enable ?date=YYYY-MM-DD filter
+    ordering_fields = ['date']
+    ordering = ['-date']
+
+    def perform_create(self, serializer):
+        today = timezone.now().date()
+        obj, created = WaterIntakeLog.objects.get_or_create(user=self.request.user, date=today)
+        if not created:
+            obj.amount_ml += serializer.validated_data['amount_ml']
+            obj.save()
+        else:
+            obj.amount_ml = serializer.validated_data['amount_ml']
+            obj.save()
+
+        response_serializer = self.get_serializer(obj)
+        raise serializers.ValidationError(response_serializer.data)  # Shortcut to return response with data
+
+    def create(self, request, *args, **kwargs):
+        today = timezone.now().date()
+        obj, created = WaterIntakeLog.objects.get_or_create(user=request.user, date=today)
+        serializer = self.get_serializer(obj, data=request.data, partial=True)
+
+        serializer.is_valid(raise_exception=True)
+
+        if created:
+            serializer.save(user=request.user, date=today)
+        else:
+            obj.amount_ml += serializer.validated_data['amount_ml']
+            obj.save()
+
+        return Response(self.get_serializer(obj).data, status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='total')
+    def total_water_intake(self, request):
+        date = request.query_params.get('date')
+        if not date:
+            return Response({"error": "date query param required"}, status=400)
+
+        total = self.get_queryset().filter(date=date).aggregate(total_ml=Sum('amount_ml'))['total_ml'] or 0
+        return Response({"date": date, "total_water_ml": total})
+
+
+class CustomReminderViewSet(viewsets.ModelViewSet):
+    queryset = CustomReminder.objects.all()
+    serializer_class = CustomReminderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['frequency', 'is_active']
+    ordering_fields = ['reminder_time', 'created_at']
+    ordering = ['reminder_time']
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

@@ -5,6 +5,7 @@ from .models import (
     DietRecommendation, DietFeedback,
     PatientAssignment, UserMeal, DietRecommendationFeedback,
     Feedback,
+    WeightLog,WaterIntakeLog,CustomReminder
     
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -169,25 +170,28 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['role'] = user.role
         token['email'] = user.email
+        token['full_name'] = user.full_name  # ✅ Add full_name to the token payload
         return token
 
     def validate(self, attrs):
         data = super().validate(attrs)
         data['role'] = self.user.role
         data['email'] = self.user.email
+        data['full_name'] = self.user.full_name  # ✅ Add full_name to response body
         return data
 
 
 # User Registration
 class RegisterSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(required=True)  # ✅ Add this to expose it in API page
+
     class Meta:
         model = User
-        fields = ['email', 'password']
+        fields = ['email', 'full_name', 'password']  # ✅ Include full_name here
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
-
 
 # User Profile Serializer
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -280,7 +284,8 @@ class PatientAssignmentSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name']
+        fields = ['id', 'email', 'full_name', 'role', 'date_joined']  # ✅ Add full_name here
+        read_only_fields = ['email', 'role', 'date_joined']  # Prevents accidental changes to email/role/date
 
 
 # Meal Log Serializer (used for nutritionist viewing logs)
@@ -314,3 +319,24 @@ class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
         fields = ['id', 'user_email', 'message', 'rating', 'created_at']
+
+####Wate,Weight Cuustom REminder
+class WeightLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WeightLog
+        fields = ['id', 'date', 'weight_kg', 'time_logged']
+        read_only_fields = ['time_logged']
+
+
+
+class WaterIntakeLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WaterIntakeLog
+        fields = '__all__'
+        read_only_fields = ('user', 'date')
+
+class CustomReminderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomReminder
+        fields = '__all__'
+        read_only_fields = ['user', 'created_at']

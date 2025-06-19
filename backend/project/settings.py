@@ -25,8 +25,13 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-
-
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'health.almanet@gmail.com'
+EMAIL_HOST_PASSWORD = 'ruwq lvgv ycrg fpbj'
+DEFAULT_FROM_EMAIL = 'health.almanet@gmail.com'
 # Application definition
 
 INSTALLED_APPS = [

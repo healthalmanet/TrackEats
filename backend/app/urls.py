@@ -19,14 +19,14 @@ from .views import (
     MyTokenObtainPairView,
     
     AssignPatientAPIView,
-    AssignedPatientsView,
+    AssignedPatientsView,NutritionistDietRecommendationsView, NutritionistPatientDietRecommendationsView,
     PatientProfileDetailView,
     PatientMealLogView,
     ApproveOrRejectDietView,
     NutritionistFeedbackOnDiet, UserListForNutritionistView,
     EditDietPlanView,
     FeedbackCreateView,
-    WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet
+    WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet, ForgotPasswordView, ResetPasswordView
     
 )
 from rest_framework_simplejwt.views import (
@@ -54,6 +54,9 @@ urlpatterns = [
 
     # JWT login endpoint - returns access and refresh tokens after user credentials verified
     path('login/', MyTokenObtainPairView.as_view(), name='login'),
+
+    path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
+    path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
 
     # Refresh JWT access token endpoint using a valid refresh token
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -133,7 +136,13 @@ urlpatterns = [
     path('nutritionist/diet/<int:recommendation_id>/feedback/', NutritionistFeedbackOnDiet.as_view()),
 
     #  PUT - Edit/update a specific diet plan (nutritionist)
-    path('nutritionist/diet/<int:recommendation_id>/edit/', EditDietPlanView.as_view()),
+    path('nutritionist/diet/<int:pk>/edit/', EditDietPlanView.as_view()),
+
+    #DIET RECOMMNEDATION FOR NUTRIONIST 
+    path('nutritionist/diet/recommendations/', NutritionistDietRecommendationsView.as_view()),
+
+    #Nutritionist Diet Recommendation view
+    path('nutritionist/diet/<int:patient_id>/', NutritionistPatientDietRecommendationsView.as_view()),
 
 
     # # # ⭐ User Feedback on Application (POST)

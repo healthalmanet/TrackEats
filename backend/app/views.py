@@ -12,18 +12,32 @@ from rest_framework.generics import ListAPIView
 from rest_framework import views
 from rest_framework.permissions import IsAuthenticated
 import copy
+
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.models import User
+from django.utils.encoding import force_bytes, smart_str, DjangoUnicodeDecodeError
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.core.mail import send_mail
+from django.conf import settings
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+
+from django.core.exceptions import PermissionDenied
 from rest_framework.decorators import action
 from django.utils import timezone
 from rest_framework.exceptions import NotFound
 from rapidfuzz import process, fuzz
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from django.utils.dateparse import parse_date
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from datetime import timedelta
+
 from django.utils.timezone import now
 from django.core.mail import send_mail
 from rest_framework import status
@@ -44,7 +58,7 @@ from .serializers import (
         DietRecommendationPatchSerializer,
         FeedbackSerializer,
         WeightLogSerializer,CustomReminderSerializer,WaterIntakeLogSerializer,
-        UserSerializer,
+        UserSerializer, DietRecommendationWithPatientSerializer, ResetPasswordSerializer, ForgotPasswordSerializer
     )
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import MyTokenObtainPairSerializer
@@ -73,6 +87,57 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
+#Forgot Password
+class ForgotPasswordView(generics.GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        try:
+            user = User.objects.get(email=email)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = PasswordResetTokenGenerator().make_token(user)
+            frontend_url = "https://track-eats.onrender.com/forgot-password"
+            reset_url = f"{frontend_url}/{uid}/{token}/"
+
+            send_mail(
+                subject="Password Reset Request",
+                message=f"Hi {user.full_name or user.email},\n\nClick the link to reset your password:\n{reset_url}\n\nIf you didn’t request this, please ignore it.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                fail_silently=False
+            )
+            return Response({'message': 'Password reset link has been sent.'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            # Return 200 to avoid user enumeration
+            return Response({'message': 'If this email exists, a password reset link will be sent.'}, status=status.HTTP_200_OK)
+
+class ResetPasswordView(generics.GenericAPIView):
+    serializer_class = ResetPasswordSerializer
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        uidb64 = serializer.validated_data['uidb64']
+        token = serializer.validated_data['token']
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            uid = smart_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+            user.save()
+            return Response({'message': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
+        except (DjangoUnicodeDecodeError, User.DoesNotExist):
+            return Response({'error': 'Invalid or expired link.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -94,19 +159,19 @@ class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class UserProfileCreateView(generics.CreateAPIView):
     """
-    API view to create a new UserProfile for the authenticated user.
+    API view to create or update a UserProfile for the authenticated user.
     Accepts profile data in POST request.
-    Links the created profile with the current logged-in user automatically.
+    Links the created/updated profile with the current logged-in user automatically.
     Requires the user to be authenticated.
     """
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        """
-        Overrides creation to attach the current user to the profile before saving.
-        """
-        serializer.save(user=self.request.user)
+        UserProfile.objects.update_or_create(
+            user=self.request.user,
+            defaults=serializer.validated_data
+        )
 
 
 class DiabeticProfileCreateView(generics.CreateAPIView):
@@ -911,7 +976,7 @@ class PatientProfileDetailView(APIView):
         try:
             assignment = PatientAssignment.objects.get(nutritionist=request.user, patient_id=patient_id)
             user_profile = UserProfile.objects.get(user_id=patient_id)
-            diabetic_profile = DiabeticProfile.objects.get(user_profile=user_profile)
+            diabetic_profiles = DiabeticProfile.objects.filter(user_profile=user_profile)
 
             return Response({
                 'user_profile': {
@@ -919,15 +984,20 @@ class PatientProfileDetailView(APIView):
                     'weight': user_profile.weight_kg,
                     'height': user_profile.height_cm,
                     'activity_level': user_profile.activity_level,
-                    'health_conditions': user_profile.health_conditions
+                    'health_conditions': user_profile.health_conditions,
                 },
-                'diabetic_profile': {
-                    'hba1c': diabetic_profile.hba1c,
-                    'fasting_blood_sugar': diabetic_profile.fasting_blood_sugar,
-                    'medications': diabetic_profile.medications,
-                }
+                'diabetic_profiles': [
+                    {
+                        'hba1c': profile.hba1c,
+                        'fasting_blood_sugar': profile.fasting_blood_sugar,
+                        'diabetes_type': profile.diabetes_type,
+                        'total_cholesterol': profile.total_cholesterol,
+                        'medications': profile.medications,
+                    }
+                    for profile in diabetic_profiles
+                ]
             })
-        except (PatientAssignment.DoesNotExist, UserProfile.DoesNotExist, DiabeticProfile.DoesNotExist):
+        except (PatientAssignment.DoesNotExist, UserProfile.DoesNotExist):
             return Response({'error': 'Data not found or not assigned'}, status=404)
 
 #Patient Meal Log View
@@ -939,7 +1009,11 @@ class PatientMealLogView(APIView):
             return Response({'error': 'Unauthorized'}, status=403)
 
         meals = UserMeal.objects.filter(user_id=patient_id).order_by('-date')
-        return Response([
+
+        paginator = StandardResultsSetPagination()
+        result_page = paginator.paginate_queryset(meals, request)
+
+        return paginator.get_paginated_response([
             {
                 'meal_type': meal.meal_type,
                 'food': meal.food_name,
@@ -947,9 +1021,8 @@ class PatientMealLogView(APIView):
                 'date': meal.date,
                 'time': meal.consumed_at.strftime('%H:%M:%S') if meal.consumed_at else None,
             }
-            for meal in meals
+            for meal in result_page
         ])
-
 #Approve reject edit diet plan
 class ApproveOrRejectDietView(APIView):
 
@@ -1001,38 +1074,78 @@ class EditDietPlanView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsNutritionist]
 
     def patch(self, request, pk):
+        patient_id = request.data.get("patient_id")
+        if not patient_id:
+            return Response({"error": "patient_id is required"}, status=400)
+
+        # Check if nutritionist is assigned to this patient
+        if not PatientAssignment.objects.filter(nutritionist=request.user, patient_id=patient_id).exists():
+            return Response({'error': 'Unauthorized: Patient not assigned to you'}, status=403)
+
         try:
-            recommendation = DietRecommendation.objects.get(pk=pk, user=request.user)
+            recommendation = DietRecommendation.objects.get(pk=pk, user_id=patient_id)
         except DietRecommendation.DoesNotExist:
             return Response({'error': 'Diet recommendation not found'}, status=404)
 
         data = request.data.copy()
 
-        # Deep merge for meals
+        # Deep merge meals
         if 'meals' in data:
-            current_meals = copy.deepcopy(recommendation.meals or {})
-            for day, meals in data['meals'].items():
-                if day in current_meals:
-                    current_meals[day].update(meals)
-                else:
-                    current_meals[day] = meals
-            data['meals'] = current_meals
+         current_meals = copy.deepcopy(recommendation.meals or {})
 
-        # Deep merge for daily_nutrition
-        if 'daily_nutrition' in data:
-            current_nutrition = copy.deepcopy(recommendation.daily_nutrition or {})
-            for day, nutrition in data['daily_nutrition'].items():
-                if day in current_nutrition:
-                    current_nutrition[day].update(nutrition)
-                else:
-                    current_nutrition[day] = nutrition
-            data['daily_nutrition'] = current_nutrition
+        for date, incoming_data in data['meals'].items():
+            if date not in current_meals:
+             current_meals[date] = incoming_data
+        else:
+            # Merge the inner structure correctly
+            current_day = current_meals[date]
+            incoming_day = incoming_data
+
+            # Merge 'day'
+            current_day['day'] = incoming_day.get('day', current_day.get('day'))
+
+            # Merge 'meals'
+            if 'meals' in incoming_day:
+                current_day_meals = current_day.get('meals', {})
+                current_day_meals.update(incoming_day['meals'])
+                current_day['meals'] = current_day_meals
+
+            current_meals[date] = current_day
+
+            data['meals'] = current_meals
 
         serializer = DietRecommendationPatchSerializer(recommendation, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+#dIET RECOMMENDATION of all users
+
+class NutritionistDietRecommendationsView(ListAPIView):
+    permission_classes = [IsAuthenticated, IsNutritionist]
+    serializer_class = DietRecommendationWithPatientSerializer
+
+    def get_queryset(self):
+        assigned_patient_ids = PatientAssignment.objects.filter(
+            nutritionist=self.request.user
+        ).values_list('patient_id', flat=True)
+
+        return DietRecommendation.objects.filter(user_id__in=assigned_patient_ids).select_related('user').order_by('-for_week_starting')
+
+#diet recommendation by patiend id
+class NutritionistPatientDietRecommendationsView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+    serializer_class = DietRecommendationWithPatientSerializer
+
+    def get_queryset(self):
+        patient_id = self.kwargs['patient_id']
+        
+        # Ensure the nutritionist is assigned to this patient
+        if not PatientAssignment.objects.filter(nutritionist=self.request.user, patient_id=patient_id).exists():
+            raise PermissionDenied("You are not assigned to this patient")
+
+        return DietRecommendation.objects.filter(user_id=patient_id).order_by('-for_week_starting')
 
 ############-------------End of Nutritionist Dashboard View-----------------###############
 
@@ -1075,27 +1188,38 @@ class WaterIntakeLogViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         today = timezone.now().date()
-        obj, created = WaterIntakeLog.objects.get_or_create(user=self.request.user, date=today)
+        amount_ml = serializer.validated_data.get('amount_ml')
+
+        obj, created = WaterIntakeLog.objects.get_or_create(
+            user=self.request.user,
+            date=today,
+            defaults={'amount_ml': amount_ml}  # 🟢 FIX: Provide default to avoid NOT NULL error
+        )
+
         if not created:
-            obj.amount_ml += serializer.validated_data['amount_ml']
-            obj.save()
-        else:
-            obj.amount_ml = serializer.validated_data['amount_ml']
+            obj.amount_ml += amount_ml
             obj.save()
 
         response_serializer = self.get_serializer(obj)
-        raise serializers.ValidationError(response_serializer.data)  # Shortcut to return response with data
+        raise serializers.ValidationError(response_serializer.data)  # Unusual pattern, but kept as-is by your code
 
     def create(self, request, *args, **kwargs):
         today = timezone.now().date()
-        obj, created = WaterIntakeLog.objects.get_or_create(user=request.user, date=today)
-        serializer = self.get_serializer(obj, data=request.data, partial=True)
+        amount_ml = request.data.get('amount_ml')
 
+        if amount_ml is None:
+            return Response({'error': 'amount_ml is required'}, status=400)
+
+        obj, created = WaterIntakeLog.objects.get_or_create(
+            user=request.user,
+            date=today,
+            defaults={'amount_ml': amount_ml}  # 🟢 FIX: Provide default here to satisfy NOT NULL constraint
+        )
+
+        serializer = self.get_serializer(obj, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        if created:
-            serializer.save(user=request.user, date=today)
-        else:
+        if not created:
             obj.amount_ml += serializer.validated_data['amount_ml']
             obj.save()
 
@@ -1112,7 +1236,6 @@ class WaterIntakeLogViewSet(viewsets.ModelViewSet):
 
         total = self.get_queryset().filter(date=date).aggregate(total_ml=Sum('amount_ml'))['total_ml'] or 0
         return Response({"date": date, "total_water_ml": total})
-
 
 class CustomReminderViewSet(viewsets.ModelViewSet):
     queryset = CustomReminder.objects.all()

@@ -1,8 +1,9 @@
 // src/api/nutritionApi.js
 import axios from 'axios';
 
-const APP_ID = 'your_app_id';       // Replace with your Nutritionix App ID
-const APP_KEY = 'your_app_key';     // Replace with your Nutritionix App Key
+// Replace with your actual Nutritionix credentials
+const APP_ID = 'your_app_id';
+const APP_KEY = 'your_app_key';
 
 const mockData = {
   apple: { calories: 95, protein: 0.5, carbs: 25, fat: 0.3 },
@@ -13,7 +14,6 @@ const mockData = {
 export const fetchNutritionData = async (foodName) => {
   const lowerCaseName = foodName.toLowerCase();
 
-  // Check mock data first
   if (mockData[lowerCaseName]) {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -22,7 +22,6 @@ export const fetchNutritionData = async (foodName) => {
     });
   }
 
-  // If not found in mock data, fallback to Nutritionix API
   try {
     const response = await axios.post(
       'https://trackapi.nutritionix.com/v2/natural/nutrients',
@@ -45,7 +44,7 @@ export const fetchNutritionData = async (foodName) => {
       fat: food.nf_total_fat,
     };
   } catch (error) {
-    console.error('Nutritionix API error:', error);
-    throw error;
+    console.error('❌ Nutritionix API error:', error?.response?.data || error.message);
+    throw new Error('Failed to fetch nutrition data.');
   }
 };

@@ -2,6 +2,7 @@ import HbA1CChart from './HbA1CChart';
 import FastingSugarChart from './FastingSugarChart';
 import InfoCards from './InfoCards';
 
+
 const DiabeticDashboard = ({ data }) => {
   // Provide default values to avoid undefined issues
   const safeData = {
@@ -55,6 +56,7 @@ const DiabeticDashboard = ({ data }) => {
         <h4>Fasting Blood Sugar Chart</h4>
         <div style={{ width: '100%', height: '200px' }}>
           <FastingSugarChart fastingBloodSugar={safeData.fasting_blood_sugar} />
+        
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { getDiabeticReport } from '../../../api/diabeticApi';
 import DiabeticDashboard from './DiabeticDashboard';
 import { useAuth } from '../../context/AuthContext';  // import your custom hook
 
+
 const DiabeticPage = () => {
   const { token } = useAuth();  // use the hook to get token
   const [data, setData] = useState(null);
@@ -29,6 +30,7 @@ const DiabeticPage = () => {
       <h2>Diabetic Report</h2>
       <DiabeticDashboard data={data} />
     </div>
+    
   );
 };
 

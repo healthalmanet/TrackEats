@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import Navbar from "./components/components/Navbar";
 import ProtectedRoute from "./components/components/ProtectedRoute";
 import Chatbot from "./components/components/Chatbot";
+import ForgotPassword from "./components/components/ForgotPassword";
 
 
 function App() {
@@ -51,6 +52,18 @@ function App() {
           path="/register"
           element={
             isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Register />
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
+          }
+        />
+         <Route
+          path="/reset-password/:token"
+          element={
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
           }
         />
 

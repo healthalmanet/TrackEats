@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import LogoutButton from "./LogoutButton";  // Keep if you're using it
+import LogoutButton from "./LogoutButton";
 import logo from "../../assets/logo.png";
 import user from "../../assets/user.png";
 
@@ -13,9 +13,10 @@ const Navbar = () => {
   const navLinks = [
     { to: "/dashboard", label: "Home" },
     { to: "/dashboard/user-profile", label: "Profile" },
-    
     { to: "/dashboard/tools", label: "Tools" },
-    { to: "/dashboard/health-section", label: "Health" }
+    { to: "/dashboard/health-section", label: "Health" },
+    { to: "/dashboard/meals", label: "Meals" },
+    { to: "/dashboard/reports", label: "Reports" }
   ];
 
   const renderNavLink = ({ to, label }) => (
@@ -35,9 +36,9 @@ const Navbar = () => {
   );
 
   return (
-    <nav className="bg-white h-16 px-6 flex items-center justify-between relative">
+    <nav className="bg-white h-16 px-6 flex items-center justify-between relative shadow-sm z-50">
 
-      {/* Left: Logo */}
+      {/* Logo */}
       <div className="flex items-center h-full">
         <Link to="/dashboard">
           <img src={logo} alt="TrackEats Logo" className="h-13 w-auto cursor-pointer" />
@@ -49,10 +50,21 @@ const Navbar = () => {
         {navLinks.map(renderNavLink)}
       </div>
 
-      {/* Right: User Avatar + Mobile Toggle */}
-      <div className="flex items-center gap-4">
-        <div className="ml-4">
-          <img src={user} alt="User Avatar" className="h-10 w-10 rounded-full border" />
+      {/* Right Section */}
+      <div className="flex items-center gap-4 relative group">
+        
+        {/* Avatar with Hover Dropdown */}
+        <div className="relative">
+          <img
+            src={user}
+            alt="User Avatar"
+            className="h-10 w-10 rounded-full border cursor-pointer"
+          />
+
+          {/* Logout dropdown on hover */}
+          <div className="absolute right-0 top-12 bg-white shadow-md rounded-lg py-2 px-4 z-50 min-w-[150px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition duration-200">
+            <LogoutButton />
+          </div>
         </div>
 
         {/* Mobile Hamburger */}
@@ -65,7 +77,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="absolute top-16 left-0 w-full bg-white flex flex-col items-center py-4 z-50">
+        <div className="absolute top-16 left-0 w-full bg-white flex flex-col items-center py-4 z-40 gap-3">
           {navLinks.map(renderNavLink)}
         </div>
       )}

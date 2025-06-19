@@ -138,7 +138,7 @@ const Home = () => {
               <div className="relative bg-white rounded-3xl shadow-lg  smv  p-4 md:p-6 mx-auto max-w-md">
                 {/* Image */}
                 <img
-                  src={banner}
+                  src={elevated}
                   alt="Nutrition App UI"
                   className="rounded-lg w-full h-auto "
                 />
@@ -412,8 +412,8 @@ const Home = () => {
           {/* Logo Section */}
           <div>
             <div className="flex items-center justify-center sm:justify-start space-x-2 mb-2">
-              <span className="text-green-500 text-2xl">🍴</span>
-              <h3 className="font-bold text-xl">TrackEats</h3>
+              {/* <span className="text-green-500 text-2xl">🍴</span> */}
+              <h3 className=""><img src={logo} alt="logo" className='h-10' /></h3>
             </div>
             <p className="text-gray-600 ">Smart nutrition tracking for a healthier you.</p>
           </div>

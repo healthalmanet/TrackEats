@@ -1,52 +1,22 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 
-const LogoutButton = () => {
-  const { logout } = useAuth();
+function LogoutButton() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
-    navigate("/", { replace: true });
+    localStorage.removeItem("token"); // remove token
+    navigate("/"); // go back to home
   };
 
   return (
-    <button 
+    <button
       onClick={handleLogout}
-      className="px-7 py-3 mt-4 bg-green-600 text-white rounded hover:bg-green-700 transition"
+      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-red-600 transition rounded-md"
     >
       Logout
     </button>
   );
+}
 
-};
-
-export default LogoutButton;
-
-// import React from "react";
-// import { useNavigate } from "react-router-dom";
-
-// const LogoutButton = () => {
-//   const navigate = useNavigate();
-
-//   const handleLogout = () => {
-//     localStorage.removeItem("token");
-//     localStorage.removeItem("refreshToken");
-
-//     // ✅ Safe redirect to Home
-//     navigate("/", { replace: true });
-//   };
-
-//   return (
-//     <button onClick={handleLogout}
-//    className="px-7 py-3 mt-4 bg-green-600 text-white rounded hover:bg-green-700 transition">
-//       Logout
-//     </button>
-//   );
-// }
-//   return <button onClick={handleLogout}>Logout</button>;
-// };
-
-// export default LogoutButton;
-
+export default LogoutButton;         

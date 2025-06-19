@@ -1,6 +1,6 @@
 // src/components/NutritionSearch.js
 import React, { useState } from 'react';
-import { fetchNutritionData } from '../../../api/nutritionApi';
+import { fetchNutritionData } from '../../../api/nutritionApi'; // ✅ Now works as expected
 
 const NutritionSearch = () => {
   const [foodItem, setFoodItem] = useState('');
@@ -10,7 +10,7 @@ const NutritionSearch = () => {
   const handleSearch = async () => {
     try {
       const data = await fetchNutritionData(foodItem);
-      setNutritionData(data.foods[0]);
+      setNutritionData(data); // ✅ You already get a flat object here
       setError('');
     } catch (err) {
       setError('Could not fetch data. Try again.');
@@ -34,10 +34,10 @@ const NutritionSearch = () => {
       {nutritionData && (
         <div>
           <h3>{nutritionData.food_name}</h3>
-          <p>Calories: {nutritionData.nf_calories}</p>
-          <p>Protein: {nutritionData.nf_protein}g</p>
-          <p>Carbs: {nutritionData.nf_total_carbohydrate}g</p>
-          <p>Fat: {nutritionData.nf_total_fat}g</p>
+          <p>Calories: {nutritionData.calories}</p>
+          <p>Protein: {nutritionData.protein}g</p>
+          <p>Carbs: {nutritionData.carbs}g</p>
+          <p>Fat: {nutritionData.fat}g</p>
         </div>
       )}
     </div>

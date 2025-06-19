@@ -1,187 +1,241 @@
-import React, { useState, useEffect } from 'react';
-import { fetchNutritionData } from '../../../api/nutritionApi';
+import React from 'react';
+import useMealLogger from '../../../components/components/MealLogger/UseMealLogger';
+import { Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
 const MealLogger = () => {
-  const [foodInputs, setFoodInputs] = useState([{ name: '', quantity: '', unit: '', remark: '' }]);
-  const [mealType, setMealType] = useState('breakfast');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [weekDates, setWeekDates] = useState([]);
-  const [loggedMeals, setLoggedMeals] = useState([]);
-  const [calendarDate, setCalendarDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const {
+    foodInputs = [],
+    handleFoodChange,
+    addFoodField,
+    removeFoodField,
+    mealType,
+    setMealType,
+    handleSubmit,
+    unitOptions = [],
+    handleQuickAdd,
+    quickAddItems = [],
+    dailySummary = { calories: 0, carbs: 0, protein: 0, fat: 0 },
+    goals = { caloriesTarget: 2000, waterLogged: 0, waterTarget: 8, stepsLogged: 0, stepsTarget: 10000 },
+    loggedMeals = [],
+    handleNextPage,
+    handlePrevPage,
+    pagination = {},
+    currentPage = 1,
+    handleDeleteMeal,
+  } = useMealLogger();
 
-  const unitOptions = ['g', 'kg', 'ml', 'l', 'piece', 'cup', 'tbsp', 'tsp', 'slice', 'bowl'];
-
-  useEffect(() => {
-    const today = new Date();
-    const startOfWeek = today.getDate() - today.getDay() + 1;
-    const dates = [];
-
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today.setDate(startOfWeek + i));
-      dates.push({
-        day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-        date: d.toISOString().split('T')[0],
-      });
-    }
-
-    setWeekDates(dates);
-    setSelectedDate(dates[0].date);
-  }, []);
-
-  const handleFoodChange = (index, field, value) => {
-    const updated = [...foodInputs];
-    updated[index][field] = value;
-    setFoodInputs(updated);
-  };
-
-  const addFoodField = () => {
-    setFoodInputs([...foodInputs, { name: '', quantity: '', unit: '', remark: '' }]);
-  };
-
-  const removeFoodField = (index) => {
-    const updated = foodInputs.filter((_, i) => i !== index);
-    setFoodInputs(updated);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const newEntries = [];
-
-    for (const foodItem of foodInputs) {
-      if (!foodItem.name.trim()) continue;
-      try {
-        const nutrition = await fetchNutritionData(foodItem.name);
-        newEntries.push({
-          food: foodItem.name,
-          quantity: foodItem.quantity,
-          unit: foodItem.unit,
-          remark: foodItem.remark,
-          mealType,
-          date: selectedDate,
-          timestamp: new Date().toLocaleString(),
-          nutrition,
-        });
-      } catch (error) {
-        console.error(`Error fetching nutrition for ${foodItem.name}`, error);
-      }
-    }
-
-    setLoggedMeals([...loggedMeals, ...newEntries]);
-    setFoodInputs([{ name: '', quantity: '', unit: '', remark: '' }]); // reset
+  const mealColors = {
+    breakfast: 'border-l-4 border-green-400',
+    lunch: 'border-l-4 border-yellow-400',
+    dinner: 'border-l-4 border-orange-400',
+    snack: 'border-l-4 border-indigo-400',
   };
 
   return (
-    <div>
-      <h2>Meal Logger</h2>
+    <div className="bg-gray-50 min-h-screen px-6 py-10">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">🍽️ Meal Logger</h2>
 
-      <div style={{ marginBottom: '10px' }}>
-        <label>
-          <strong>Check Meals by Date: </strong>
-          <input
-            type="date"
-            value={calendarDate}
-            onChange={(e) => setCalendarDate(e.target.value)}
-          />
-        </label>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Section */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Add Food Form */}
+            <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 shadow-md space-y-4">
+              <h3 className="text-sm font-semibold text-gray-700">Add Food Item</h3>
 
-      <div>
-        <p>Select a day to log meal:</p>
-        {weekDates.map((d) => (
-          <label key={d.date} style={{ marginRight: '10px' }}>
-            <input
-              type="radio"
-              name="day"
-              value={d.date}
-              checked={selectedDate === d.date}
-              onChange={() => setSelectedDate(d.date)}
-            />
-            {d.day} ({d.date})
-          </label>
-        ))}
-      </div>
+              {foodInputs.map((input, idx) => (
+                <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-600 font-semibold mb-1 block">Food Name</label>
+                    <input
+                      type="text"
+                      value={input.name}
+                      placeholder="Search food..."
+                      onChange={(e) => handleFoodChange(idx, 'name', e.target.value)}
+                      className="border border-gray-300 px-3 py-2 rounded-lg w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 font-semibold mb-1 block">Unit</label>
+                    <select
+                      value={input.unit}
+                      onChange={(e) => handleFoodChange(idx, 'unit', e.target.value)}
+                      className="border border-gray-300 px-3 py-2 rounded-lg w-full"
+                    >
+                      <option value="">Unit</option>
+                      {unitOptions.map((unit) => (
+                        <option key={unit} value={unit}>{unit}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 font-semibold mb-1 block">Quantity</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={input.quantity}
+                      placeholder="Quantity"
+                      onChange={(e) => handleFoodChange(idx, 'quantity', e.target.value)}
+                      className="border border-gray-300 px-3 py-2 rounded-lg w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 font-semibold mb-1 block">Remarks</label>
+                    <input
+                      type="text"
+                      value={input.remark}
+                      placeholder="Remarks"
+                      onChange={(e) => handleFoodChange(idx, 'remark', e.target.value)}
+                      className="border border-gray-300 px-3 py-2 rounded-lg w-full"
+                    />
+                  </div>
+                </div>
+              ))}
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Food Items:</label>
-          {foodInputs.map((item, index) => (
-            <div key={index} style={{ marginBottom: '10px' }}>
-              <input
-                type="text"
-                placeholder={`Food item ${index + 1}`}
-                value={item.name}
-                onChange={(e) => handleFoodChange(index, 'name', e.target.value)}
-                required
-              />
-              <input
-                type="number"
-                placeholder="Qty"
-                value={item.quantity}
-                onChange={(e) => handleFoodChange(index, 'quantity', e.target.value)}
-                style={{ marginLeft: '5px', width: '80px' }}
-              />
-              <select
-                value={item.unit}
-                onChange={(e) => handleFoodChange(index, 'unit', e.target.value)}
-                style={{ marginLeft: '5px' }}
-              >
-                <option value="">Unit</option>
-                {unitOptions.map((unit) => (
-                  <option key={unit} value={unit}>{unit}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                placeholder="Remarks"
-                value={item.remark}
-                onChange={(e) => handleFoodChange(index, 'remark', e.target.value)}
-                style={{ marginLeft: '5px', width: '150px' }}
-              />
-              {foodInputs.length > 1 && (
-                <button type="button" onClick={() => removeFoodField(index)} style={{ marginLeft: '5px' }}>
-                  Remove
+              <div className="flex gap-3 mt-2">
+                <button type="button" onClick={addFoodField} className="text-sm text-green-600 hover:underline flex items-center">
+                  <Plus size={16} className="mr-1" /> Add another
                 </button>
+                {foodInputs.length > 1 && (
+                  <button type="button" onClick={() => removeFoodField(foodInputs.length - 1)} className="text-sm text-red-500 hover:underline">
+                    Remove last
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4 items-center mt-4">
+                <select
+                  value={mealType}
+                  onChange={(e) => setMealType(e.target.value)}
+                  className="border border-gray-300 px-3 py-2 rounded-lg w-full md:w-1/2"
+                >
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="snack">Snack</option>
+                </select>
+
+                <button
+                  type="submit"
+                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold w-full md:w-auto"
+                >
+                  + Add Food Item
+                </button>
+              </div>
+            </form>
+
+            {/* Logged Meals */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-md">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Today's Logged Foods</h3>
+              {loggedMeals.length === 0 ? (
+                <p className="text-sm text-gray-400">No meals logged yet.</p>
+              ) : (
+                <>
+                  <ul className="space-y-4">
+                    {loggedMeals.map((meal) => (
+                      <li
+                        key={meal.id}
+                        className={`p-4 pl-5 rounded-md border bg-white shadow-sm relative ${mealColors[meal.mealType] || 'border-l-4 border-gray-300'}`}
+                      >
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                          {/* Left Section: Meal Info */}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div className="font-semibold text-gray-800 text-base">{meal.name}</div>
+                              <button
+                                onClick={() => handleDeleteMeal(meal.id)}
+                                className="text-red-500 hover:text-red-600"
+                                title="Remove"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+
+                            <div className="text-sm text-gray-600 mt-0.5">
+                              <span className="font-medium">{meal.quantity}</span> {meal.unit} •
+                              <span className="capitalize ml-1">{meal.mealType}</span>
+                            </div>
+
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              {new Date(meal.date).toLocaleString('en-IN', {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              })}
+                            </div>
+
+                            {meal.remark && (
+                              <div className="text-xs text-blue-400 italic mt-1">“{meal.remark}”</div>
+                            )}
+                          </div>
+
+                          {/* Right Section: Nutrition */}
+                          <div className="text-right min-w-[120px] mt-2 sm:mt-0">
+                            <div className="text-sm font-semibold text-green-600">{meal.nutrition.calories ?? 0} cal</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              <span className="text-purple-600 font-medium">{meal.nutrition.protein ?? 0}g</span> P •{' '}
+                              <span className="text-yellow-600 font-medium">{meal.nutrition.carbs ?? 0}g</span> C •{' '}
+                              <span className="text-pink-600 font-medium">{meal.nutrition.fats ?? 0}g</span> F
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Pagination */}
+                  <div className="flex justify-center items-center mt-6 space-x-4">
+                    <button
+                      onClick={handlePrevPage}
+                      disabled={!pagination.previous}
+                      className={`p-2 rounded-full border ${
+                        pagination.previous ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300 cursor-not-allowed'
+                      }`}
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <span className="text-sm text-gray-500 font-medium">Page {currentPage}</span>
+                    <button
+                      onClick={handleNextPage}
+                      disabled={!pagination.next}
+                      className={`p-2 rounded-full border ${
+                        pagination.next ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300 cursor-not-allowed'
+                      }`}
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                </>
               )}
             </div>
-          ))}
-          <button type="button" onClick={addFoodField}>+ Add Another Food</button>
-        </div>
-
-        <div style={{ marginTop: '10px' }}>
-          <label>Meal Type: </label>
-          {['breakfast', 'lunch', 'dinner'].map((type) => (
-            <label key={type} style={{ marginRight: '10px' }}>
-              <input
-                type="radio"
-                value={type}
-                checked={mealType === type}
-                onChange={() => setMealType(type)}
-              />
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </label>
-          ))}
-        </div>
-
-        <button type="submit" style={{ marginTop: '10px' }}>Log Meal</button>
-      </form>
-
-      <h3>Logged Meals:</h3>
-      {loggedMeals
-        .filter((meal) => meal.date === calendarDate)
-        .map((meal, index) => (
-          <div key={index}>
-            <p><strong>{meal.date} - {meal.mealType.toUpperCase()}</strong></p>
-            <p><em>Logged at: {meal.timestamp}</em></p>
-            <p>Food: {meal.food}</p>
-            <p>Quantity: {meal.quantity} {meal.unit}</p>
-            <p>Remarks: {meal.remark}</p>
-            <p>Calories: {meal.nutrition.calories}</p>
-            <p>Protein: {meal.nutrition.protein}g</p>
-            <p>Carbs: {meal.nutrition.carbs}g</p>
-            <p>Fat: {meal.nutrition.fat}g</p>
-            <hr />
           </div>
-      ))}
+
+          {/* Sidebar */}
+          <div className="space-y-6 flex flex-col h-full">
+            {/* Daily Summary */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md">
+              <h4 className="font-semibold text-sm text-gray-700 mb-3">Daily Summary</h4>
+              <p className="text-xl font-bold text-green-600">{dailySummary?.calories ?? 0} cal</p>
+              <p className="text-xs text-gray-400 mb-3">
+                {(goals?.caloriesTarget ?? 0) - (dailySummary?.calories ?? 0)} remaining
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between"><span>Carbs</span><span>{dailySummary?.carbs ?? 0}g / 250g</span></div>
+                <div className="flex justify-between"><span>Protein</span><span>{dailySummary?.protein ?? 0}g / 50g</span></div>
+                <div className="flex justify-between"><span>Fat</span><span>{dailySummary?.fat ?? 0}g / 67g</span></div>
+              </div>
+            </div>
+
+            {/* Goals */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md">
+              <h4 className="font-semibold text-sm text-gray-700 mb-3">Today's Goals</h4>
+              <div className="text-sm space-y-2">
+                <p>💧 Water: {goals?.waterLogged ?? 0}/{goals?.waterTarget ?? 0} glasses</p>
+                <p>🔥 Calories: {dailySummary?.calories ?? 0}/{goals?.caloriesTarget ?? 0}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

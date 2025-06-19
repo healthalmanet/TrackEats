@@ -1,4 +1,3 @@
-// src/components/LogoutButton.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -6,13 +5,15 @@ function LogoutButton() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // remove token
-    navigate("/"); // go back to home
+    localStorage.removeItem("token");
+    navigate("/");
   };
 
   return (
-    <button onClick={handleLogout}
-   className="px-6 py-3 mt-4 bg-green-600 text-white rounded hover:bg-green-700 transition">
+    <button
+      onClick={handleLogout}
+      className="w-full text-left py-2 text-gray-700 hover:bg-green-500 hover:text-white transition rounded-none m-0 p-0"
+    >
       Logout
     </button>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FaLightbulb, FaMobileAlt, FaChartLine, FaFacebook, FaUtensils, FaHeartbeat, FaStethoscope, FaWater, FaWaveSquare, FaHandHoldingWater, FaComment, FaGlobeAsia, FaTwitter, FaInstagram, FaRegMoneyBillAlt, FaStackpath, FaStar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import offer  from "../assets/lunch.png";
@@ -12,10 +12,23 @@ import explore1 from "../assets/explore 1.png"
 import explore3 from "../assets/explore 3.png"
 import explore4 from "../assets/explore4.png"
 import lunch from "../assets/lunch.png"
+import main from "../assets/main.png";
+import main2 from "../assets/main2.png";
+import flat from "../assets/flat.jpg";
+import healthy from "../assets/healthy.jpg";
+import high from "../assets/high-view.jpg";
+
+
+
+
+
 
 
 const Home = () => {
    const navigate = useNavigate();
+
+   
+  const [isOpen, setIsOpen] = useState(false);
 
 // explore contain hai yaha se
     const items = [
@@ -65,37 +78,72 @@ const Home = () => {
 
 
   return (
-    <div className="min-h-screen  overflow-x-hidden bg-gradient-to-br from-white to-[#f4fbf8] font-sans text-gray-800">
-      {/* Header Section */}
-      <header className="shadow-sm bg-white">
-        <div className="container mx-auto flex justify-between items-center px-4 sm:px-6 py-4">
-          <div className="flex items-center space-x-2">
-            <div className="text-green-500 text-2xl font-bold"></div>
-            <h1 className="text-xl font-semibold"><img src={logo} alt="logo" className='h-10 w-30' /></h1>
-          </div>
-          <nav className="hidden md:flex text-gray-700 font-medium space-x-6 text-sm">
-            <a href="#" className="hover:text-green-500">About</a>
-            <a href="#" className="hover:text-green-500">Features</a>
-            <a href="#" className="hover:text-green-500">Contact</a>
-            <button onClick={() => navigate('/register')} className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600">Sign In</button>
-          </nav>
-          <button className="block md:hidden text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>  
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-white to-[#f4fbf8] font-sans text-gray-800">
+   
+    <header className="shadow-sm bg-white">
+      <div className="container mx-auto flex justify-between items-center px-4 sm:px-6 py-4">
+        
+        {/* Logo Section */}
+        <div className="flex items-center space-x-2">
+          <img src={logo} alt="logo" className="h-10 w-auto" />
+        </div>
+
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-700">
+          <a href="#about" className="hover:text-green-500">About</a>
+          <a href="#features" className="hover:text-green-500">Features</a>
+          <a href="#Contact" className="hover:text-green-500">Contact</a>
+          <button 
+            onClick={() => navigate('/register')} 
+            className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition duration-200"
+          >
+            Sign In
           </button>
         </div>
-      </header>
+
+        {/* Mobile Menu Button */}
+        <button 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="block md:hidden text-gray-700 focus:outline-none"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d={isOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile Menu Items hai */}
+      {isOpen && (
+        <div className="md:hidden px-4 pb-4 space-y-3 text-sm font-medium text-gray-700">
+          <a href="#" className="block hover:text-green-500">About</a>
+          <a href="#" className="block hover:text-green-500">Features</a>
+          <a href="#" className="block hover:text-green-500">Contact</a>
+          <button 
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/register');
+            }} 
+            className="w-full text-center bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition duration-200"
+          >
+            Sign In
+          </button>
+        </div>
+      )}
+    </header>
+  
+      {/* ---------------------------imran---------------------------------------- */}
 
       {/* Main Content Section hai  */}
       <main className="container mx-auto px-4 sm:px-6 py-8 md:py-15">
         <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-8 md:gap-16">
           {/* Left Content */}
           <div className="w-full md:w-1/2 space-y-5">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 leading-tight ">
               Smart <span className="text-green-500 ">Nutrition</span><br />
               Tracking <span className='relative z-10'>Made</span>
-              <div className=" absolute left-80 top-60 w-20 h-20 bg-gray-200 rounded-full opacity-70"></div>
+              <div className=" absolute left-80 top-64 w-20 h-20 bg-gray-200 rounded-full opacity-90"></div>
 
                <span className="text-orange-500"><br></br>Simple</span>
             </h2>
@@ -127,12 +175,12 @@ const Home = () => {
 
 
           {/* Right Image */}
-          <div className="w-full md:w-1/2 relative">
-            <div className="relative py-8">
+          <div className="w-full md:w-1/2 relative ">
+            <div className="relative py-12">
               {/* Background decorative shapes */}
-              <div className="absolute top-0 right-25  w-30 h-30 bg-orange-300 rounded-full opacity-70"></div>
-              <div className="absolute top-0 left-20 w-20 h-25 bg-yellow-200 rounded-full opacity-70"></div>
-              <div className="absolute bottom-1 left-10 w-20 h-20 bg-orange-400 rounded-full opacity-70"></div>
+              <div className=" absolute top-0 right-25  w-25 h-25 bg-orange-300 rounded-full opacity-90"></div>
+              <div className="absolute top-3 left-40 w-20 h-20 bg-yellow-300 rounded-full opacity-90"></div>
+              <div className="absolute bottom-5 left-11 w-20 h-20 bg-orange-400 rounded-full opacity-90"></div>
 
               {/* Main white card */}
               <div className="relative bg-white rounded-3xl shadow-lg  smv  p-4 md:p-6 mx-auto max-w-md">
@@ -140,7 +188,7 @@ const Home = () => {
                 <img
                   src={elevated}
                   alt="Nutrition App UI"
-                  className="rounded-lg w-full h-auto "
+                  className="rounded-lg w-full h-auto transition-transform duration-300 hover:scale-105"
                 />
 
                 {/* Green check */}
@@ -173,8 +221,8 @@ const Home = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {/* Card 1 */}
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
-          <div className="flex justify-center mb-4">
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition transition-transform duration-300 hover:scale-105">
+          <div className="flex justify-center mb-4 ">
             <FaLightbulb className="text-green-500 text-4xl" />
           </div>
           <h3 className="font-semibold text-lg mb-2">AI-Powered Insights</h3>
@@ -184,8 +232,8 @@ const Home = () => {
         </div>
 
         {/* Card 2 */}
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
-          <div className="flex justify-center mb-4">
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition transition-transform duration-300 hover:scale-105">
+          <div className="flex justify-center mb-4 ">
             <FaMobileAlt className="text-orange-500 text-4xl" />
           </div>
           <h3 className="font-semibold text-lg mb-2">Easy Tracking</h3>
@@ -195,7 +243,7 @@ const Home = () => {
         </div>
 
         {/* Card 3 */}
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition transition-transform duration-300 hover:scale-105">
           <div className="flex justify-center mb-4">
             <FaChartLine className="text-yellow-500 text-4xl" />
           </div>
@@ -210,7 +258,7 @@ const Home = () => {
 
 {/* -----------------------new aera power full features---------------------------------- */}
 
-     <section className="py-10 px-4 md:px-35 bg-white">
+     <section id='features' className="py-10 px-4 md:px-35 bg-white">
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-2">
         <span className="text-black">Powerful</span>{' '}
         <span className="text-orange-500">Features</span>
@@ -219,7 +267,7 @@ const Home = () => {
         Everything you need to maintain a healthy lifestyle
       </p>
 
-      <div className="flex flex-col md:flex-row items-center justify-between gap-25">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-25 ">
         {/* Left Feature List */}
         <div className="space-y-6 w-full md:w-1/2">
           <div className="flex items-start gap-3">
@@ -261,7 +309,7 @@ const Home = () => {
 
         {/* Right Image */}
         <div className="w-full md:w-1/2 sm:spacey-4">
-        <img src={offer} alt="" className="w-[450px] rounded-lg shadow-lg" />
+        <img src={healthy} alt="" className="w-[450px] rounded-lg shadow-lg" />
 
         </div>
       </div>
@@ -273,7 +321,7 @@ const Home = () => {
 
        {/* Right Image */}
         <div className="w-full md:w-1/2">
-          <img src={elevated} alt="elevated"
+          <img src={flat} alt="elevated"
            className="w-[450px] h-[full] rounded-lg shadow-lg " />
         </div>
 
@@ -327,7 +375,7 @@ const Home = () => {
             key={index}
             className="bg-white rounded-xl shadow hover:shadow-md transition duration-300 overflow-hidden"
           >
-            <img src={item.img} alt={item.title} className="w-full h-48 object-cover" />
+            <img src={item.img} alt={item.title} className="w-full h-48 object-cover transition-transform duration-300 hover:scale-105" />
             <div className="p-4">
               <h2 className="text-lg font-semibold">{item.title}</h2>
               <p className="text-gray-600 text-sm mt-1">{item.desc}</p>
@@ -407,7 +455,7 @@ const Home = () => {
     </motion.div> */}
 
 {/* -------------------------------------- */}
-  <footer className=" bg-white border-t">
+  <footer id='Contact' className=" bg-white border-t">
 <div className="container mx-auto lg:ml-30 space-x-10 grid grid-cols-1 sm:grid-cols-4  gap-8 text-center sm:text-left mt-10">
           {/* Logo Section */}
           <div>

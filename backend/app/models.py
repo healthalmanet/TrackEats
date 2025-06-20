@@ -186,6 +186,7 @@ class FoodItem(models.Model):
         return f"{self.name} ({self.food_type})"
 
 
+
 class UserMeal(models.Model):
     UNIT_CHOICES = [
         ("g", "Grams"), ("kg", "Kilograms"),
@@ -211,7 +212,9 @@ class UserMeal(models.Model):
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default="g")
     meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
 
-    consumed_at = models.DateTimeField(default=timezone.now)
+    consumed_at = models.DateTimeField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+
     remarks = models.TextField(blank=True)
 
     calories = models.FloatField(blank=True, null=True)
@@ -221,15 +224,24 @@ class UserMeal(models.Model):
     sugar = models.FloatField(blank=True, null=True)
     fiber = models.FloatField(blank=True, null=True)
 
-    date = models.DateField(auto_now_add=True)
-
     def save(self, *args, **kwargs):
+        # Auto-populate food_name if not provided but food_item is set
         if not self.food_name and self.food_item:
             self.food_name = self.food_item.name
+
+        # ✅ If consumed_at not provided → set to now
+        if not self.consumed_at:
+            self.consumed_at = timezone.now()
+
+        # ✅ If date not provided → set from consumed_at.date()
+        if not self.date:
+            self.date = self.consumed_at.date()
+
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.email} ate {self.food_name or 'Unknown'} on {self.consumed_at.date()} — {self.quantity} {self.unit}"
+        return f"{self.user.email} ate {self.food_name or 'Unknown'} on {self.date} — {self.quantity} {self.unit}"
+
 
 
 # ------------------------For OWNER/OPERATOR

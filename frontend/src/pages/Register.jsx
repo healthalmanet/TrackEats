@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/auth";
 import { User, Mail, Lock, CircleCheck, CircleX } from "lucide-react";
+import { toast } from "react-toastify"; // ✅ Import toast
 import logo from "../assets/logo.png";
 
 function Register() {
@@ -21,16 +22,19 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!isFormValid) {
-      alert("Please make sure your password meets all conditions.");
+      toast.warning("Please ensure your password meets all the requirements.");
       return;
     }
 
     try {
-      const res = await registerUser({ full_name, email, password, password2 });
-      alert("You are registered successfully!");
+      await registerUser({ full_name, email, password, password2 });
+
+      // ✅ Show success toast
+      toast.success("Registration successful! You can now login.");
       navigate("/login");
     } catch (error) {
-      alert(
+      // ✅ Show error toast
+      toast.error(
         error?.response?.data?.message || "Registration failed. Please try again."
       );
     }
@@ -40,7 +44,7 @@ function Register() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl shadow-2xl p-6 my-10">
 
-        {/* Logo inside card */}
+        {/* Logo */}
         <div className="flex justify-center mb-4">
           <img src={logo} alt="TrackEats Logo" className="w-36 h-auto sm:w-40 mb-2" />
         </div>

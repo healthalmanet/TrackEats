@@ -17,6 +17,9 @@ import ProtectedRoute from "./components/components/ProtectedRoute";
 import Chatbot from "./components/components/Chatbot";
 import ForgotPassword from "./components/components/ForgotPassword";
 
+// ✅ Import ToastContainer and its CSS
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
@@ -60,7 +63,7 @@ function App() {
             isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
           }
         />
-         <Route
+        <Route
           path="/reset-password/:token"
           element={
             isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
@@ -104,11 +107,11 @@ function App() {
         />
       </Routes>
 
-
       {isAuthenticated && <Chatbot />}
 
+      {/* ✅ Toast container for showing messages globally */}
+      <ToastContainer position="top-right" autoClose={3000} pauseOnHover theme="light" />
     </>
-
   );
 }
 

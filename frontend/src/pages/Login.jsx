@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/auth";
 import { useAuth } from "../components/context/AuthContext";
 import { Mail, Lock } from "lucide-react";
+import { toast } from "react-toastify"; // ✅ Toast import
 import logo from "../assets/logo.png";
 
 function Login() {
@@ -29,15 +30,18 @@ function Login() {
       login(accessToken, userInfo);
       localStorage.setItem("refreshToken", refreshToken);
 
-      alert("You are logged in successfully!");
+      // ✅ Success toast
+      toast.success("Welcome to Smart Malnutrition Web Tracker!");
 
+      // Redirect based on role
       if (role === "Owner" || role === "Operator" || role === "Nutritionist") {
         navigate(`/${role.toLowerCase()}`);
       } else {
         navigate("/dashboard");
       }
     } catch (error) {
-      alert("Login failed. Please check your credentials.");
+      // ✅ Error toast
+      toast.error("Login failed. Please check your email or password.");
       console.error("Login error:", error);
     }
   };

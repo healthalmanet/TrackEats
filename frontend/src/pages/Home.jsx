@@ -221,7 +221,7 @@ const Home = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {/* Card 1 */}
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition transition-transform duration-300 hover:scale-105">
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl  transition-transform duration-300 hover:scale-105">
           <div className="flex justify-center mb-4 ">
             <FaLightbulb className="text-green-500 text-4xl" />
           </div>
@@ -232,7 +232,7 @@ const Home = () => {
         </div>
 
         {/* Card 2 */}
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition transition-transform duration-300 hover:scale-105">
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-transform duration-300 hover:scale-105">
           <div className="flex justify-center mb-4 ">
             <FaMobileAlt className="text-orange-500 text-4xl" />
           </div>
@@ -243,7 +243,7 @@ const Home = () => {
         </div>
 
         {/* Card 3 */}
-        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition transition-transform duration-300 hover:scale-105">
+        <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl  transition-transform duration-300 hover:scale-105">
           <div className="flex justify-center mb-4">
             <FaChartLine className="text-yellow-500 text-4xl" />
           </div>

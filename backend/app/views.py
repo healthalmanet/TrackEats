@@ -2,7 +2,8 @@ from django.shortcuts import render, HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import BasePermission
 from django.db.models import Sum
-from django.db.models import Count
+from django.db.models import Count  
+from django.contrib.auth.models import Group
 from rest_framework.exceptions import ValidationError   
 from utils.utils import UNIT_TO_GRAMS,role_required,generate_diet_recommendation
 from .ml_diet.predict import recommend_meals
@@ -12,7 +13,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework import views
 from rest_framework.permissions import IsAuthenticated
 import copy
-
+from django.db.models import Q
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.models import User
 from django.utils.encoding import force_bytes, smart_str, DjangoUnicodeDecodeError
@@ -37,6 +38,9 @@ from django.utils.dateparse import parse_date
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from datetime import timedelta
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.facebook.views import FacebookOAuth2Adapter
+from dj_rest_auth.registration.views import SocialLoginView
 
 from django.utils.timezone import now
 from django.core.mail import send_mail
@@ -48,7 +52,7 @@ from .models import (
     DietRecommendation,DietFeedback,
     PatientAssignment, UserMeal, DietRecommendationFeedback,
     Feedback,
-    WeightLog,WaterIntakeLog,CustomReminder,
+    WeightLog,WaterIntakeLog,CustomReminder, Message
     )
 from .serializers import (
         RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,
@@ -58,7 +62,8 @@ from .serializers import (
         DietRecommendationPatchSerializer,
         FeedbackSerializer,
         WeightLogSerializer,CustomReminderSerializer,WaterIntakeLogSerializer,
-        UserSerializer, DietRecommendationWithPatientSerializer, ResetPasswordSerializer, ForgotPasswordSerializer
+        UserSerializer, DietRecommendationWithPatientSerializer, ResetPasswordSerializer, ForgotPasswordSerializer,
+        MessageSerializer
     )
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import MyTokenObtainPairSerializer
@@ -86,6 +91,13 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+
+class FacebookLogin(SocialLoginView):
+    adapter_class = FacebookOAuth2Adapter
+
 
 #Forgot Password
 class ForgotPasswordView(generics.GenericAPIView):
@@ -762,6 +774,44 @@ class OperatorReportView(APIView):
 
 
 
+# class WeeklyDietRecommendationView(views.APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get(self, request):
+#         try:
+#             profile = request.user.userprofile
+#         except UserProfile.DoesNotExist:
+#             return Response({'error': 'User profile not found.'}, status=404)
+
+#         start_date = now().date()
+
+#         try:
+#             recommendation = DietRecommendation.objects.get(user=request.user, for_week_starting=start_date)
+#         except DietRecommendation.DoesNotExist:
+#             return Response({'error': 'No diet recommendation generated yet.'}, status=404)
+
+#         if not recommendation.approved_by_nutritionist:
+#             return Response({'error': 'Your diet recommendation is pending approval.'}, status=403)
+
+#         # 👇 Generate the full 15-day diet again to get the nutrition per day
+#         generated = recommend_meals(profile, start_date=start_date, days_count=15)
+
+#         return Response({
+#             'id': recommendation.id,
+#             'week_starting': str(start_date),
+#             'meals': recommendation.meals,  # This has the meals per date already
+#             'daily_nutrition': generated['daily_nutrition'],  # 👈 Now includes protein, carbs, fats PER DAY
+#             'total_average_nutrition': {
+#                 'calories': recommendation.calories,
+#                 'protein': recommendation.protein,
+#                 'carbs': recommendation.carbs,
+#                 'fats': recommendation.fats,
+#             },
+#             'nutritionist_comment': recommendation.nutritionist_comment,
+#             'reviewed_by': recommendation.reviewed_by.email if recommendation.reviewed_by else None,
+#             'approved': recommendation.approved_by_nutritionist,
+#         })
+
 class WeeklyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -773,22 +823,44 @@ class WeeklyDietRecommendationView(views.APIView):
 
         start_date = now().date()
 
-        try:
-            recommendation = DietRecommendation.objects.get(user=request.user, for_week_starting=start_date)
-        except DietRecommendation.DoesNotExist:
-            return Response({'error': 'No diet recommendation generated yet.'}, status=404)
+        recommendation = DietRecommendation.objects.filter(user=request.user, for_week_starting=start_date).first()
 
-        if not recommendation.approved_by_nutritionist:
-            return Response({'error': 'Your diet recommendation is pending approval.'}, status=403)
+        # If not found or not approved → regenerate automatically
+        if not recommendation or not recommendation.approved_by_nutritionist:
+            # 👇 Call the recommend_meals() to regenerate
+            generated = recommend_meals(profile, start_date=start_date, days_count=15)
 
-        # 👇 Generate the full 15-day diet again to get the nutrition per day
+            daily_nutrition = generated['daily_nutrition']
+            nutrition = {
+                'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 15, 2),
+                'protein': round(sum(day['protein'] for day in daily_nutrition.values()) / 15, 2),
+                'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 15, 2),
+                'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 15, 2),
+            }
+
+            recommendation, _ = DietRecommendation.objects.update_or_create(
+                user=request.user,
+                for_week_starting=start_date,
+                defaults={
+                    'meals': generated['meals'],
+                    'calories': nutrition['calories'],
+                    'protein': nutrition['protein'],
+                    'carbs': nutrition['carbs'],
+                    'fats': nutrition['fats'],
+                    'approved_by_nutritionist': False,
+                    'reviewed_by': None,
+                    'nutritionist_comment': '',
+                }
+            )
+
+        # Now fetch the latest meals for the response
         generated = recommend_meals(profile, start_date=start_date, days_count=15)
 
         return Response({
             'id': recommendation.id,
             'week_starting': str(start_date),
-            'meals': recommendation.meals,  # This has the meals per date already
-            'daily_nutrition': generated['daily_nutrition'],  # 👈 Now includes protein, carbs, fats PER DAY
+            'meals': recommendation.meals,
+            'daily_nutrition': generated['daily_nutrition'],
             'total_average_nutrition': {
                 'calories': recommendation.calories,
                 'protein': recommendation.protein,
@@ -799,6 +871,7 @@ class WeeklyDietRecommendationView(views.APIView):
             'reviewed_by': recommendation.reviewed_by.email if recommendation.reviewed_by else None,
             'approved': recommendation.approved_by_nutritionist,
         })
+
 
 class DailyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -918,7 +991,6 @@ def get_feedback_for_recommendation(request, recommendation_id):
     feedbacks = DietFeedback.objects.filter(recommendation_id=recommendation_id, user=request.user)
     serializer = DietFeedbackSerializer(feedbacks, many=True)
     return Response(serializer.data)
-
 
 
 
@@ -1252,3 +1324,47 @@ class CustomReminderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+
+class CanSendMessage(BasePermission):
+    """
+    Custom permission:
+    - Nutritionists → can send to assigned patients
+    - Patients → can send to their assigned nutritionist
+    """
+
+    def has_permission(self, request, view):
+        receiver_id = request.data.get('receiver')
+        if not receiver_id:
+            return False
+
+        user = request.user
+
+        # If user is a nutritionist, can only message assigned patients
+        if getattr(user, 'role', None) == 'nutritionist':
+            return PatientAssignment.objects.filter(nutritionist=user, patient_id=receiver_id).exists()
+
+        # If user is a patient, can only message their assigned nutritionist
+        if getattr(user, 'role', None) == 'user':
+            return PatientAssignment.objects.filter(patient=user, nutritionist_id=receiver_id).exists()
+
+        # Other roles (e.g., operator) → Denied
+        return False
+
+class SendMessageView(generics.CreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated, CanSendMessage]
+
+    def perform_create(self, serializer):
+        receiver_id = self.request.data.get('receiver')
+        serializer.save(sender=self.request.user, receiver_id=receiver_id)
+
+class MessageListView(generics.ListAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Message.objects.filter(
+            Q(sender=self.request.user) | Q(receiver=self.request.user)
+        ).order_by('-timestamp')        

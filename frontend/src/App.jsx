@@ -49,15 +49,15 @@ function App() {
 
         
         <Route
-          path="/forgot-password"
+          path="/forgot-password/"
           element={
             isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
           }
         />
         <Route
-  path="/reset-password/:uidb/:token"
-  element={
-    isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ResetPassword />
+        path="/forgot-password/:uidb/:token"
+        element={
+        isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ResetPassword />
   }
 />
 

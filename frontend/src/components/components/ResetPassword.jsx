@@ -11,7 +11,7 @@ const ResetPassword = () => {
   const [showChecklist, setShowChecklist] = useState(false);
 
   const navigate = useNavigate();
-  const { uidb, token } = useParams(); // ✅ Getting both uid and token
+  const { uidb64, token } = useParams(); // ✅ Getting both uid and token
 
   const isLengthValid = password.length >= 8;
   const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
@@ -27,7 +27,7 @@ const ResetPassword = () => {
     }
 
     try {
-      await resetPassword({ uidb, token, password });
+      await resetPassword({ uidb64, token, password });
       toast.success("✅ Password reset successful! Redirecting to login...");
       setSubmitted(true);
 

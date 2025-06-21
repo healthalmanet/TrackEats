@@ -37,10 +37,14 @@ export const forgotPassword = (email) => {
   );
 };
 
-export const resetPassword = ({ uidb, token, password }) => {
+export const resetPassword = ({ uidb64, token, password }) => {
   return axios.post(
-    `${BASE_URL}/reset-password/${uidb}/${token}/`,
-    { password },
+    `${BASE_URL}/reset-password/`, // NOT with uid/token in URL
+    {
+      uidb64,
+      token,
+      new_password: password,
+    },
     {
       headers: {
         "Content-Type": "application/json",

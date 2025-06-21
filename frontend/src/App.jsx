@@ -55,7 +55,7 @@ function App() {
           }
         />
         <Route
-        path="/forgot-password/:uidb/:token"
+        path="/reset-password/:uidb64/:token"
         element={
         isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ResetPassword />
   }

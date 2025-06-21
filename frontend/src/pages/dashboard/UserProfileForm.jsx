@@ -202,11 +202,15 @@ const UserProfileForm = () => {
           </div>
 
           <button
-            type="submit"
-            className="w-full py-3 px-6 rounded-lg text-white font-semibold bg-gradient-to-r from-green-400 to-yellow-400 hover:opacity-90 transition"
-          >
-            {isEditing ? "Update Profile" : "Save Profile"}
-          </button>
+  type="submit"
+  className="w-full py-3 px-6 rounded-lg text-white font-semibold bg-gradient-to-r from-green-400 to-yellow-400
+             hover:scale-[1.02] active:scale-95 active:translate-y-[1px]
+             hover:shadow-md cursor-pointer
+             transition-all duration-200 ease-in-out focus:outline-none focus:ring-2"
+>
+  {isEditing ? "Update Profile" : "Save Profile"}
+</button>
+
 
           {error && (
             <p className="text-red-500 text-sm mt-4">{error}</p>

@@ -2,19 +2,28 @@
 
 import React, { useState } from "react";
 import { Mail } from "lucide-react";
+import { forgotPassword } from "../../api/auth";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    await forgotPassword(email); // 👈 call the backend
+    setSubmitted(true); // show success message
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    alert("Something went wrong. Please try again.");
+  }
+};
+
+ 
 
     // This is where you'd normally send the email to backend
-    console.log("Email sent to:", email);
-
-    setSubmitted(true);
-  };
+   
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
@@ -46,11 +55,12 @@ const ForgotPassword = () => {
             </div>
 
             <button
-              type="submit"
-              className="w-full bg-[#00FF33] text-black py-2 rounded-md font-semibold hover:brightness-105 transition shadow"
-            >
-              Send Reset Link
-            </button>
+  type="submit"
+  className="w-full bg-[#00FF33] text-black py-2 rounded-md font-semibold hover:brightness-105 active:scale-[.98] transition duration-150 shadow cursor-pointer"
+>
+  Send Reset Link
+</button>
+
           </form>
         )}
       </div>

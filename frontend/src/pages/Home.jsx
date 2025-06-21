@@ -143,7 +143,7 @@ const Home = () => {
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 leading-tight ">
               Smart <span className="text-green-500 ">Nutrition</span><br />
               Tracking <span className='relative z-10'>Made</span>
-              <div className=" absolute left-80 top-64 w-20 h-20 bg-gray-200 rounded-full opacity-90"></div>
+              <div className="absolute left-80 top-64 w-20 h-20 bg-gray-200 rounded-full opacity-90"></div>
 
                <span className="text-orange-500"><br></br>Simple</span>
             </h2>

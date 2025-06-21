@@ -25,6 +25,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
 
+
+##################---------------------------------------Email Send------------#############33
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -32,6 +34,9 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'health.almanet@gmail.com'
 EMAIL_HOST_PASSWORD = 'ruwq lvgv ycrg fpbj'
 DEFAULT_FROM_EMAIL = 'health.almanet@gmail.com'
+############################################################----------------------#####################
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,8 +50,46 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'django_filters',
-    'app'
+    'app',
+
+    # Third-party   
+    'rest_framework.authtoken',  # ✅ REQUIRED for dj_rest_auth tokens
+    'dj_rest_auth', 
+    'dj_rest_auth.registration',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
 ]
+
+SITE_ID = 1
+
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'yourapp.serializers.CustomRegisterSerializer',
+}
+# Social Account Providers
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': '24826653856-4gf5i8bvm25bhiqtf9qodv6fneu161gk.apps.googleusercontent.com',
+            'secret': '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',
+            'key': ''
+        }
+    },
+    'facebook': {
+        'APP': {
+            'client_id': 'YOUR_FACEBOOK_APP_ID',
+            'secret': 'YOUR_FACEBOOK_APP_SECRET',
+            'key': ''
+        }
+    }
+}
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',# Middleware to handle CORS headers
@@ -60,6 +103,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -122,6 +166,8 @@ SIMPLE_JWT = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',

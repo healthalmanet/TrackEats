@@ -5,7 +5,7 @@ from .models import (
     DietRecommendation, DietFeedback,
     PatientAssignment, UserMeal, DietRecommendationFeedback,
     Feedback,
-    WeightLog,WaterIntakeLog,CustomReminder
+    WeightLog,WaterIntakeLog,CustomReminder, Message
     
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -217,6 +217,8 @@ class CustomReminderSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'created_at']
 
 
+
+#Forgot PassWord
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -224,3 +226,9 @@ class ResetPasswordSerializer(serializers.Serializer):
     uidb64 = serializers.CharField()
     token = serializers.CharField()
     new_password = serializers.CharField(min_length=8)
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'receiver', 'text', 'timestamp', 'is_read']
+        read_only_fields = ['id', 'sender', 'timestamp', 'is_read']

@@ -11,6 +11,7 @@ import OperatorPage from "./pages/OperatorPage";
 import NutritionistPage from "./pages/NutritionistPage";
 
 import Dashboard from "./pages/Dashboard";
+import ResetPassword from "./components/components/ResetPassword";
 
 import Navbar from "./components/components/Navbar";
 import ProtectedRoute from "./components/components/ProtectedRoute";
@@ -44,19 +45,7 @@ function App() {
           }
         />
 
-        <Route
-          path="/login"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Login />
-          }
-        />
-
-        <Route
-          path="/register"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Register />
-          }
-        />
+        
         <Route
           path="/forgot-password"
           element={
@@ -64,11 +53,12 @@ function App() {
           }
         />
         <Route
-          path="/reset-password/:token"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
-          }
-        />
+  path="/reset-password/:uidb/:token"
+  element={
+    isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ResetPassword />
+  }
+/>
+
 
         {/* Protected routes based on user role */}
         <Route

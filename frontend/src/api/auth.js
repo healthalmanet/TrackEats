@@ -26,3 +26,25 @@ export const refreshToken = (refreshToken) => {
     }
   );
 };
+
+export const forgotPassword = (email) => {
+  return axios.post(
+    `${BASE_URL}/forgot-password/`,
+    { email }, // Sends the email in body
+    {
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+};
+
+export const resetPassword = ({ uidb, token, password }) => {
+  return axios.post(
+    `${BASE_URL}/reset-password/${uidb}/${token}/`,
+    { password },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};

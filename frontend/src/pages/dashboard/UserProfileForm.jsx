@@ -189,7 +189,7 @@ const UserProfileForm = () => {
           </div>
         </div>
 
-        {/* Edit & Submit Buttons */}
+        {/* Edit + Submit Buttons */}
         <div className="px-8 pb-8 md:px-10 flex flex-col gap-4">
           <div className="flex justify-end">
             <button
@@ -213,6 +213,23 @@ const UserProfileForm = () => {
           )}
         </div>
       </form>
+
+      {/* Info Cards */}
+      <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-4xl">
+        {[
+          { icon: "🔒", title: "Secure & Private", desc: "Your data is encrypted and protected" },
+          { icon: "🤖", title: "AI Powered", desc: "Smart recommendations based on your profile" },
+          { icon: "❤️", title: "Health First", desc: "Personalized for your health goals" },
+        ].map((card, i) => (
+          <div key={i} className="text-center bg-white shadow-md rounded-xl p-6">
+            <div className="w-10 h-10 mx-auto mb-3 bg-gray-100 flex items-center justify-center rounded-full text-lg">
+              <span className="font-semibold">{card.icon}</span>
+            </div>
+            <h3 className="text-base font-semibold text-gray-800">{card.title}</h3>
+            <p className="text-sm text-gray-600">{card.desc}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

@@ -1,21 +1,44 @@
 import React from 'react';
 import { FaLightbulb, FaMobileAlt, FaChartLine, FaFacebook, FaUtensils, FaHeartbeat, FaStethoscope, FaWater, FaWaveSquare, FaHandHoldingWater, FaComment, FaGlobeAsia, FaTwitter, FaInstagram, FaRegMoneyBillAlt, FaStackpath, FaStar } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, } from 'react-router-dom';
 import offer  from "../assets/lunch.png";
 import elevated  from "../assets/banner img.png";
 import banner  from "../assets/explore 1.png";
 import logo from "../assets/logo.png";
 // import { motion } from 'framer-motion';
-import explore2 from "../assets/explore 2.png"
-import din from "../assets/dinner.png"
-import explore1 from "../assets/explore 1.png"
-import explore3 from "../assets/explore 3.png"
-import explore4 from "../assets/explore4.png"
-import lunch from "../assets/lunch.png"
+import explore2 from "../assets/explore 2.png";
+import din from "../assets/dinner.png";
+import explore1 from "../assets/explore 1.png";
+import explore3 from "../assets/explore 3.png";
+import explore4 from "../assets/explore4.png";
+import lunch from "../assets/lunch.png";
+import ModalWrapper from '../components/components/ModalWrapper';
+import { useState } from 'react';
+import Register from './Register';
+import Login from './Login';
 
 
 const Home = () => {
    const navigate = useNavigate();
+   const [showRegisterModal, setShowRegisterModal] = useState(false);
+   const [showLoginModal, setShowLoginModal] = useState(false);
+
+   const openLogin = () => {
+    setShowRegisterModal(false);
+    setShowLoginModal(true);
+  };
+
+  const openRegister = () => {
+    setShowLoginModal(false);
+    setShowRegisterModal(true);
+  };
+
+  const closeModals = () => {
+    setShowLoginModal(false);
+    setShowRegisterModal(false);
+  };
+
+
 
 // explore contain hai yaha se
     const items = [
@@ -77,7 +100,10 @@ const Home = () => {
             <a href="#" className="hover:text-green-500">About</a>
             <a href="#" className="hover:text-green-500">Features</a>
             <a href="#" className="hover:text-green-500">Contact</a>
-            <button onClick={() => navigate('/register')} className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600">Sign In</button>
+<button onClick={openRegister} className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600">
+  Sign In
+</button>
+
           </nav>
           <button className="block md:hidden text-gray-700">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -103,10 +129,11 @@ const Home = () => {
               Transform your health journey with AI-powered meal tracking, personalized recommendations, and comprehensive nutrition insights.
             </p>
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-              <button onClick={() => navigate('/register')} className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-semibold">
-                Get Started Free
+              <button onClick={() => setShowRegisterModal(true)} className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-semibold">
+               Get Started Free
               </button>
-              <button onClick={() => navigate('/register')} className="border border-orange-400 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-full font-semibold">
+
+              <button className="border border-orange-400 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-full font-semibold">
                 Watch Demo
               </button>
             </div>
@@ -357,15 +384,23 @@ const Home = () => {
         Join thousands of users who have already improved their nutrition and wellness with TrackEats.
       </p>
       <div className="flex gap-4 flex-wrap justify-center">
-        <button onClick={() => navigate('/register')} className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
-          Start Free Trial
-        </button>
-        <button onClick={() => navigate('/register')} className="bg-white text-red-500 border-2 border-red-400 hover:bg-red-500 hover:text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
+        <button onClick={openRegister} className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
+        Start Free Trial
+         </button>
+        <button  className="bg-white text-red-500 border-2 border-red-400 hover:bg-red-500 hover:text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
           Learn More
         </button>
-      </div>
-    </div> 
+        
 
+      </div>
+     <ModalWrapper isOpen={showRegisterModal} onClose={closeModals}>
+  <Register onClose={closeModals} onSwitchToLogin={openLogin} />
+</ModalWrapper>
+
+    </div> 
+      <ModalWrapper isOpen={showLoginModal} onClose={closeModals}>
+      <Login onSwitchToRegister={openRegister} onClose={closeModals} />
+      </ModalWrapper>
 
 {/* --------------------------------------------------- */}
 

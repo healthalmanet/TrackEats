@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Lock, CircleCheck, CircleX } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { resetPassword } from "../../api/auth"; // ✅ Make sure this exists
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -9,27 +11,32 @@ const ResetPassword = () => {
   const [showChecklist, setShowChecklist] = useState(false);
 
   const navigate = useNavigate();
-  const { token } = useParams(); // If using /reset-password/:token route
+  const { uidb, token } = useParams(); // ✅ Getting both uid and token
 
   const isLengthValid = password.length >= 8;
   const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
   const isMatch = password && password === confirmPassword;
   const isFormValid = isLengthValid && hasSymbol && isMatch;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isFormValid) {
-      alert("Please fix the password requirements.");
+      toast.warning("Please fix the password requirements.");
       return;
     }
 
-    // Simulate sending new password to backend
-    console.log("Password reset for token:", token);
-    console.log("New password:", password);
+    try {
+      await resetPassword({ uidb, token, password });
+      toast.success("✅ Password reset successful! Redirecting to login...");
+      setSubmitted(true);
 
-    setSubmitted(true);
-    setTimeout(() => navigate("/login"), 3000); // Redirect after success
+      setTimeout(() => navigate("/"), 3000); // Go to homepage, modal can open from there
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || "❌ Password reset failed. Try again."
+      );
+    }
   };
 
   return (
@@ -102,7 +109,7 @@ const ResetPassword = () => {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full bg-[#00FF33] text-black py-2 rounded-md font-semibold hover:brightness-105 transition shadow"
+              className="w-full bg-[#00FF33] text-black py-2 rounded-md font-semibold hover:brightness-105 active:scale-95 transition shadow cursor-pointer"
             >
               Reset Password
             </button>

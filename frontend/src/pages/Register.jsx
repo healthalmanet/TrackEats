@@ -25,8 +25,11 @@ const Register = ({ onClose, onSwitchToLogin }) => {
 
     try {
       await registerUser({ full_name, email, password, password2 });
-      toast.success("Registration successful! You can now login.");
-      onClose();
+      toast.success("Registration successful! Redirecting to login...");
+setTimeout(() => {
+  onSwitchToLogin(); // Switch to login modal
+}, 1000);
+
     } catch (error) {
       toast.error(
         error?.response?.data?.message || "Registration failed. Please try again."

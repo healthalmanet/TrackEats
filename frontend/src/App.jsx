@@ -17,6 +17,7 @@ import Navbar from "./components/components/Navbar";
 import ProtectedRoute from "./components/components/ProtectedRoute";
 import Chatbot from "./components/components/Chatbot";
 import ForgotPassword from "./components/components/ForgotPassword";
+// import { Layout } from "lucide-react";
 
 // ✅ Import ToastContainer and its CSS
 import { ToastContainer } from "react-toastify";
@@ -38,6 +39,7 @@ function App() {
       {isAuthenticated && <Navbar />}
 
       <Routes>
+         {/* <Route path="/" element={<Layout />}> */}
         <Route
           path="/"
           element={
@@ -95,6 +97,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+        {/* </Route> */}
+
       </Routes>
 
       {isAuthenticated && <Chatbot />}

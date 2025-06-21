@@ -26,7 +26,9 @@ from .views import (
     NutritionistFeedbackOnDiet, UserListForNutritionistView,
     EditDietPlanView,
     FeedbackCreateView,
-    WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet, ForgotPasswordView, ResetPasswordView
+    WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet, ForgotPasswordView,
+    ResetPasswordView, GoogleLogin, FacebookLogin,
+    SendMessageView,MessageListView
     
 )
 from rest_framework_simplejwt.views import (
@@ -54,6 +56,10 @@ urlpatterns = [
 
     # JWT login endpoint - returns access and refresh tokens after user credentials verified
     path('login/', MyTokenObtainPairView.as_view(), name='login'),
+
+    path('accounts/', include('allauth.socialaccount.urls')),
+    path('google/', GoogleLogin.as_view(), name='google_login'),
+    path('facebook/', FacebookLogin.as_view(), name='facebook_login'),
 
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
@@ -148,6 +154,10 @@ urlpatterns = [
     # # # ⭐ User Feedback on Application (POST)
     path('feedback/create/', FeedbackCreateView.as_view(), name='feedback-create'),
 
+
+    #Messaging 
+    path('messages/', MessageListView.as_view(), name='message-list'),
+    path('messages/send/', SendMessageView.as_view(), name='send-message'),
 ]
 
 

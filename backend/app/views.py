@@ -328,16 +328,19 @@ class UserMealViewSet(viewsets.ModelViewSet):
             weight_in_grams = quantity * grams_per_unit
 
             instance = serializer.save(
-                user=user,
-                food_item=food_item,
-                food_name=food_item.name,
-                meal_type=meal_type,
-                calories=round((weight_in_grams / 100) * food_item.calories, 2),
-                protein=round((weight_in_grams / 100) * food_item.protein_g, 2),
-                carbs=round((weight_in_grams / 100) * food_item.carbs_g, 2),
-                fats=round((weight_in_grams / 100) * food_item.fats_g, 2),
-                sugar=round((weight_in_grams / 100) * food_item.sugar_g, 2),
-                fiber=round((weight_in_grams / 100) * food_item.fiber_g, 2),
+                 user=user,
+                 food_item=food_item,
+                 food_name=food_item.name,
+                 meal_type=meal_type,
+                 calories=round((weight_in_grams / 100) * food_item.calories, 2),
+                 protein=round((weight_in_grams / 100) * food_item.protein, 2),
+                 carbs=round((weight_in_grams / 100) * food_item.carbs, 2),
+                 fats=round((weight_in_grams / 100) * food_item.fats, 2),
+                #  sugar=round((weight_in_grams / 100) * food_item.sugar, 2) if food_item.sugar is not None else None,
+                #  fiber=round((weight_in_grams / 100) * food_item.fiber, 2) if food_item.fiber is not None else None,
+                 estimated_gi=food_item.estimated_gi,  # usually not scaled — it’s per food, not weight-based
+                 glycemic_load=round((weight_in_grams / 100) * food_item.glycemic_load, 2) if food_item.glycemic_load else None,
+                 food_type=food_item.food_type,
             )
 
             response_data.append(self.get_serializer(instance).data)

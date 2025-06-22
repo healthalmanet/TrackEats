@@ -33,7 +33,7 @@ export const getMeals = async (token, url = null) => {
       return response.data;
     } else {
       const axiosInstance = createAxiosInstance(token);
-      const response = await axiosInstance.get('/?page_size=10');
+      const response = await axiosInstance.get('/?page_size=5');
       return response.data;
     }
   } catch (error) {

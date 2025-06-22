@@ -1,6 +1,4 @@
-// src/components/BloodSugarChart.jsx
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -10,28 +8,54 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { getDiabeticProfile } from "../../../api/diabeticApi"; // adjust if needed
+import { toast } from "react-hot-toast";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const BloodSugarChart = () => {
-  const data = {
-    labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-    datasets: [
-      {
-        label: "Fasting Blood Sugar (mg/dL)",
-        data: [115, 120, 110, 108],
-        backgroundColor: "#10b981",
-        borderRadius: 6,
-        barThickness: 30,
-      },
-    ],
-  };
+  const [chartData, setChartData] = useState(null);
+
+  useEffect(() => {
+    const fetchBloodSugarData = async () => {
+      try {
+        const res = await getDiabeticProfile();
+        const results = res?.results || [];
+
+        // Sort by date ascending
+        const sorted = [...results].sort(
+          (a, b) => new Date(a.diagnosis_date) - new Date(b.diagnosis_date)
+        );
+
+        const labels = sorted.map((item) =>
+          new Date(item.diagnosis_date).toLocaleDateString("en-IN", {
+            month: "short",
+            day: "numeric",
+          })
+        );
+
+        const sugarValues = sorted.map((item) => item.fasting_blood_sugar);
+
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: "Fasting Blood Sugar (mg/dL)",
+              data: sugarValues,
+              backgroundColor: "#10b981",
+              borderRadius: 6,
+              barThickness: 30,
+            },
+          ],
+        });
+      } catch (error) {
+        toast.error("Failed to load blood sugar data.");
+        console.error("Blood Sugar Chart Error:", error);
+      }
+    };
+
+    fetchBloodSugarData();
+  }, []);
 
   const options = {
     responsive: true,
@@ -55,8 +79,12 @@ const BloodSugarChart = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-md p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">Weekly Fasting Blood Sugar</h3>
-      <Bar data={data} options={options} />
+      <h3 className="text-sm font-semibold text-gray-700 mb-3">Fasting Blood Sugar Trend</h3>
+      {chartData ? (
+        <Bar data={chartData} options={options} />
+      ) : (
+        <p className="text-sm text-gray-500">Loading chart...</p>
+      )}
     </div>
   );
 };

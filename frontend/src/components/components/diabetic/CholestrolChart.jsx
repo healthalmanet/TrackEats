@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -10,8 +10,10 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { getDiabeticProfile } from "../../../api/diabeticApi"; // adjust path if needed
+import { toast } from "react-hot-toast";
 
-// Register components
+// Register chart components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -23,22 +25,51 @@ ChartJS.register(
 );
 
 const CholestrolChart = () => {
-  const data = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    datasets: [
-      {
-        label: "Total Cholesterol",
-        data: [175, 172, 170, 168, 170, 171],
-        borderColor: "#8B008B", // Deep purple
-        backgroundColor: "#8B008B",
-        tension: 0.3,
-        pointBackgroundColor: "#fff",
-        pointBorderColor: "#8B008B",
-        pointHoverBackgroundColor: "#8B008B",
-        pointHoverBorderColor: "#fff",
-      },
-    ],
-  };
+  const [chartData, setChartData] = useState(null);
+
+  useEffect(() => {
+    const fetchCholesterolData = async () => {
+      try {
+        const res = await getDiabeticProfile();
+        const results = res?.results || [];
+
+        const sorted = [...results].sort(
+          (a, b) => new Date(a.diagnosis_date) - new Date(b.diagnosis_date)
+        );
+
+        const labels = sorted.map((item) =>
+          new Date(item.diagnosis_date).toLocaleDateString("en-IN", {
+            month: "short",
+            day: "numeric",
+          })
+        );
+
+        const cholesterolValues = sorted.map((item) => item.total_cholesterol);
+
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: "Total Cholesterol (mg/dL)",
+              data: cholesterolValues,
+              borderColor: "#8B008B", // Deep purple
+              backgroundColor: "#8B008B",
+              tension: 0.3,
+              pointBackgroundColor: "#fff",
+              pointBorderColor: "#8B008B",
+              pointHoverBackgroundColor: "#8B008B",
+              pointHoverBorderColor: "#fff",
+            },
+          ],
+        });
+      } catch (err) {
+        toast.error("Failed to load cholesterol data.");
+        console.error("Cholesterol chart error:", err);
+      }
+    };
+
+    fetchCholesterolData();
+  }, []);
 
   const options = {
     responsive: true,
@@ -82,7 +113,11 @@ const CholestrolChart = () => {
         Cholesterol Tracking
       </h3>
       <div className="h-[calc(100%-2rem)]">
-        <Line data={data} options={options} />
+        {chartData ? (
+          <Line data={chartData} options={options} />
+        ) : (
+          <p className="text-sm text-gray-500">Loading chart...</p>
+        )}
       </div>
     </div>
   );

@@ -4,7 +4,6 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer
 } from "recharts";
 
-
 const Reports = () => {
   {/*  progress bar */}
   // Donut chart data

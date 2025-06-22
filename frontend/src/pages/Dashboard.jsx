@@ -21,6 +21,7 @@ import HealthTools from "../components/components/HealthSection";
 import DietRecommendations from "../components/components/RecommendationSection";
 import Meals from "./dashboard/Meals";
 import Footer from "../components/components/Footer";
+import Reports from "./Reports"
 
 
 function Dashboard() {
@@ -51,10 +52,9 @@ function Dashboard() {
         <Route path="tools/weight-tracker" element={<WeightTracker />} />
         <Route path="tools/water-tracker" element={<WaterTracker />} />
         <Route path="tools/custom-reminder" element={<CustomReminder />} />
-       
-        
         <Route path="health-section" element={<HealthSection />} />
         <Route path="meals" element={<Meals/>} />
+        <Route path="reports" element={<Reports/>} />
       
       </Routes>
     </div>

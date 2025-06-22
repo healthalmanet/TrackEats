@@ -5,7 +5,6 @@ import offer  from "../assets/lunch.png";
 import elevated  from "../assets/banner img.png";
 import banner  from "../assets/explore 1.png";
 import logo from "../assets/logo.png";
-// import { motion } from 'framer-motion';
 import explore2 from "../assets/explore 2.png"
 import din from "../assets/dinner.png"
 import explore1 from "../assets/explore 1.png"
@@ -18,8 +17,6 @@ import Register from './Register';
 import healthy from "../assets/healthy.jpg"
 import flat from "../assets/flat.jpg"
 
-
-
 const Home = () => {
    const navigate = useNavigate();
    const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -29,20 +26,14 @@ const Home = () => {
     setShowRegisterModal(false);
     setShowLoginModal(true);
   };
-
   const openRegister = () => {
     setShowLoginModal(false);
     setShowRegisterModal(true);
   };
-
   const closeModals = () => {
     setShowLoginModal(false);
     setShowRegisterModal(false);
   };
-
-
-
-   
   const [isOpen, setIsOpen] = useState(false);
 
 // explore contain hai yaha se
@@ -90,9 +81,8 @@ const Home = () => {
   ];
 
 {/* -----------------------------------------start Home page -------------------------------------------------------- */}
-
-
-  return (
+ 
+return (
     <div className="min-h-screen  overflow-x-hidden bg-gradient-to-br from-white to-[#f4fbf8] font-sans text-gray-800">
       {/* Header Section */}
       <header className="shadow-sm bg-white">
@@ -113,7 +103,7 @@ const Home = () => {
             </svg>  
           </button>
         </div>
-      
+
     </header>
   
       {/* ---------------------------imran---------------------------------------- */}
@@ -409,43 +399,6 @@ const Home = () => {
 
 {/* --------------------------------------------------- */}
 
-
-
-     {/* <motion.div
-      initial={{ opacity: 0, y: 60 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      viewport={{ once: true }}
-      className="w-full bg-gradient-to-r from-[#fefcea] to-[#f1f4f9] py-20 flex flex-col items-center px-4 text-center"
-    >
-      <h1 className="text-3xl md:text-5xl font-bold mb-4">
-        Ready to Transform Your{' '}
-        <span className="text-green-500">Health Journey</span>
-        <span className="text-black">?</span>
-      </h1>
-      <p className="text-gray-600 text-base md:text-lg mb-8 max-w-xl">
-        Join thousands of users who have already improved their nutrition and wellness with TrackEats.
-      </p>
-      <div className="flex gap-4 flex-wrap justify-center">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/register')}
-          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300"
-        >
-          Start Free Trial
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/register')}
-          className="bg-white text-red-500 border-2 border-red-400 hover:bg-red-500 hover:text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300"
-        >
-          Learn More
-        </motion.button>
-      </div>
-    </motion.div> */}
-
 {/* -------------------------------------- */}
   <footer id='Contact' className=" bg-white border-t">
 <div className="container mx-auto lg:ml-30 space-x-10 grid grid-cols-1 sm:grid-cols-4  gap-8 text-center sm:text-left mt-10">
@@ -530,33 +483,12 @@ export default Home;
 
 
 
-// import React from "react";
-// import { useNavigate } from "react-router-dom";
 
-// function Home() {
-//   const navigate = useNavigate();
-//   return (
-//     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center p-6">
-//       <h1 className="text-4xl font-bold text-gray-800 mb-6">
-//         Track. Improve. Thrive.
-//       </h1>
 
-//       <div className="flex space-x-4">
-//         <button
-//           onClick={() => navigate('/register')}
-//           className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
-//         >
-//           Register
-//         </button>
 
-//         <button
-//           onClick={() => navigate('/login')}
-//           className="px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
-//         >
-//           Login
-//         </button>
-//       </div>
-//     </div>);
-// }
 
-// export default Home;
+
+
+
+
+

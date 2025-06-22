@@ -11,7 +11,7 @@ import NutritionSearch from "./dashboard/Tools/NutritionSearch";
 import WeightTracker from "./dashboard/Tools/WeightTracker";
 import WaterTracker from "./dashboard/Tools/WaterTracker";
 import CustomReminder from "./dashboard/Tools/CustomReminder";
-import DiabeticPage from "../components/components/diabetic";
+
 import HealthSection from "./dashboard/Tools/HealthSection";
 import Caloriesbar from "../components/components/Caloriesbar";
 import HeroSection from "../components/components/HeroSection";
@@ -52,7 +52,7 @@ function Dashboard() {
         <Route path="tools/water-tracker" element={<WaterTracker />} />
         <Route path="tools/custom-reminder" element={<CustomReminder />} />
        
-        <Route path="diabetic" element={<DiabeticPage />} />
+        
         <Route path="health-section" element={<HealthSection />} />
         <Route path="meals" element={<Meals/>} />
       

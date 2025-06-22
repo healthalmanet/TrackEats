@@ -1,10 +1,11 @@
 import React from 'react'
-import DiabeticPage from '../../../components/components/diabetic'
+import Dashboard from '../../../components/components/diabetic/HealthDashboard'
+import HealthDashboard from '../../../components/components/diabetic/HealthDashboard'
 
 const HealthSection = () => {
   return (
     <div>
-        <DiabeticPage/>
+      <HealthDashboard/>
       
     </div>
   )

@@ -11,6 +11,7 @@ import OperatorPage from "./pages/OperatorPage";
 import NutritionistPage from "./pages/NutritionistPage";
 
 import Dashboard from "./pages/Dashboard";
+import ResetPassword from "./components/components/ResetPassword";
 
 import Navbar from "./components/components/Navbar";
 import ProtectedRoute from "./components/components/ProtectedRoute";
@@ -18,6 +19,9 @@ import Chatbot from "./components/components/Chatbot";
 import ForgotPassword from "./components/components/ForgotPassword";
 // import { Layout } from "lucide-react";
 
+// ✅ Import ToastContainer and its CSS
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const { isAuthenticated, user } = useAuth();
@@ -43,31 +47,20 @@ function App() {
           }
         />
 
+        
         <Route
-          path="/login"
+          path="/forgot-password/"
           element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Login />
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
           }
         />
+        <Route
+        path="/reset-password/:uidb64/:token"
+        element={
+        isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ResetPassword />
+  }
+/>
 
-        <Route
-          path="/register"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Register />
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
-          }
-        />
-         <Route
-          path="/reset-password/:token"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
-          }
-        />
 
         {/* Protected routes based on user role */}
         <Route
@@ -108,11 +101,11 @@ function App() {
 
       </Routes>
 
-
       {isAuthenticated && <Chatbot />}
 
+      {/* ✅ Toast container for showing messages globally */}
+      <ToastContainer position="top-right" autoClose={3000} pauseOnHover theme="light" />
     </>
-
   );
 }
 

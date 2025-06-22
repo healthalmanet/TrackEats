@@ -1,32 +1,31 @@
-// src/api/userProfile.js
 import axios from "axios";
 
-const API_BASE_URL = " "; // Replace with your actual backend URL
+const BASE_URL = "https://trackeats.onrender.com/api/profile";
 
-export const submitUserProfile = async (profileData) => {
-  const token = localStorage.getItem("jwtToken");
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token"); // ensure token is set on login
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  };
+};
 
-  const response = await axios.post(
-    `${API_BASE_URL}/profile`,
-    profileData,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-
+// 1. Create user profile
+export const createUserProfile = async (profileData) => {
+  const response = await axios.post(`${BASE_URL}/create/`, profileData, getAuthHeaders());
   return response.data;
 };
 
+// 2. Get user profile
 export const getUserProfile = async () => {
-  const token = localStorage.getItem("jwtToken");
+  const response = await axios.get(`${BASE_URL}`, getAuthHeaders());
+  return response.data;
+};
 
-  const response = await axios.get(`${API_BASE_URL}/profile`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
+// 3. Update user profile
+export const updateUserProfile = async (profileData) => {
+  const response = await axios.patch(`${BASE_URL}/`, profileData, getAuthHeaders());
   return response.data;
 };

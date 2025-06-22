@@ -1,12 +1,42 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const BASE_URL = "https://trackeats.onrender.com/api/diabetic-reports";
 
-export const getDiabeticReport = async (token) => {
-  const response = await axios.get(`${API_BASE_URL}/diabetic/`, {
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-  });
+  };
+};
+
+// 1. Create diabetic profile
+export const createDiabeticProfile = async (formData) => {
+  const response = await axios.post(`${BASE_URL}/create/`, formData, getAuthHeaders());
   return response.data;
 };
+
+// 2. Get diabetic profile
+export const getDiabeticProfile = async () => {
+  const response = await axios.get(`${BASE_URL}/`, getAuthHeaders());
+  return response.data;
+};
+
+// 3. Update diabetic profile
+export const updateDiabeticProfile = async (formData) => {
+  if (!formData.id) {
+    throw new Error("Diabetic profile ID is required for update.");
+  }
+
+  const response = await axios.patch(
+    `${BASE_URL}/${formData.id}/`, // Ensure this is a detail URL
+    formData,
+    getAuthHeaders()
+  );
+
+  return response.data;
+};
+
+

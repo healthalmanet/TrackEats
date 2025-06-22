@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   createUserProfile,
   getUserProfile,
@@ -16,6 +16,17 @@ const countryOptions = [
   { value: "Australia", label: "Australia" },
 ];
 
+const healthConditionOptions = [
+  { value: "None", label: "None" },
+  { value: "Diabetes", label: "Diabetes" },
+  { value: "Hypertension", label: "Hypertension" },
+  { value: "Thyroid", label: "Thyroid" },
+  { value: "Cholesterol", label: "Cholesterol" },
+  { value: "PCOS/PCOD", label: "PCOS/PCOD" },
+  { value: "Anemia", label: "Anemia" },
+  { value: "Cancer", label: "Cancer" },
+];
+
 const activityLevelMap = {
   "Sedentary": "sedentary",
   "Light Activity": "light",
@@ -29,6 +40,29 @@ const goalMap = {
   "Maintain Weight": "maintain",
   "Gain Weight": "gain_weight",
 };
+
+const genderOptions = [
+  { value: "Male", label: "Male" },
+  { value: "Female", label: "Female" },
+];
+
+const activityLevelOptions = Object.keys(activityLevelMap).map(level => ({
+  value: level,
+  label: level,
+}));
+
+const goalOptions = Object.keys(goalMap).map(goal => ({
+  value: goal,
+  label: goal,
+}));
+
+const dietTypeOptions = [
+  { value: "Vegetarian", label: "Vegetarian" },
+  { value: "Non-Vegetarian", label: "Non-Vegetarian" },
+  { value: "Vegan", label: "Vegan" },
+  { value: "Eggetarian", label: "Eggetarian" },
+  { value: "Other", label: "Other" },
+];
 
 const UserProfileForm = () => {
   const [formData, setFormData] = useState({
@@ -51,15 +85,6 @@ const UserProfileForm = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleCountryChange = (selectedOption) => {
-    setFormData({ ...formData, country: selectedOption?.value || "" });
-  };
-
-  const handleHealthConditionChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
-    setFormData({ ...formData, health_conditions: selected });
   };
 
   const formatDataForBackend = (data) => {
@@ -177,60 +202,92 @@ const UserProfileForm = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-8 md:p-10">
-          {[ // main input fields
+          {/* Name, Age, Height, Weight, Mobile Number */}
+          {[
             { label: "Name", type: "text", name: "name", placeholder: "Enter your name" },
             { label: "Age", type: "number", name: "age", placeholder: "Enter your age" },
-            { label: "Gender", type: "select", name: "gender", options: ["Male", "Female"] },
             { label: "Height (cm)", type: "number", name: "height_cm", placeholder: "e.g. 170" },
             { label: "Weight (kg)", type: "number", name: "weight_kg", placeholder: "e.g. 65" },
             { label: "Mobile Number", type: "tel", name: "mobile_number", placeholder: "Enter mobile number" },
-            { label: "Activity Level", type: "select", name: "activity_level", options: Object.keys(activityLevelMap) },
-            { label: "Goal", type: "select", name: "goal", options: Object.keys(goalMap) },
           ].map((field, index) => (
             <div key={index}>
               <label className="block text-gray-700 font-medium mb-1">{field.label}</label>
-              {field.type === "select" ? (
-                <select
-                  name={field.name}
-                  value={formData[field.name] || ""}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700"
-                >
-                  <option value="">Select {field.label}</option>
-                  {field.options.map((opt, i) => (
-                    <option key={i} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={field.type}
-                  name={field.name}
-                  value={formData[field.name] || ""}
-                  onChange={handleChange}
-                  placeholder={field.placeholder}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                />
-              )}
+              <input
+                type={field.type}
+                name={field.name}
+                value={formData[field.name] || ""}
+                onChange={handleChange}
+                placeholder={field.placeholder}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
             </div>
           ))}
+
+          {/* Gender */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Gender</label>
+            <Select
+              options={genderOptions}
+              value={genderOptions.find(opt => opt.value === formData.gender)}
+              onChange={(selectedOption) =>
+                setFormData({ ...formData, gender: selectedOption?.value || "" })
+              }
+              placeholder="Select gender"
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+          </div>
+
+          {/* Activity Level */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Activity Level</label>
+            <Select
+              options={activityLevelOptions}
+              value={activityLevelOptions.find(opt => opt.value === formData.activity_level)}
+              onChange={(selectedOption) =>
+                setFormData({ ...formData, activity_level: selectedOption?.value || "" })
+              }
+              placeholder="Select activity level"
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+          </div>
+
+          {/* Goal */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Goal</label>
+            <Select
+              options={goalOptions}
+              value={goalOptions.find(opt => opt.value === formData.goal)}
+              onChange={(selectedOption) =>
+                setFormData({ ...formData, goal: selectedOption?.value || "" })
+              }
+              placeholder="Select goal"
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
+          </div>
 
           {/* Health Conditions */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">Health Conditions</label>
-            <select
+            <Select
+              isMulti
               name="health_conditions"
-              multiple
-              value={formData.health_conditions}
-              onChange={handleHealthConditionChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              {[
-                "None", "Diabetes", "Hypertension", "Thyroid",
-                "Cholesterol", "PCOS/PCOD", "Anemia", "Cancer",
-              ].map((cond, i) => (
-                <option key={i} value={cond}>{cond}</option>
-              ))}
-            </select>
+              options={healthConditionOptions}
+              value={healthConditionOptions.filter(opt =>
+                formData.health_conditions.includes(opt.value)
+              )}
+              onChange={(selectedOptions) =>
+                setFormData({
+                  ...formData,
+                  health_conditions: selectedOptions.map((opt) => opt.value),
+                })
+              }
+              placeholder="Select health conditions"
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
           </div>
 
           {/* Country */}
@@ -239,7 +296,9 @@ const UserProfileForm = () => {
             <Select
               options={countryOptions}
               value={countryOptions.find((c) => c.value === formData.country)}
-              onChange={handleCountryChange}
+              onChange={(selectedOption) =>
+                setFormData({ ...formData, country: selectedOption?.value || "" })
+              }
               placeholder="Select your country"
             />
           </div>
@@ -247,17 +306,16 @@ const UserProfileForm = () => {
           {/* Diet Type */}
           <div className="col-span-1 sm:col-span-2">
             <label className="block text-gray-700 font-medium mb-1">Diet Type</label>
-            <select
-              name="diet_type"
-              value={formData.diet_type}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="">Select Diet Type</option>
-              {["Vegetarian", "Non-Vegetarian", "Vegan", "Eggetarian", "Other"].map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
+            <Select
+              options={dietTypeOptions}
+              value={dietTypeOptions.find(opt => opt.value === formData.diet_type)}
+              onChange={(selectedOption) =>
+                setFormData({ ...formData, diet_type: selectedOption?.value || "" })
+              }
+              placeholder="Select diet type"
+              className="react-select-container"
+              classNamePrefix="react-select"
+            />
           </div>
         </div>
 
@@ -266,7 +324,7 @@ const UserProfileForm = () => {
             <button
               type="button"
               onClick={handleEditProfile}
-              className="text-sm text-gray-600 border border-gray-300 rounded-md px-4 py-2 hover:bg-gray-100"
+              className="text-sm text-red-600 border border-gray-300 rounded-md px-4 py-2 hover:bg-gray-100"
             >
               Edit Existing Profile
             </button>

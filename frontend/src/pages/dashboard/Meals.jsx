@@ -1,8 +1,30 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Flame, Dumbbell,  Drumstick } from "lucide-react";
 import { Sun, Moon, CloudSun } from "lucide-react";
 
-const Meals = () => {
+// const Meals = () => {
+
+  const Meals = ({mealpanData}) => {
+  const [showAll, setShowAll] = useState(false);
+  const [activeForm, setActiveForm] = useState(null);
+
+  const handleCardClick = (day) => {
+    setActiveForm(day);
+  };
+
+  const handleClose = () => {
+    setActiveForm(null);
+  };
+
+ const toggleShowAll = () => {
+    setShowAll((prev) => !prev);
+  };
+
+  // const displayedDays = Array.isArray(mealPlanData)
+  //   ? showAll
+  //     ? mealPlanData
+  //     : mealPlanData.slice(0, 6)
+  //   : [];
 
   const mealPlanData = [
   {
@@ -13,7 +35,9 @@ const Meals = () => {
       { icon: <CloudSun className="inline w-4 h-4" />, item: "Oats Idli" },
       { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
     ],
+    
   },
+
   {
     day: "Day 2 - Tuesday",
     calories: "491 cal",
@@ -59,8 +83,9 @@ const Meals = () => {
       { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
     ],
   },
+  
 ];
-
+ const displayedDays = showAll ? mealPlanData : mealPlanData.slice(0, 6);
   return (
     <>
         <div className="min-h-screen bg-white p-6 font-sans text-[#001064]">
@@ -114,7 +139,7 @@ const Meals = () => {
       </div>
 
       {/* 15 d plan  ka code hai */}
-
+{/* 
 <div className="p-6 font-sans text-[#001064]">
   <h2 className="text-lg font-semibold mb-6">15-Day Meal Plan</h2>
   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -158,7 +183,100 @@ const Meals = () => {
       👁 View All 15 Days
     </button>
   </div>
-</div>
+</div> */}
+{/* new from -------------------------------------------- */}
+
+ <div className="p-6 font-sans text-[#001064] relative">
+      <h2 className="text-lg font-semibold mb-6">15-Day Meal Plan</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {displayedDays.map((day, index) => (
+          <div
+            key={index}
+            onClick={() => handleCardClick(day)}
+            className="bg-white border rounded-xl p-4 shadow-md transition-transform duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold text-[#001064]">{day.day}</h3>
+              {day.calories && (
+                <span className="bg-gray-100 text-sm text-gray-700 px-2 py-1 rounded">
+                  {day.calories}
+                </span>
+              )}
+            </div>
+            <ul className="text-sm text-gray-800 space-y-1">
+              {day.meals.map((meal, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <span
+                    className={
+                      i === 0
+                        ? "text-yellow-500"
+                        : i === 1
+                        ? "text-orange-500"
+                        : "text-blue-600"
+                    }
+                  >
+                    {meal.icon}
+                  </span>
+                  {meal.item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {/* View All Button */}
+      {!showAll && (
+        <div className="text-center">
+          <button
+            onClick={() => setShowAll(true)}
+            className="bg-[#001064] hover:bg-[#001068] text-white px-6 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition duration-300"
+          >
+            👁 View All 15 Days
+          </button>
+        </div>
+      )}
+
+      {/* Overlay Form */}
+      {activeForm && (
+        <div className="fixed inset-0  bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg w-[90%] max-w-md relative">
+            <button
+              onClick={handleClose}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl"
+            >
+              &times;
+            </button>
+            <h3 className="text-lg font-bold text-[#001064] mb-4">
+              Edit Meal Plan - {activeForm.day}
+            </h3>
+            <form className="space-y-4">
+              <input
+                type="text"
+                placeholder="Meal Name"
+                className="w-full border rounded px-4 py-2"
+              />
+              <input
+                type="text"
+                placeholder="Calories"
+                className="w-full border rounded px-4 py-2"
+              />
+              <button
+                type="submit"
+                className="bg-[#001064] text-white px-4 py-2 rounded hover:bg-[#001088]"
+              >
+                Save
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+ 
+
+
+
     </div>
     </>    
   )

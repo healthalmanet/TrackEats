@@ -118,7 +118,7 @@ const mealData = [
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('https://api/daily/calorie-summary/trackeats.onrender.com/', {
+        const response = await axios.get('https://api/dailly/calorie-summary/trackeats.onrender.com/', {
           headers: {
             Authorization: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDY1OTgxOTAxLCJpYXQiOjE3NTA2MjE5MDEsImp0aSI6IjIxYWIwNzBhMjQ5ZDQ2NWQ4ODI5ZTIwZWUxMGY3MDBhIiwidXNlcl9pZCI6Miwicm9sZSI6InVzZXIiLCJlbWFpbCI6Im1heXVyQGdtYWlsLmNvbSIsImZ1bGxfbmFtZSI6Ik1heXVyIFBhcm1hciJ9.c49-Du2B7rCVdcYzoPgq5PIcLvFhK8mban8AwS_p9bs`, // Replace with your actual token
             // 'Content-Type': 'application/json',
@@ -162,7 +162,7 @@ const mealData = [
       {nutrientData.map((item, idx) => (
         <div
           key={idx}
-          className="bg-white p-4 rounded-xl shadow hover:shadow-md transition"
+          className="bg-white p-4 rounded-xl shadow hover:shadow-md transition-transform duration-300 hover:scale-105"
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-600 font-medium">{item.title}</h3>
@@ -267,7 +267,7 @@ const mealData = [
     return (
       <div
         key={index}
-        className="flex items-start justify-between p-4 rounded-xl shadow bg-white"
+        className="flex items-start justify-between p-4 rounded-xl shadow bg-white hover:bg-blue-200"
       >
         {/* Left side: Icon and details */}
         <div className="flex gap-4">

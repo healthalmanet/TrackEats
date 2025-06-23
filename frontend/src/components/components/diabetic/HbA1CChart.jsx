@@ -1,6 +1,4 @@
-// src/components/HbA1cChart.jsx
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -12,6 +10,8 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { getDiabeticProfile } from "../../../api/diabeticApi"; // adjust path as needed
+import { toast } from "react-hot-toast";
 
 ChartJS.register(
   LineElement,
@@ -24,21 +24,53 @@ ChartJS.register(
 );
 
 const HbA1cChart = () => {
-  const data = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    datasets: [
-      {
-        label: "HbA1c %",
-        data: [7.8, 7.5, 7.3, 7.0, 6.9, 7.1],
-        fill: false,
-        borderColor: "#3b82f6",
-        backgroundColor: "#3b82f6",
-        tension: 0.3,
-        pointRadius: 5,
-        pointHoverRadius: 6,
-      },
-    ],
-  };
+  const [chartData, setChartData] = useState(null);
+
+  useEffect(() => {
+    const fetchHbA1cData = async () => {
+      try {
+        const res = await getDiabeticProfile();
+        const results = res?.results || [];
+
+        // Sort by diagnosis_date ascending
+        const sorted = [...results].sort(
+          (a, b) => new Date(a.diagnosis_date) - new Date(b.diagnosis_date)
+        );
+
+        const labels = sorted.map((item) =>
+          new Date(item.diagnosis_date).toLocaleDateString("en-IN", {
+            month: "short",
+            year: "2-digit",
+          })
+        );
+
+        const hba1cValues = sorted.map((item) => item.hba1c);
+
+        const chartObj = {
+          labels,
+          datasets: [
+            {
+              label: "HbA1c %",
+              data: hba1cValues,
+              fill: false,
+              borderColor: "#3b82f6",
+              backgroundColor: "#3b82f6",
+              tension: 0.3,
+              pointRadius: 5,
+              pointHoverRadius: 6,
+            },
+          ],
+        };
+
+        setChartData(chartObj);
+      } catch (error) {
+        toast.error("Failed to load HbA1c data.");
+        console.error("Chart fetch error:", error);
+      }
+    };
+
+    fetchHbA1cData();
+  }, []);
 
   const options = {
     responsive: true,
@@ -63,8 +95,12 @@ const HbA1cChart = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-md p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">HbA1c Trend (6 Months)</h3>
-      <Line data={data} options={options} />
+      <h3 className="text-sm font-semibold text-gray-700 mb-3">HbA1c Trend</h3>
+      {chartData ? (
+        <Line data={chartData} options={options} />
+      ) : (
+        <p className="text-sm text-gray-500">Loading chart...</p>
+      )}
     </div>
   );
 };

@@ -20,7 +20,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://trackeat-auch.onrender.com",
+    "https://track-eats.onrender.com",
     "https://trackeats.onrender.com",
     "http://localhost:5173",
 ]

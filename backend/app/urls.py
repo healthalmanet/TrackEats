@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from django.urls import include
 from .views import (
-    RegisterView, UserProfileDetailView, UserProfileCreateView,home,
+    FoodItemListView, RegisterView, UserProfileDetailView, UserProfileCreateView,home,
     DiabeticProfileCreateView,DiabeticProfileDetailView,DiabeticProfileListView,
     UserMealViewSet,
     OwnerDashboardView,
@@ -158,6 +158,10 @@ urlpatterns = [
     #Messaging 
     path('messages/', MessageListView.as_view(), name='message-list'),
     path('messages/send/', SendMessageView.as_view(), name='send-message'),
+
+
+    #Nutrion Search 
+    path('foods/', FoodItemListView.as_view(), name='food-list'),
 ]
 
 

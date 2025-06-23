@@ -1,19 +1,14 @@
 import React from 'react';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
-
 import { FaAppleAlt } from "react-icons/fa";
 import { FaCoffee,  FaHamburger } from "react-icons/fa";
 import { FaFireAlt, FaDrumstickBite, FaBreadSlice, FaTint } from "react-icons/fa";
-
-
 import {
   PieChart, Pie, Cell,
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, CartesianGrid, Legend 
 } from "recharts";
-
-
 
 
 const Reports = () => {
@@ -147,7 +142,7 @@ const mealData = [
     <div className="min-h-screen bg-[#f7fdfc] text-gray-800 p-6 font-sans">
       {/* Header */}
       <header className="flex justify-between items-center mb-6">
-        
+
         <div className="flex items-center gap-2 text-2xl font-bold text-black">
           <h1>Daily Progress</h1>
         </div>

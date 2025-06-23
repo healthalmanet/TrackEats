@@ -1,6 +1,6 @@
-// src/api/mealLog.js
 import axios from 'axios';
 
+// ✅ Always use HTTPS to prevent CORS redirect issues
 const BASE_URL = 'https://trackeats.onrender.com/api/logmeals';
 
 const createAxiosInstance = (token) =>
@@ -20,68 +20,71 @@ const formatMealData = (meal) => ({
   remarks: meal.remarks,
 });
 
-// Get meals (paginated)
+// ✅ Get meals (paginated), with forced HTTPS on pagination URLs
 export const getMeals = async (token, url = null) => {
   try {
-    if (url) {
-      const response = await axios.get(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.data;
-    } else {
-      const axiosInstance = createAxiosInstance(token);
-      const response = await axiosInstance.get('/?page_size=5');
-      return response.data;
-    }
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+
+    // If a pagination URL is passed, replace http with https
+    const finalUrl = url
+      ? url.replace(/^http:\/\//, 'https://')
+      : `${BASE_URL}/?page=1&page_size=5`;
+
+    const response = await axios.get(finalUrl, { headers });
+    return response.data;
   } catch (error) {
-    console.error('Error fetching meals with pagination:', error);
+    console.error('❌ Error fetching meals:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// ✅ Create new meal
 export const createMeal = async (mealData, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
     const response = await axiosInstance.post('/', formatMealData(mealData));
     return response.data;
   } catch (error) {
-    console.error('Error creating meal:', error);
+    console.error('❌ Error creating meal:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// ✅ Full update of a meal
 export const updateMeal = async (mealId, updatedMealData, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
-    const response = await axiosInstance.put(`/${mealId}`, formatMealData(updatedMealData));
+    const response = await axiosInstance.put(`/${mealId}/`, formatMealData(updatedMealData));
     return response.data;
   } catch (error) {
-    console.error(`Error updating meal with ID ${mealId}:`, error);
+    console.error(`❌ Error updating meal ${mealId}:`, error.response?.data || error.message);
     throw error;
   }
 };
 
+// ✅ Partial update of a meal
 export const patchMeal = async (mealId, partialMealData, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
-    const response = await axiosInstance.patch(`/${mealId}`, partialMealData);
+    const response = await axiosInstance.patch(`/${mealId}/`, partialMealData);
     return response.data;
   } catch (error) {
-    console.error(`Error patching meal with ID ${mealId}:`, error);
+    console.error(`❌ Error patching meal ${mealId}:`, error.response?.data || error.message);
     throw error;
   }
 };
 
+// ✅ Delete a meal
 export const deleteMeal = async (mealId, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
-    const response = await axiosInstance.delete(`/${mealId}`);
+    const response = await axiosInstance.delete(`/${mealId}/`);
     return response.data;
   } catch (error) {
-    console.error(`Error deleting meal with ID ${mealId}:`, error);
+    console.error(`❌ Error deleting meal ${mealId}:`, error.response?.data || error.message);
     throw error;
   }
 };

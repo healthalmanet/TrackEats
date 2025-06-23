@@ -1,36 +1,53 @@
-// src/hooks/useWaterTracker.js
 
 import { useState, useEffect } from 'react';
+import { logWaterGlass } from '../../../api/water'; // Your API file
+import { toast } from 'react-hot-toast';
+
+const GLASS_SIZE_ML = 250;
 
 const useWaterTracker = () => {
   const [selectedDate, setSelectedDate] = useState(() => {
-    // default to today's date in YYYY-MM-DD format
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
 
-  const [waterLogs, setWaterLogs] = useState({}); // logs by date
+  const [waterLogs, setWaterLogs] = useState({}); // { "2025-06-23": 2, ... }
 
-  // Get total glasses for selected date
   const totalGlasses = waterLogs[selectedDate] || 0;
 
-  // Add 1 glass
-  const addGlass = () => {
-    setWaterLogs((prev) => ({
-      ...prev,
-      [selectedDate]: (prev[selectedDate] || 0) + 1,
-    }));
+  
+  
+
+  // Add a glass and log to backend
+  const addGlass = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Login required');
+      return;
+    }
+
+    try {
+      await logWaterGlass(token); // logs 500ml to backend
+      // Update local log (1 glass = 250ml, 500ml = 2 glasses)
+      setWaterLogs((prev) => ({
+        ...prev,
+        [selectedDate]: (prev[selectedDate] || 0) + 2,
+      }));
+      toast.success('Logged 500ml (2 glasses) of water');
+    } catch (error) {
+      console.error('❌ Failed to log water to backend:', error);
+      toast.error('Failed to sync with server');
+    }
   };
 
-  // Reset glasses for selected date
   const resetGlasses = () => {
     setWaterLogs((prev) => ({
       ...prev,
       [selectedDate]: 0,
     }));
+    // Optional: add API reset if needed
   };
 
-  // Change selected date
   const changeDate = (newDate) => {
     setSelectedDate(newDate);
   };
@@ -41,7 +58,7 @@ const useWaterTracker = () => {
     totalGlasses,
     addGlass,
     resetGlasses,
-    waterLogs, // optional, if you want to show a log chart later
+    waterLogs,
   };
 };
 

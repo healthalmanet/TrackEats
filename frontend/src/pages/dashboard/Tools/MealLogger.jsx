@@ -15,7 +15,7 @@ const MealLogger = () => {
     handleQuickAdd,
     quickAddItems = [],
     dailySummary = { calories: 0, carbs: 0, protein: 0, fat: 0 },
-    goals = { caloriesTarget: 2000, waterLogged: 0, waterTarget: 8, stepsLogged: 0, stepsTarget: 10000 },
+    goals = { caloriesTarget: 2000, waterLogged: 0, waterTarget: 8 },
     loggedMeals = [],
     handleNextPage,
     handlePrevPage,
@@ -153,12 +153,12 @@ const MealLogger = () => {
                     {loggedMeals.map((meal) => (
                       <li
                         key={meal.id}
-                        className={`p-4 pl-5 rounded-md border bg-white shadow-sm relative ${mealColors[meal.mealType] || 'border-l-4 border-gray-300'}`}
+                        className={`p-4 pl-5 rounded-md border bg-white shadow-sm relative ${mealColors[meal.meal_type] || 'border-l-4 border-gray-300'}`}
                       >
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
-                              <div className="font-semibold text-gray-800 text-base">{meal.name}</div>
+                              <div className="font-semibold text-gray-800 text-base">{meal.food_name}</div>
                               <button
                                 onClick={() => handleDeleteMeal(meal.id)}
                                 className="text-red-500 hover:text-red-600"
@@ -170,10 +170,9 @@ const MealLogger = () => {
 
                             <div className="text-sm text-gray-600 mt-0.5">
                               <span className="font-medium">{meal.quantity}</span> {meal.unit} •
-                              <span className="capitalize ml-1">{meal.mealType}</span>
+                              <span className="capitalize ml-1">{meal.meal_type}</span>
                             </div>
 
-                            {/* Date and Time */}
                             {(meal.date || meal.consumed_at) && (
                               <div className="text-xs text-gray-400 mt-0.5">
                                 {meal.date && <>📅 {meal.date} </>}
@@ -181,18 +180,24 @@ const MealLogger = () => {
                               </div>
                             )}
 
-                            {meal.remark && (
-                              <div className="text-xs text-blue-400 italic mt-1">“{meal.remark}”</div>
+                            {meal.remarks && (
+                              <div className="text-xs text-blue-400 italic mt-1">“{meal.remarks}”</div>
                             )}
                           </div>
 
                           <div className="text-right min-w-[120px] mt-2 sm:mt-0">
-                            <div className="text-sm font-semibold text-green-600">{meal.nutrition.calories ?? 0} cal</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              <span className="text-purple-600 font-medium">{meal.nutrition.protein ?? 0}g</span> P •{' '}
-                              <span className="text-yellow-600 font-medium">{meal.nutrition.carbs ?? 0}g</span> C •{' '}
-                              <span className="text-pink-600 font-medium">{meal.nutrition.fats ?? 0}g</span> F
-                            </div>
+                            {meal.calories !== undefined ? (
+                              <>
+                                <div className="text-sm font-semibold text-green-600">{meal.calories} cal</div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  <span className="text-purple-600 font-medium">{meal.protein ?? 0}g</span> P •{' '}
+                                  <span className="text-yellow-600 font-medium">{meal.carbs ?? 0}g</span> C •{' '}
+                                  <span className="text-pink-600 font-medium">{meal.fats ?? 0}g</span> F
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-xs text-gray-400 italic">No nutrition data</div>
+                            )}
                           </div>
                         </div>
                       </li>

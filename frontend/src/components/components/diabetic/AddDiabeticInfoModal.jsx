@@ -232,7 +232,7 @@ const AddDiabeticInfoModal = ({
                 loading ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
-              {loading ? "Submitting..." : mode === "edit" ? "Update Info" : "Submit"}
+              {loading ? "Submitting..." : mode === "edit" ? "Submit" : "Submit"}
             </button>
           </div>
         </form>

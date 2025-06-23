@@ -7,6 +7,7 @@ from django.contrib.auth.models import Group
 from rest_framework.exceptions import ValidationError   
 from utils.utils import UNIT_TO_GRAMS,role_required,generate_diet_recommendation
 from .ml_diet.predict import recommend_meals
+from rest_framework.filters import SearchFilter
 from datetime import datetime, time
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
@@ -55,7 +56,7 @@ from .models import (
     WeightLog,WaterIntakeLog,CustomReminder, Message
     )
 from .serializers import (
-        RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,
+        FoodItemSerializer2, RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,
         UserMealSerializer,PatientReminderSerializer,
         DietRecommendationSerializer,
         DietFeedbackSerializer,
@@ -1371,3 +1372,10 @@ class MessageListView(generics.ListAPIView):
         return Message.objects.filter(
             Q(sender=self.request.user) | Q(receiver=self.request.user)
         ).order_by('-timestamp')        
+
+
+class FoodItemListView(ListAPIView):
+    queryset = FoodItem.objects.all()
+    serializer_class = FoodItemSerializer2
+    filter_backends = [SearchFilter, DjangoFilterBackend]
+    search_fields = ['name']  # ✅ Allows ?search=Apple

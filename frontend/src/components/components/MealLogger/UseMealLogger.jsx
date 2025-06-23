@@ -10,7 +10,17 @@ import {
 const unitOptions = ['g', 'kg', 'ml', 'l', 'piece', 'cup', 'tbsp', 'tsp', 'slice', 'bowl'];
 
 export default function useMealLogger() {
-  const [foodInputs, setFoodInputs] = useState([{ name: '', quantity: '', unit: '', remark: '' }]);
+  const [foodInputs, setFoodInputs] = useState([
+    {
+      name: '',
+      quantity: '',
+      unit: '',
+      remark: '',
+      consumed_at: '',
+      date: '',
+    },
+  ]);
+
   const [mealType, setMealType] = useState('breakfast');
   const [weekDates, setWeekDates] = useState([]);
   const [calendarDate, setCalendarDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -39,7 +49,7 @@ export default function useMealLogger() {
   }, []);
 
   useEffect(() => {
-    fetchLoggedMeals(); // initial load or when date changes
+    fetchLoggedMeals();
   }, [calendarDate]);
 
   const fetchLoggedMeals = async (pageUrl = null) => {
@@ -47,7 +57,11 @@ export default function useMealLogger() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await getMeals(token, pageUrl);
+      // Ensure page size is always enforced
+      const defaultUrl = `https://trackeats.onrender.com/api/logmeals/?page_size=5`;
+      const url = pageUrl ?? defaultUrl;
+
+      const response = await getMeals(token, url);
       const meals = response?.results || [];
 
       const formatted = meals.map((m) => ({
@@ -57,6 +71,7 @@ export default function useMealLogger() {
         unit: m.unit || '',
         mealType: m.meal_type || '',
         remark: m.remarks || '',
+        consumed_at: m.consumed_at || '',
         date: m.date || '',
         nutrition: {
           calories: m.calories ?? 0,
@@ -73,7 +88,7 @@ export default function useMealLogger() {
         next: response.next,
         previous: response.previous,
         count: response.count,
-        currentPageUrl: pageUrl,
+        currentPageUrl: url,
       });
     } catch (error) {
       console.error('❌ Error fetching meals:', error);
@@ -99,7 +114,17 @@ export default function useMealLogger() {
   };
 
   const addFoodField = () => {
-    setFoodInputs([...foodInputs, { name: '', quantity: '', unit: '', remark: '' }]);
+    setFoodInputs([
+      ...foodInputs,
+      {
+        name: '',
+        quantity: '',
+        unit: '',
+        remark: '',
+        consumed_at: '',
+        date: '',
+      },
+    ]);
   };
 
   const removeFoodField = (index) => {
@@ -115,7 +140,7 @@ export default function useMealLogger() {
     const newMeals = [];
 
     for (const foodItem of foodInputs) {
-      const { name, quantity, unit, remark } = foodItem;
+      const { name, quantity, unit, remark, consumed_at, date } = foodItem;
       if (!name?.trim()) continue;
 
       const parsedQuantity = Number(quantity);
@@ -129,6 +154,8 @@ export default function useMealLogger() {
         unit,
         meal_type: mealType,
         remarks: remark?.trim() || '',
+        consumed_at: consumed_at || null,
+        date: date || calendarDate,
       };
 
       try {
@@ -141,6 +168,7 @@ export default function useMealLogger() {
             unit: created.unit,
             mealType: created.meal_type,
             remark: created.remarks,
+            consumed_at: created.consumed_at || '',
             date: created.date || '',
             nutrition: {
               calories: created.calories ?? 0,
@@ -157,18 +185,26 @@ export default function useMealLogger() {
       }
     }
 
-    setFoodInputs([{ name: '', quantity: '', unit: '', remark: '' }]);
+    setFoodInputs([
+      {
+        name: '',
+        quantity: '',
+        unit: '',
+        remark: '',
+        consumed_at: '',
+        date: '',
+      },
+    ]);
+
     await fetchLoggedMeals(pagination.currentPageUrl);
   };
 
   const handleDeleteMeal = async (mealId) => {
     try {
-      console.log('Deleting meal with ID:', mealId);
       const token = localStorage.getItem('token');
       if (!token) return;
 
       await deleteMeal(mealId, token);
-      console.log('✅ Meal deleted');
       await fetchLoggedMeals(pagination.currentPageUrl);
     } catch (err) {
       console.error('❌ Error deleting meal:', err.response?.data || err);

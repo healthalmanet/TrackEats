@@ -33,7 +33,7 @@ export const getMeals = async (token, url = null) => {
       return response.data;
     } else {
       const axiosInstance = createAxiosInstance(token);
-      const response = await axiosInstance.get('/?page_size=10');
+      const response = await axiosInstance.get('/?page_size=5');
       return response.data;
     }
   } catch (error) {
@@ -56,7 +56,7 @@ export const createMeal = async (mealData, token) => {
 export const updateMeal = async (mealId, updatedMealData, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
-    const response = await axiosInstance.put(`/${mealId}`, formatMealData(updatedMealData));
+    const response = await axiosInstance.put(`/${mealId}/`, formatMealData(updatedMealData));
     return response.data;
   } catch (error) {
     console.error(`Error updating meal with ID ${mealId}:`, error);
@@ -67,7 +67,7 @@ export const updateMeal = async (mealId, updatedMealData, token) => {
 export const patchMeal = async (mealId, partialMealData, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
-    const response = await axiosInstance.patch(`/${mealId}`, partialMealData);
+    const response = await axiosInstance.patch(`/${mealId}/`, partialMealData);
     return response.data;
   } catch (error) {
     console.error(`Error patching meal with ID ${mealId}:`, error);
@@ -78,7 +78,7 @@ export const patchMeal = async (mealId, partialMealData, token) => {
 export const deleteMeal = async (mealId, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
-    const response = await axiosInstance.delete(`/${mealId}`);
+    const response = await axiosInstance.delete(`/${mealId}/`);
     return response.data;
   } catch (error) {
     console.error(`Error deleting meal with ID ${mealId}:`, error);

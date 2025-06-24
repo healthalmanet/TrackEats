@@ -31,9 +31,9 @@ const useWaterTracker = () => {
       // Update local log (1 glass = 250ml, 500ml = 2 glasses)
       setWaterLogs((prev) => ({
         ...prev,
-        [selectedDate]: (prev[selectedDate] || 0) + 2,
+        [selectedDate]: (prev[selectedDate] || 0) + 1,
       }));
-      toast.success('Logged 500ml (2 glasses) of water');
+      toast.success('Logged 500ml (1 glasses) of water');
     } catch (error) {
       console.error('❌ Failed to log water to backend:', error);
       toast.error('Failed to sync with server');

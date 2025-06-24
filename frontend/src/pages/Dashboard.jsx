@@ -3,7 +3,7 @@ import UserProfileForm from "./dashboard/UserProfileForm";
 import Tools from "./dashboard/Tools/Tools";
 import BmiCalculator from "./dashboard/Tools/BmiCalculator";
 import FatCalculator from "./dashboard/Tools/FatCalculator";
-import BmiResult from "./dashboard/Tools/BmiResult";
+// import BmiResult from "./dashboard/Tools/BmiResult";
 import Explore from "./dashboard/Explore";
 import FatResult from "./dashboard/Tools/FatResult";
 import MealLogger from "./dashboard/Tools/MealLogger";
@@ -22,18 +22,21 @@ import DietRecommendations from "../components/components/RecommendationSection"
 import Meals from "./dashboard/Meals";
 import Footer from "../components/components/Footer";
 import Reports from "./Reports"
+import { useState } from "react";
 
 
 function Dashboard() {
   const location = useLocation();
+  const [waterUpdateTrigger, setWaterUpdateTrigger] = useState(0);
+
 
   return (
     <div>
       {location.pathname === "/dashboard" && (
         <>
-          <HeroSection />
+         <HeroSection waterUpdateTrigger={waterUpdateTrigger} />
           <QuickMealLogger />
-          <WaterIntakeWidget/> 
+          <WaterIntakeWidget onWaterLogged={() => setWaterUpdateTrigger((prev) => prev + 1)} />
           <HealthTools/> 
           <DietRecommendations/>
           <Footer/>
@@ -44,7 +47,7 @@ function Dashboard() {
         <Route path="user-profile" element={<UserProfileForm />} />
         <Route path="tools" element={<Tools />} />
         <Route path="tools/bmi" element={<BmiCalculator />} />
-        <Route path="tools/bmi-result" element={<BmiResult />} />
+        {/* <Route path="tools/bmi-result" element={<BmiResult />} /> */}
         <Route path="tools/fat-calculator" element={<FatCalculator />} />
         <Route path="fat-result" element={<FatResult />} />
         <Route path="tools/meal-log" element={<MealLogger />} />

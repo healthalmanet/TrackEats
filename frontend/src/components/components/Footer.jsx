@@ -1,6 +1,7 @@
 import React from 'react';
 import { Facebook, Twitter, Instagram } from 'lucide-react';
 import { CiForkAndKnife } from "react-icons/ci";
+import logo from "../../assets/logo.png"
 
 const Footer = () => {
   return (
@@ -10,14 +11,12 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-lime-400 to-yellow-400 rounded-xl  "> 
-
-                    
-                 <CiForkAndKnife className='text-4xl text-white '/>
-                
-              </div>
-              <span className="text-xl font-bold text-gray-900">TrackEats</span>
-            </div>
+  <img
+    src={logo}
+    alt="TrackEats Logo"
+    className="h-10 w-auto object-contain"
+  />
+</div>
             <p className="text-gray-600 leading-relaxed mb-6 max-w-md">
               Smart nutrition tracking for a healthier lifestyle. Monitor, analyze, and optimize your daily nutrition intake.
             </p>

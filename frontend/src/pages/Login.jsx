@@ -3,11 +3,13 @@ import { loginUser } from "../api/auth";
 import { useAuth } from "../components/context/AuthContext";
 import { Mail, Lock } from "lucide-react";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 const Login = ({ onClose, onSwitchToRegister }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const GOOGLE_AUTH_URL = "http://localhost:5000/auth/google";
   const FACEBOOK_AUTH_URL = "http://localhost:5000/auth/facebook";
@@ -18,12 +20,30 @@ const Login = ({ onClose, onSwitchToRegister }) => {
       const res = await loginUser({ email, password });
       const accessToken = res.data.access;
       const refreshToken = res.data.refresh;
-      const userInfo = res.data.user || { email };
+
+      // avoid conflict with state variable 'email'
+      const { role, email: userEmail, full_name } = res.data;
+      const userInfo = { role, email: userEmail, full_name };
 
       login(accessToken, userInfo);
       localStorage.setItem("refreshToken", refreshToken);
-      toast.success("Welcome to Smart Malnutrition Web Tracker!");
-      onClose();
+      localStorage.setItem("userRole", role.toLowerCase());
+
+      toast.success(`Welcome, ${role}!`);
+
+      // Navigate based on role
+      const roleLower = role.toLowerCase();
+      if (roleLower === "nutritionist") {
+        navigate("/nutritionist");
+      } else if (roleLower === "operator") {
+        navigate("/operator");
+      } else if (roleLower === "owner") {
+        navigate("/owner");
+      } else {
+        navigate("/dashboard");
+      }
+
+      onClose?.();
     } catch (error) {
       toast.error("Login failed. Please check your email or password.");
       console.error("Login error:", error);
@@ -32,10 +52,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
 
   return (
     <div className="text-left w-full max-w-sm mx-auto bg-white p-6 rounded-xl ">
-      {/* Heading */}
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">Login</h2>
-
-      {/* Form */}
       <form onSubmit={handleLogin}>
         {/* Email */}
         <div className="mb-4">
@@ -86,15 +103,14 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         </div>
 
         {/* Submit Button */}
-<button
-  type="submit"
-  className="w-full bg-[#00FF33] text-black py-2 rounded-md font-semibold 
-             hover:brightness-105 cursor-pointer transition-transform duration-150 
-             active:scale-95 shadow"
->
-  Login
-</button>
-
+        <button
+          type="submit"
+          className="w-full bg-[#00FF33] text-black py-2 rounded-md font-semibold 
+                 hover:brightness-105 cursor-pointer transition-transform duration-150 
+                 active:scale-95 shadow"
+        >
+          Login
+        </button>
       </form>
 
       {/* OR Continue With */}
@@ -113,7 +129,6 @@ const Login = ({ onClose, onSwitchToRegister }) => {
           />
         </div>
       </div>
-
 
       {/* Switch to Register */}
       <div className="mt-4 text-center text-sm">

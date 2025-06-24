@@ -22,18 +22,21 @@ import DietRecommendations from "../components/components/RecommendationSection"
 import Meals from "./dashboard/Meals";
 import Footer from "../components/components/Footer";
 import Reports from "./Reports"
+import { useState } from "react";
 
 
 function Dashboard() {
   const location = useLocation();
+  const [waterUpdateTrigger, setWaterUpdateTrigger] = useState(0);
+
 
   return (
     <div>
       {location.pathname === "/dashboard" && (
         <>
-          <HeroSection />
+         <HeroSection waterUpdateTrigger={waterUpdateTrigger} />
           <QuickMealLogger />
-          <WaterIntakeWidget/> 
+          <WaterIntakeWidget onWaterLogged={() => setWaterUpdateTrigger((prev) => prev + 1)} />
           <HealthTools/> 
           <DietRecommendations/>
           <Footer/>

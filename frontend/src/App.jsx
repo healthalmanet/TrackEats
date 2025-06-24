@@ -22,6 +22,7 @@ import ForgotPassword from "./components/components/ForgotPassword";
 // ✅ Import ToastContainer and its CSS
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import Footer from "./components/components/Footer";
 
 function App() {
   const { isAuthenticated, user } = useAuth();
@@ -105,6 +106,7 @@ function App() {
 
       {/* ✅ Toast container for showing messages globally */}
       <ToastContainer position="top-right" autoClose={3000} pauseOnHover theme="light" />
+    <Footer/>
     </>
   );
 }

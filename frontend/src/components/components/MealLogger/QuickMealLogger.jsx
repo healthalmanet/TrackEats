@@ -15,7 +15,7 @@ const QuickMealLogger = () => {
     handleSubmit,
     loggedMeals,
     handleDeleteMeal,
-    handleNextPage,
+    handlePageChange,
     handlePrevPage,
     pagination,
   } = useMealLogger();
@@ -30,16 +30,15 @@ const QuickMealLogger = () => {
     ? extractPageNumber(pagination.currentPageUrl)
     : 1;
 
-  // Paginate locally to 5 meals per page
-  const mealsPerPage = 5;
-  const startIndex = (currentPage - 1) * mealsPerPage;
-  const displayedMeals = loggedMeals.slice(startIndex, startIndex + mealsPerPage);
+  const totalPages = Math.ceil(pagination.count / 5);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 pt-10 pb-20 bg-white">
       <div className="text-center mb-10">
         <h2 className="text-3xl font-bold text-gray-800">Quick Meal Logger</h2>
-        <p className="text-sm font-semibold text-gray-500 mt-1">Track your nutrition smartly & simply</p>
+        <p className="text-sm font-semibold text-gray-500 mt-1">
+          Track your nutrition smartly & simply
+        </p>
       </div>
 
       <div className="mx-auto w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -162,46 +161,58 @@ const QuickMealLogger = () => {
         <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200 shadow">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Meals on {calendarDate}</h3>
 
-          {displayedMeals.length === 0 ? (
+          {loggedMeals.length === 0 ? (
             <p className="text-sm text-gray-500">No meals logged yet.</p>
           ) : (
             <ul className="space-y-3">
-              {displayedMeals.map((meal) => (
+              {loggedMeals.map((meal) => (
                 <li
-                  key={meal.id}
-                  className="relative group bg-white p-3 rounded-md border border-gray-100 hover:shadow-md transition text-sm"
+                  key={meal._id}
+                  className="relative group bg-white px-4 py-3 rounded-md border border-gray-100 hover:shadow transition text-sm"
                 >
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-700 truncate max-w-[70%]">
-                      {meal.name}
-                    </span>
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-gray-800">{meal.food_name}</span>
+                      <div className="text-gray-600 text-xs mt-0.5">
+                        🍽️ {meal.meal_type || 'Meal'} · {meal.quantity} {meal.unit}
+                      </div>
+                    </div>
+
                     <button
-                      onClick={() => handleDeleteMeal(meal.id)}
+                      onClick={() => handleDeleteMeal(meal._id)}
                       className="text-red-500 hover:text-red-600 text-sm flex items-center gap-1"
                     >
                       <FaTrash className="text-xs" />
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {meal.quantity} {meal.unit} · {meal.mealType}
+
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition duration-200 z-20">
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-sm">
+                      <h4 className="font-semibold text-gray-700 mb-1">{meal.food_name}</h4>
+                      <p className="text-gray-600">
+                        {meal.quantity} {meal.unit} • {meal.meal_type}
+                      </p>
+                      <p className="text-gray-500 mt-1">
+                        📅 {meal.date || 'N/A'} <br /> ⏰ {meal.consumed_at || 'N/A'}
+                      </p>
+                      {meal.remark && (
+                        <p className="mt-2 italic text-blue-500">“{meal.remark}”</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">
-                    📅 {meal.date || 'N/A'} | ⏰ {meal.consumed_at || 'N/A'}
-                  </div>
-                  {meal.remark && <div className="text-xs italic text-blue-500 mt-1">“{meal.remark}”</div>}
                 </li>
               ))}
             </ul>
           )}
 
-          {/* Pagination Controls */}
-          {loggedMeals.length > mealsPerPage && (
-            <div className="flex justify-center mt-4 items-center gap-4">
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6 items-center gap-2 flex-wrap">
               <button
                 onClick={handlePrevPage}
-                disabled={startIndex === 0}
+                disabled={!pagination.previous}
                 className={`px-3 py-1 text-sm rounded-md border ${
-                  startIndex === 0
+                  !pagination.previous
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
@@ -209,15 +220,30 @@ const QuickMealLogger = () => {
                 ←
               </button>
 
-              <span className="text-sm text-gray-700 font-medium">
-                Page {currentPage}
-              </span>
+              {Array.from({ length: totalPages }, (_, index) => {
+                const pageNum = index + 1;
+                const isCurrent = pageNum === currentPage;
+                const pageUrl = `https://trackeats.onrender.com/api/logmeals/?page=${pageNum}`;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageUrl)}
+                    className={`px-3 py-1 text-sm rounded-md border ${
+                      isCurrent
+                        ? 'bg-green-100 text-green-700 border-green-300 font-semibold'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
 
               <button
-                onClick={handleNextPage}
-                disabled={startIndex + mealsPerPage >= loggedMeals.length}
+                onClick={handlePageChange}
+                disabled={!pagination.next}
                 className={`px-3 py-1 text-sm rounded-md border ${
-                  startIndex + mealsPerPage >= loggedMeals.length
+                  !pagination.next
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}

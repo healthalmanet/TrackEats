@@ -184,7 +184,6 @@ class DiabeticProfile(models.Model):
 
 #     def __str__(self):
 #         return f"{self.name} ({self.food_type})"
-from django.db import models
 
 class FoodItem(models.Model):
     FOOD_TYPE_CHOICES = [

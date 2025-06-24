@@ -826,14 +826,11 @@ class WeeklyDietRecommendationView(views.APIView):
             return Response({'error': 'User profile not found.'}, status=404)
 
         start_date = now().date()
-
         recommendation = DietRecommendation.objects.filter(user=request.user, for_week_starting=start_date).first()
 
-        # If not found or not approved → regenerate automatically
-        if not recommendation or not recommendation.approved_by_nutritionist:
-            # 👇 Call the recommend_meals() to regenerate
+        # If recommendation does not exist → generate a new one (still unapproved)
+        if not recommendation:
             generated = recommend_meals(profile, start_date=start_date, days_count=15)
-
             daily_nutrition = generated['daily_nutrition']
             nutrition = {
                 'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 15, 2),
@@ -841,7 +838,6 @@ class WeeklyDietRecommendationView(views.APIView):
                 'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 15, 2),
                 'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 15, 2),
             }
-
             recommendation, _ = DietRecommendation.objects.update_or_create(
                 user=request.user,
                 for_week_starting=start_date,
@@ -857,14 +853,14 @@ class WeeklyDietRecommendationView(views.APIView):
                 }
             )
 
-        # Now fetch the latest meals for the response
-        generated = recommend_meals(profile, start_date=start_date, days_count=15)
+        # Return only if approved
+        if not recommendation.approved_by_nutritionist:
+            return Response({'message': 'Diet recommendation is not yet approved by your nutritionist.'}, status=202)
 
         return Response({
             'id': recommendation.id,
             'week_starting': str(start_date),
             'meals': recommendation.meals,
-            'daily_nutrition': generated['daily_nutrition'],
             'total_average_nutrition': {
                 'calories': recommendation.calories,
                 'protein': recommendation.protein,
@@ -873,6 +869,7 @@ class WeeklyDietRecommendationView(views.APIView):
             },
             'nutritionist_comment': recommendation.nutritionist_comment,
             'reviewed_by': recommendation.reviewed_by.email if recommendation.reviewed_by else None,
+            'nutritionist_full_name': recommendation.reviewed_by.full_name if recommendation.reviewed_by else None,
             'approved': recommendation.approved_by_nutritionist,
         })
 
@@ -1379,3 +1376,4 @@ class FoodItemListView(ListAPIView):
     serializer_class = FoodItemSerializer2
     filter_backends = [SearchFilter, DjangoFilterBackend]
     search_fields = ['name']  # ✅ Allows ?search=Apple
+    pagination_class = StandardResultsSetPagination

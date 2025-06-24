@@ -1,6 +1,6 @@
 import useWaterTracker from "./UseWaterTracker";
 
-const WaterIntakeWidget = () => {
+const WaterIntakeWidget = ({ onWaterLogged }) => {
   const {
     selectedDate,
     setSelectedDate,
@@ -8,7 +8,14 @@ const WaterIntakeWidget = () => {
     addGlass,
   } = useWaterTracker();
 
-  const maxGlasses = 8;
+  const maxGlasses = 10;
+
+  const handleAddGlass = async () => {
+    const success = await addGlass(); // Only add if successful
+    if (success && typeof onWaterLogged === "function") {
+      onWaterLogged(); // Notify parent to re-fetch
+    }
+  };
 
   return (
     <div className="w-full bg-blue-100 py-10 mt-20">
@@ -33,7 +40,9 @@ const WaterIntakeWidget = () => {
             <div
               key={i}
               className={`w-5 h-10 sm:w-6 sm:h-12 rounded-full border-2 transition-all duration-300 ${
-                i < totalGlasses ? "bg-blue-500 border-blue-500" : "bg-white border-gray-300"
+                i < totalGlasses
+                  ? "bg-blue-500 border-blue-500"
+                  : "bg-white border-gray-300"
               }`}
               title={`Glass ${i + 1}`}
             />
@@ -48,7 +57,7 @@ const WaterIntakeWidget = () => {
         {/* Add Glass Button */}
         <div className="flex justify-center">
           <button
-            onClick={addGlass}
+            onClick={handleAddGlass}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-semibold"
             disabled={totalGlasses >= maxGlasses}
           >

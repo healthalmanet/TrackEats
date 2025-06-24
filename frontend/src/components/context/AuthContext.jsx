@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Load token and user from local storage when app starts
     const existingToken = getToken();
     if (existingToken) {
       setTokenState(existingToken);
@@ -24,10 +25,16 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (newToken, userInfo) => {
+    // Normalize the role to lowercase for consistency across app
+    const normalizedUser = {
+      ...userInfo,
+      role: userInfo.role?.toLowerCase() || "user",
+    };
+
     storeToken(newToken);
     setTokenState(newToken);
-    setUser(userInfo);
-    localStorage.setItem("user", JSON.stringify(userInfo));
+    setUser(normalizedUser);
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
   };
 
   const logout = () => {

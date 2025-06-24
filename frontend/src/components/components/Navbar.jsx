@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import LogoutButton from "./LogoutButton";
@@ -7,8 +7,21 @@ import user from "../../assets/user.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const timeoutIdRef = useRef(null);
 
   const toggleMenu = () => setIsOpen(!isOpen);
+
+  const handleMouseEnter = () => {
+    clearTimeout(timeoutIdRef.current);
+    setShowDropdown(true);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutIdRef.current = setTimeout(() => {
+      setShowDropdown(false);
+    }, 200); // 200ms delay before hiding
+  };
 
   const navLinks = [
     { to: "/dashboard", label: "Home" },
@@ -16,7 +29,7 @@ const Navbar = () => {
     { to: "/dashboard/tools", label: "Tools" },
     { to: "/dashboard/health-section", label: "Health" },
     { to: "/dashboard/meals", label: "Meals" },
-    { to: "/dashboard/reports", label: "Reports" }
+    { to: "/dashboard/reports", label: "Reports" },
   ];
 
   const renderNavLink = ({ to, label }) => (
@@ -26,9 +39,7 @@ const Navbar = () => {
       end={to === "/dashboard"}
       onClick={() => setIsOpen(false)}
       className={({ isActive }) =>
-        isActive
-          ? "text-green-500"
-          : "text-gray-500 hover:text-green-500"
+        isActive ? "text-green-500" : "text-gray-500 hover:text-green-500"
       }
     >
       {label}
@@ -37,7 +48,6 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white h-16 px-6 flex items-center justify-between relative shadow-sm z-50">
-
       {/* Logo */}
       <div className="flex items-center h-full">
         <Link to="/dashboard">
@@ -51,20 +61,25 @@ const Navbar = () => {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-4 relative group">
-        
+      <div className="flex items-center gap-4 relative">
         {/* Avatar with Hover Dropdown */}
-        <div className="relative">
+        <div
+          className="relative"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           <img
             src={user}
             alt="User Avatar"
             className="h-10 w-10 rounded-full border cursor-pointer"
           />
 
-          {/* Logout dropdown on hover */}
-          <div className="absolute right-0 top-12 bg-white shadow-md rounded-lg py-2 px-4 z-50 min-w-[150px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition duration-200">
-            <LogoutButton />
-          </div>
+          {/* Logout dropdown */}
+          {showDropdown && (
+            <div className="absolute right-0 top-12 bg-white shadow-md rounded-lg py-2 px-4 z-50 min-w-[150px] transition-opacity duration-300 ease-in-out">
+              <LogoutButton />
+            </div>
+          )}
         </div>
 
         {/* Mobile Hamburger */}

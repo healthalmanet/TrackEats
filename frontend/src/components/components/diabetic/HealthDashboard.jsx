@@ -1,28 +1,56 @@
-import React, { useState } from "react";
+// src/components/HealthDashboard.jsx
+import React, { useEffect, useState } from "react";
+import { getDiabeticProfile } from "../../../api/diabeticApi";
+
 import HealthSummary from "./HealthSummary";
 import HbA1cChart from "./HbA1CChart";
 import BloodSugarChart from "./BloodSugarChart";
 import CholesterolChart from "./CholestrolChart";
 import AddInfoButton from "./AddInfoButton";
-import AddDiabeticInfoModal from "./AddDiabeticInfoModal"; // Make sure this exists
+import AddDiabeticInfoModal from "./AddDiabeticInfoModal";
+import SummaryPieChart from "./PieChart";
 
 const HealthDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [summaryData, setSummaryData] = useState({
+    hba1c: 0,
+    bloodSugar: 0,
+    cholesterol: 0,
+  });
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   const handleSubmit = (formData) => {
     console.log("Form submitted:", formData);
-    // TODO: Send formData to backend via API call
+    fetchProfileData(); // Refresh after submitting
     closeModal();
   };
 
-  return (
-    <div className="p-10 bg-gray-50 min-h-screen">
-    
-     
+  const fetchProfileData = async () => {
+    try {
+      const response = await getDiabeticProfile();
+      const results = response?.results || [];
+      const latest = results[results.length - 1];
 
+      if (latest) {
+        setSummaryData({
+          hba1c: latest.hba1c || 0,
+          bloodSugar: latest.fasting_blood_sugar || 0,
+          cholesterol: latest.total_cholesterol || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  return (
+    <div className="bg-gray-50 min-h-screen px-6 py-10 sm:px-10 md:px-10 lg:px-32 xl:px-30">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex gap-4">
@@ -48,10 +76,11 @@ const HealthDashboard = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
         <HbA1cChart />
         <BloodSugarChart />
         <CholesterolChart />
+        <SummaryPieChart data={summaryData} />
       </div>
 
       {/* Add Info Modal */}

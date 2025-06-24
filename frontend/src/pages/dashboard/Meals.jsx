@@ -3,6 +3,10 @@ import { Flame, Dumbbell,  Drumstick } from "lucide-react";
 import { Sun, Moon, CloudSun } from "lucide-react";
 import Footer from '../../components/components/Footer';
 import { getDietApi } from '../../api/dietApi';
+import { FaFire, FaDumbbell, FaBreadSlice, FaFish } from "react-icons/fa";
+import { IoClose } from "react-icons/io5";
+import { BsSunFill, BsFillCloudSunFill, BsFillMoonStarsFill } from "react-icons/bs";
+
 
 
 // const Meals = () => {
@@ -27,6 +31,7 @@ import { getDietApi } from '../../api/dietApi';
   
     fetchData();
   }, []);
+
 
   const handleCardClick = (day) => {
     setActiveForm(day);
@@ -97,7 +102,91 @@ import { getDietApi } from '../../api/dietApi';
       { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
     ],
   },
-  
+    {
+    day: "Day 7 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+   {
+    day: "Day 8 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+   {
+    day: "Day 9 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+   {
+    day: "Day 10 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+
+   {
+    day: "Day 11 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+   {
+    day: "Day 12 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+   {
+    day: "Day 13 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+   {
+    day: "Day 14 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+   {
+    day: "Day 15 - Saturday",
+    calories: "790 cal",
+    meals: [
+      { icon: <Sun className="inline w-4 h-4" />, item: "Vegetable Upma" },
+      { icon: <CloudSun className="inline w-4 h-4" />, item: "Paneer Bhurji" },
+      { icon: <Moon className="inline w-4 h-4" />, item: "Oats Idli" },
+    ],
+  },
+
+
+
 ];
  const displayedDays = showAll ? mealPlanData : mealPlanData.slice(0, 6);
   return (
@@ -205,40 +294,111 @@ import { getDietApi } from '../../api/dietApi';
           </button>
         </div>
       )}
+{/* 
+      Overlay Form
+      
+      {activeFor && (
+  <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-50 flex items-center justify-center">
+    <div className="bg-white w-[90%] max-w-md p-6 rounded-2xl shadow-2xl relative animate-fadeIn">
+      
+      Close Button
+      <button
+        onClick={handleClose}
+        className="absolute top-3 right-3 text-gray-500 hover:text-black text-2xl"
+      >
+        &times;
+      </button>
 
-      {/* Overlay Form */}
+      Modal Title
+      <h3 className="text-xl font-semibold text-center text-[#001064] mb-6">
+        Edit Meal Plan - {activeForm.day}
+      </h3>
+
+      Form
+      <form className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Meal Name</label>
+          <input
+            type="text"
+            placeholder="e.g. Vegetable Upma"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#001064] outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Calories</label>
+          <input
+            type="text"
+            placeholder="e.g. 350"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#001064] outline-none"
+          />
+        </div>
+
+      
+      </form>
+    </div>
+  </div> */}
+
+    
+
       {activeForm && (
         <div className="fixed inset-0  bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-[90%] max-w-md relative">
+          <div className="bg-white rounded-xl p-6 w-[400px] shadow-lg relative animate-fadeIn">
+            {/* Close Icon */}
             <button
-              onClick={handleClose}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-xl"
+              onClick={() => {handleClose}}
+              className="absolute top-4 right-4 text-gray-600 hover:text-black text-xl"
             >
-              &times;
+              <IoClose />
             </button>
-            <h3 className="text-lg font-bold text-[#001064] mb-4">
-              Edit Meal Plan - {activeForm.day}
-            </h3>
-            <form className="space-y-4">
-              <input
-                type="text"
-                placeholder="Meal Name"
-                className="w-full border rounded px-4 py-2"
-              />
-              <input
-                type="text"
-                placeholder="Calories"
-                className="w-full border rounded px-4 py-2"
-              />
-              <button
-                type="submit"
-                className="bg-[#001064] text-white px-4 py-2 rounded hover:bg-[#001088]"
-              >
-                Save
-              </button>
-            </form>
-          </div>
+
+            {/* Date */}
+            <h2 className="text-lg font-semibold text-blue-900 mb-4">Monday - 6/16/2025</h2>
+
+                 {/* Meals */}
+            <div className="bg-gray-50 p-4 rounded-lg mb-6 shadow-sm">
+              <h3 className="font-semibold text-gray-700 mb-2">Daily Meals</h3>
+              <ul className="space-y-2 text-sm text-gray-800">
+                <li className="flex items-center gap-2">
+                  <BsSunFill className="text-yellow-400" /> <strong>Breakfast:</strong> Vegetable Upma
+                </li>
+                <li className="flex items-center gap-2">
+                  <BsFillCloudSunFill className="text-orange-500" /> <strong>Lunch:</strong> Oats Idli
+                </li>
+                <li className="flex items-center gap-2">
+                  <BsFillMoonStarsFill className="text-indigo-500" /> <strong>Dinner:</strong> Oats Idli
+                </li>
+              </ul>
+            </div>
+   {/* Nutrition Facts */}
+            <div className="bg-gray-100 p-4 rounded-lg shadow-sm">
+              <h3 className="font-semibold text-gray-700 mb-4">Nutrition Facts</h3>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <FaFire className="text-red-500 text-xl mx-auto" />
+                  <p className="font-medium text-sm">Calories</p>
+                  <p className="font-bold text-base">766</p>
+                </div>
+                <div>
+                  <FaDumbbell className="text-blue-500 text-xl mx-auto" />
+                  <p className="font-medium text-sm">Protein</p>
+                  <p className="font-bold text-base">22g</p>
+                </div>
+                <div>
+                  <FaBreadSlice className="text-yellow-700 text-xl mx-auto" />
+                  <p className="font-medium text-sm">Carbs</p>
+                  <p className="font-bold text-base">108g</p>
+                </div>
+                <div>
+                  <FaFish className="text-green-600 text-xl mx-auto" />
+                  <p className="font-medium text-sm">Fats</p>
+                  <p className="font-bold text-base">19g</p>
+                </div>
+              </div>
+            </div>
+     </div>
         </div>
+
       )}
     </div>
     </div>

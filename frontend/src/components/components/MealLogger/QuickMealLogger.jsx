@@ -15,7 +15,7 @@ const QuickMealLogger = () => {
     handleSubmit,
     loggedMeals,
     handleDeleteMeal,
-    handleNextPage,
+    handlePageChange,
     handlePrevPage,
     pagination,
   } = useMealLogger();
@@ -30,7 +30,7 @@ const QuickMealLogger = () => {
     ? extractPageNumber(pagination.currentPageUrl)
     : 1;
 
-  const totalPages = Math.ceil((pagination.count || 0) / 5);
+  const totalPages = Math.ceil(pagination.count / 5);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 pt-10 pb-20 bg-white">
@@ -168,12 +168,12 @@ const QuickMealLogger = () => {
               {loggedMeals.map((meal) => (
                 <li
                   key={meal._id}
-                  className="relative group bg-white px-5 py-4 rounded-md border border-gray-200 hover:shadow transition text-sm"
+                  className="relative group bg-white px-4 py-3 rounded-md border border-gray-100 hover:shadow transition text-sm"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col">
-                      <span className="font-medium text-base text-gray-800">{meal.food_name}</span>
-                      <div className="text-gray-600 text-sm mt-1">
+                      <span className="font-semibold text-gray-800">{meal.food_name}</span>
+                      <div className="text-gray-600 text-xs mt-0.5">
                         🍽️ {meal.meal_type || 'Meal'} · {meal.quantity} {meal.unit}
                       </div>
                     </div>
@@ -205,7 +205,7 @@ const QuickMealLogger = () => {
             </ul>
           )}
 
-          {/* Pagination Controls */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center mt-6 items-center gap-2 flex-wrap">
               <button
@@ -227,7 +227,7 @@ const QuickMealLogger = () => {
                 return (
                   <button
                     key={pageNum}
-                    onClick={() => handleNextPage(pageUrl)}
+                    onClick={() => handlePageChange(pageUrl)}
                     className={`px-3 py-1 text-sm rounded-md border ${
                       isCurrent
                         ? 'bg-green-100 text-green-700 border-green-300 font-semibold'
@@ -240,7 +240,7 @@ const QuickMealLogger = () => {
               })}
 
               <button
-                onClick={handleNextPage}
+                onClick={handlePageChange}
                 disabled={!pagination.next}
                 className={`px-3 py-1 text-sm rounded-md border ${
                   !pagination.next

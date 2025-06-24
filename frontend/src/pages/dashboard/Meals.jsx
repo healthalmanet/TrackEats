@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Flame, Dumbbell,  Drumstick } from "lucide-react";
 import { Sun, Moon, CloudSun } from "lucide-react";
+import Footer from '../../components/components/Footer';
 
 // const Meals = () => {
 
@@ -19,12 +20,6 @@ import { Sun, Moon, CloudSun } from "lucide-react";
  const toggleShowAll = () => {
     setShowAll((prev) => !prev);
   };
-
-  // const displayedDays = Array.isArray(mealPlanData)
-  //   ? showAll
-  //     ? mealPlanData
-  //     : mealPlanData.slice(0, 6)
-  //   : [];
 
   const mealPlanData = [
   {
@@ -138,53 +133,7 @@ import { Sun, Moon, CloudSun } from "lucide-react";
         </div>
       </div>
 
-      {/* 15 d plan  ka code hai */}
-{/* 
-<div className="p-6 font-sans text-[#001064]">
-  <h2 className="text-lg font-semibold mb-6">15-Day Meal Plan</h2>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    {mealPlanData.map((day, index) => (
-      <div
-        key={index}
-        className="bg-white border rounded-xl p-4 shadow-md transition-transform duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer"
-      >
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold text-[#001064]">{day.day}</h3>
-          {day.calories && (
-            <span className="bg-gray-100 text-sm text-gray-700 px-2 py-1 rounded">
-              {day.calories}
-            </span>
-          )}
-        </div>
-        <ul className="text-sm text-gray-800 space-y-1">
-          {day.meals.map((meal, i) => (
-            <li key={i} className="flex items-center gap-2">
-              <span
-                className={
-                  i === 0
-                    ? "text-yellow-500"
-                    : i === 1
-                    ? "text-orange-500"
-                    : "text-blue-600"
-                }
-              >
-                {meal.icon}
-              </span>
-              {meal.item}
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))}
-  </div>
-
-  <div className="text-center">
-    <button className="bg-[#001064] hover:bg-[#001068] text-white px-6 py-2 rounded-full font-medium shadow-md hover:shadow-lg transition duration-300">
-      👁 View All 15 Days
-    </button>
-  </div>
-</div> */}
-{/* new from -------------------------------------------- */}
+    {/* new from -------------------------------------------- */}
 
  <div className="p-6 font-sans text-[#001064] relative">
       <h2 className="text-lg font-semibold mb-6">15-Day Meal Plan</h2>
@@ -273,11 +222,8 @@ import { Sun, Moon, CloudSun } from "lucide-react";
         </div>
       )}
     </div>
- 
-
-
-
     </div>
+<Footer/>
     </>    
   )
 }

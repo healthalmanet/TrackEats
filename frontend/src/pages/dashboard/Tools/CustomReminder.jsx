@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
-import { Clock, Droplets, Scale, Pill, Plus, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, X } from 'lucide-react';
+import { getAllReminder,reminderCreate } from '../../../api/CustomReminderApi';
 
 const CustomReminder = () => {
-  const [activeReminders, setActiveReminders] = useState([
-    { id: 1, type: 'meal', title: 'Breakfast Time', time: '8:00 AM', frequency: 'Daily', icon: '🍳', color: 'bg-green-100 text-green-800' },
-    { id: 2, type: 'water', title: 'Hydration Check', time: 'Every 2 hours', frequency: 'Daily', icon: '💧', color: 'bg-blue-100 text-blue-800' },
-    { id: 3, type: 'supplement', title: 'Vitamins', time: '9:00 AM', frequency: 'Daily', icon: '💊', color: 'bg-orange-100 text-orange-800' }
-  ]);
-
+  const [activeReminders, setActiveReminders] = useState([]);
   const [showForm, setShowForm] = useState(false);
+
   const [formData, setFormData] = useState({
     type: 'meal',
     title: '',
@@ -27,6 +24,29 @@ const CustomReminder = () => {
 
   const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+  const getColorForType = (type) => {
+    const colors = {
+      meal: 'bg-green-100 text-green-800',
+      water: 'bg-blue-100 text-blue-800',
+      supplement: 'bg-orange-100 text-orange-800',
+      weigh: 'bg-purple-100 text-purple-800'
+    };
+    return colors[type] || 'bg-gray-100 text-gray-800';
+  };
+
+  const fetchReminders = async () => {
+    try {
+      const data = await getAllReminder();
+      setActiveReminders(data);
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchReminders();
+  }, []);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -40,37 +60,28 @@ const CustomReminder = () => {
     }));
   };
 
-  const getColorForType = (type) => {
-    const colors = {
-      meal: 'bg-green-100 text-green-800',
-      water: 'bg-blue-100 text-blue-800',
-      supplement: 'bg-orange-100 text-orange-800',
-      weigh: 'bg-purple-100 text-purple-800'
-    };
-    return colors[type] || 'bg-gray-100 text-gray-800';
-  };
-
-  const handleSaveReminder = () => {
+  const handleSaveReminder = async () => {
     if (formData.title && formData.time) {
-      const newReminder = {
-        id: Date.now(),
-        type: formData.type,
-        title: formData.title,
-        time: formData.time,
-        frequency: formData.frequency,
-        icon: reminderTypes.find(t => t.type === formData.type)?.icon,
-        color: getColorForType(formData.type)
-      };
-      setActiveReminders(prev => [...prev, newReminder]);
-      setFormData({
-        type: 'meal',
-        title: '',
-        time: '',
-        frequency: 'Daily',
-        days: ['M', 'T', 'W', 'T', 'F'],
-        message: ''
-      });
-      setShowForm(false);
+      try {
+        const payload = {
+          ...formData,
+          icon: reminderTypes.find(t => t.type === formData.type)?.icon,
+          color: getColorForType(formData.type)
+        };
+        await reminderCreate(payload);           // ✅ Save to backend
+        await fetchReminders();                  // ✅ Refresh list
+        setShowForm(false);                      // ✅ Hide form
+        setFormData({
+          type: 'meal',
+          title: '',
+          time: '',
+          frequency: 'Daily',
+          days: ['M', 'T', 'W', 'T', 'F'],
+          message: ''
+        });
+      } catch (error) {
+        console.error("Error saving reminder:", error);
+      }
     }
   };
 

@@ -75,7 +75,7 @@ export default function WaterTracker() {
             className="absolute bottom-0 left-0 right-0 bg-blue-500 transition-all duration-500"
             style={{ height: `${Math.min(progressPercentage, 100)}%` }}
           />
-          <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-red-600" />
+          
         </div>
       </div>
 

@@ -10,6 +10,9 @@ import {
   BarChart, Bar, CartesianGrid, Legend 
 } from "recharts";
 import Footer from '../components/components/Footer' 
+import { targetApi } from '../api/reportsApi';
+import { targetProgressApi } from '../api/reportsApi';
+
 
 
 const Reports = () => {
@@ -96,48 +99,28 @@ const mealData = [
 
 // function FetchData() {
   const [data, setData] = useState([]);
+  const [progress, setProgress] = useState(null);
 
   
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const response = await axios.get('https://api.example.com/data', {
-  //         headers: {
-  //           Authorization: `Bearer YOUR_TOKEN_HERE`, // Replace with your actual token
-  //           'Content-Type': 'application/json',
-  //           'Custom-Header': 'custom-value'
-  //         }
-  //       });
-  //       setData(response.data);
-  //       console.log('Data:', response.data);
-  //     } catch (error) {
-  //       console.error('Error:', error);
-  //     }
-  //   };
-  
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get('https://trackeats.onrender.com/api/recommend-calories/trackeats.onrender.com/', {
-          headers: {
-            Authorization: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDY1OTgxOTAxLCJpYXQiOjE3NTA2MjE5MDEsImp0aSI6IjIxYWIwNzBhMjQ5ZDQ2NWQ4ODI5ZTIwZWUxMGY3MDBhIiwidXNlcl9pZCI6Miwicm9sZSI6InVzZXIiLCJlbWFpbCI6Im1heXVyQGdtYWlsLmNvbSIsImZ1bGxfbmFtZSI6Ik1heXVyIFBhcm1hciJ9.c49-Du2B7rCVdcYzoPgq5PIcLvFhK8mban8AwS_p9bs`, // Replace with your actual token
-            // 'Content-Type': 'application/json',
-            // 'Custom-Header': 'custom-value'
-          }
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const recommended = await targetApi();
+      const progressData = await targetProgressApi();
 
-// const BASE_URL = "https://trackeats.onrender.com/api/recommend-calories/";
+      console.log('Recommended:', recommended);
+      console.log('Progress:', progressData);
 
-        });
-        setData(response.data);
-        console.log('Data:', response.data);
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
+      setData(recommended);
+      setProgress(progressData);
+    } catch (error) {
+      console.error('API Error:', error);
+    }
+  };
 
-    fetchData();
-  }, []);
+  fetchData();
+}, []);
 
 
 

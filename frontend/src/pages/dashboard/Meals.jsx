@@ -1,13 +1,32 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Flame, Dumbbell,  Drumstick } from "lucide-react";
 import { Sun, Moon, CloudSun } from "lucide-react";
 import Footer from '../../components/components/Footer';
+import { getDietApi } from '../../api/dietApi';
+
 
 // const Meals = () => {
 
   const Meals = ({mealpanData}) => {
   const [showAll, setShowAll] = useState(false);
   const [activeForm, setActiveForm] = useState(null);
+  const [diet, setDiet] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const d = await getDietApi();
+  
+        console.log('diet:', d);
+  
+        setDiet(d);
+      } catch (error) {
+        console.error('API Error:', error);
+      }
+    };
+  
+    fetchData();
+  }, []);
 
   const handleCardClick = (day) => {
     setActiveForm(day);

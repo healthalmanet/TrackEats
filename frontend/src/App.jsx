@@ -31,11 +31,21 @@ function App() {
 
   // Determine redirection path based on user role
   const getRedirectPath = () => {
-    if (user?.role) {
-      return `/${user.role.toLowerCase()}`;
-    }
-    return "/dashboard"; // Default route if no specific role
-  };
+  if (!user?.role) return "/dashboard"; // default fallback
+
+  const role = user.role.toLowerCase();
+
+  switch (role) {
+    case "owner":
+    case "operator":
+    case "nutritionist":
+      return `/${role}`;
+    case "user":
+    default:
+      return "/dashboard"; // ✅ Correct path for normal user
+  }
+};
+
 
   return (
     <>

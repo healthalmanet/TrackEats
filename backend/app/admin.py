@@ -7,6 +7,7 @@ from .models import (
     FoodItem, Feedback, PatientReminder,
     NutritionistProfile, DietRecommendation,
     PatientAssignment, AppReport, DietRecommendationFeedback, DietFeedback,
+    Blog,
 )
 
 # ------------------------------
@@ -87,3 +88,4 @@ admin.site.register(PatientAssignment)
 admin.site.register(AppReport)
 admin.site.register(DietRecommendationFeedback)
 admin.site.register(DietFeedback)
+admin.site.register(Blog)

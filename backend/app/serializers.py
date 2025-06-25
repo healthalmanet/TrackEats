@@ -5,7 +5,7 @@ from .models import (
     DietRecommendation, DietFeedback,
     PatientAssignment, UserMeal, DietRecommendationFeedback,
     Feedback,
-    WeightLog,WaterIntakeLog,CustomReminder, Message
+    WeightLog,WaterIntakeLog,CustomReminder, Message, Blog
     
 )
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -242,3 +242,25 @@ class FoodItemSerializer2(serializers.ModelSerializer):
     class Meta:
         model = FoodItem
         fields = '__all__'
+
+class BlogSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.full_name', read_only=True)
+
+    class Meta:
+        model = Blog
+        fields = [
+            'id', 'author', 'author_name',
+            'title', 'content',
+            'image', 'image_url',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'author', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        image = data.get('image')
+        image_url = data.get('image_url')
+
+        if not image and not image_url:
+            raise serializers.ValidationError("You must provide either an image file or an image URL.")
+        
+        return data

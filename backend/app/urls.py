@@ -28,7 +28,8 @@ from .views import (
     FeedbackCreateView,
     WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet, ForgotPasswordView,
     ResetPasswordView, GoogleLogin, FacebookLogin,
-    SendMessageView,MessageListView
+    SendMessageView,MessageListView,
+    BlogDetailView,BlogListCreateView,
     
 )
 from rest_framework_simplejwt.views import (
@@ -162,6 +163,10 @@ urlpatterns = [
 
     #Nutrion Search 
     path('foods/', FoodItemListView.as_view(), name='food-list'),
+
+    #Blog APIs
+    path('blogs/', BlogListCreateView.as_view(), name='blog-list-create'),
+    path('blogs/<int:pk>/', BlogDetailView.as_view(), name='blog-detail'),
 ]
 
 

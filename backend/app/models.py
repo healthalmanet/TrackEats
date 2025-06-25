@@ -417,19 +417,29 @@ class PatientAssignment(models.Model):
 # # ------------------------
 
 class DietRecommendation(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Monday of the week
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    # Existing fields
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     for_week_starting = models.DateField(default=timezone.now)
-    meals = models.JSONField(default=dict)  #   # Structure: { 'Monday': {'breakfast': ..., 'lunch': ..., 'dinner': ...}, ... }
-    
-    
+    meals = models.JSONField(default=dict)
     calories = models.FloatField(default=0)
     protein = models.FloatField(default=0)
     carbs = models.FloatField(default=0)
     fats = models.FloatField(default=0)
-    
-    approved_by_nutritionist = models.BooleanField(default=False)
+
+    # ✅ New field
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+
+    # Existing review-related fields
     nutritionist_comment = models.TextField(blank=True, null=True)
-    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_dietrecommendations')
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_diets'
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

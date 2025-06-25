@@ -27,7 +27,7 @@ const Topbar = () => {
       {/* Profile & Logout */}
       <div className="flex items-center gap-4">
         <img
-          src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" // cleaner dashboard style icon
+            src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png" // cleaner dashboard style icon
           alt="Profile"
           className="w-10 h-10 rounded-full border border-gray-300 object-cover"
         />

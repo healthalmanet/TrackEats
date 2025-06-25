@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { getDiabeticProfile } from "../../../api/diabeticApi";
 
 import HealthSummary from "./HealthSummary";
-import HbA1cChart from "./HbA1CChart";
+import HbA1cChart from "./HbA1cChart";
 import BloodSugarChart from "./BloodSugarChart";
 import CholesterolChart from "./CholestrolChart";
 import AddInfoButton from "./AddInfoButton";

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// ✅ Use local or deployed base URL
 const BASE_URL = 'https://trackeats.onrender.com/api/water/'; // change if testing locally
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const createAxiosInstance = (token) =>
   axios.create({
@@ -13,10 +13,11 @@ const createAxiosInstance = (token) =>
   });
 
 /**
- * Logs 500ml of water (equivalent to 2 glasses).
+ * Logs 250ml of water (equivalent to 1 glass).
  */
 export const logWaterGlass = async (token) => {
   try {
+    await delay(500); // simulate delay
     console.log('📤 Sending water log request');
     const axiosInstance = createAxiosInstance(token);
     const response = await axiosInstance.post('/', {
@@ -43,10 +44,11 @@ export const logWaterGlass = async (token) => {
  */
 export const getWaterByDate = async (token, date) => {
   try {
+    await delay(500); // simulate delay
     const axiosInstance = createAxiosInstance(token);
     const response = await axiosInstance.get(`/?date=${date}`);
 
-    return response.data; // e.g., { amount_ml: 500, date: "...", id: ..., user: ... }
+    return response.data;
   } catch (error) {
     console.error(`❌ Failed to fetch water for ${date}:`);
     if (error.response) {

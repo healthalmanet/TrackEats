@@ -1,27 +1,13 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import LogoutButton from "./LogoutButton";
 import logo from "../../assets/logo.png";
-import user from "../../assets/user.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const timeoutIdRef = useRef(null);
 
   const toggleMenu = () => setIsOpen(!isOpen);
-
-  const handleMouseEnter = () => {
-    clearTimeout(timeoutIdRef.current);
-    setShowDropdown(true);
-  };
-
-  const handleMouseLeave = () => {
-    timeoutIdRef.current = setTimeout(() => {
-      setShowDropdown(false);
-    }, 200); // 200ms delay before hiding
-  };
 
   const navLinks = [
     { to: "/dashboard", label: "Home" },
@@ -60,33 +46,18 @@ const Navbar = () => {
         {navLinks.map(renderNavLink)}
       </div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-4 relative">
-        {/* Avatar with Hover Dropdown */}
-        <div
-          className="relative"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          <img
-            src={user}
-            alt="User Avatar"
-            className="h-10 w-10 rounded-full border cursor-pointer"
-          />
-
-          {/* Logout dropdown */}
-          {showDropdown && (
-            <div className="absolute right-0 top-12 bg-white shadow-md rounded-lg py-2 px-4 z-50 min-w-[150px] transition-opacity duration-300 ease-in-out">
-              <LogoutButton />
-            </div>
-          )}
-        </div>
-
+      {/* Right Section with Logout */}
+      <div className="flex items-center gap-4">
         {/* Mobile Hamburger */}
         <div className="md:hidden">
           <button onClick={toggleMenu} className="focus:outline-none">
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
+        </div>
+
+        {/* Logout Button (always visible on all screens) */}
+        <div className="hidden md:block">
+          <LogoutButton />
         </div>
       </div>
 
@@ -94,6 +65,8 @@ const Navbar = () => {
       {isOpen && (
         <div className="absolute top-16 left-0 w-full bg-white flex flex-col items-center py-4 z-40 gap-3">
           {navLinks.map(renderNavLink)}
+          {/* Show logout in mobile menu too */}
+          <LogoutButton />
         </div>
       )}
     </nav>

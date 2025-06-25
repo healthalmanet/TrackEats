@@ -10,9 +10,9 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [token, setTokenState] = useState(null);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ NEW: loading state
 
   useEffect(() => {
-    // Load token and user from local storage when app starts
     const existingToken = getToken();
     if (existingToken) {
       setTokenState(existingToken);
@@ -22,10 +22,11 @@ export const AuthProvider = ({ children }) => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    setLoading(false); // ✅ Done loading
   }, []);
 
   const login = (newToken, userInfo) => {
-    // Normalize the role to lowercase for consistency across app
     const normalizedUser = {
       ...userInfo,
       role: userInfo.role?.toLowerCase() || "user",
@@ -56,6 +57,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         user,
         role,
+        loading, // ✅ Export loading to consumers
       }}
     >
       {children}

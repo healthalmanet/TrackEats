@@ -150,7 +150,7 @@ const QuickMealLogger = () => {
           <div className="flex justify-center">
             <button
               type="submit"
-              className="w-full sm:w-3/5 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-md text-sm font-semibold"
+              className="w-full sm:w-3/5 bg-[#00bd00] hover:bg-[#00e62a] text-white px-6 py-3 rounded-md text-sm font-semibold"
             >
               + Add Food
             </button>

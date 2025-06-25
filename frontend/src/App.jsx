@@ -14,7 +14,7 @@ import Unauthorized from "./pages/Unauthorized";
 import OwnerPage from "./pages/OwnerPage";
 import OperatorPage from "./pages/OperatorPage";
 import NutritionistPage from "./pages/NutritionistPage";
-import Dashboard from "./pages/Dashboard"; // user dashboard
+import Dashboard from "./pages/Dashboard";
 
 // Shared UI components
 import Navbar from "./components/components/Navbar";
@@ -27,73 +27,56 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function App() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth(); // ⬅️ include loading
 
-  // Determine redirection path based on user role
-  const getRedirectPath = () => {
-  if (!user?.role) return "/dashboard"; // default fallback
-
-  const role = user.role.toLowerCase();
-
-  switch (role) {
-    case "owner":
-    case "operator":
-    case "nutritionist":
-      return `/${role}`;
-    case "user":
-    default:
-      return "/dashboard"; // ✅ Correct path for normal user
+  // Block rendering until auth data is ready
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>; // or custom spinner
   }
-};
 
+  const getRedirectPath = () => {
+    if (!user?.role) return "/dashboard"; // fallback
+    const role = user.role.toLowerCase();
+    switch (role) {
+      case "owner":
+      case "operator":
+      case "nutritionist":
+        return `/${role}`;
+      case "user":
+      default:
+        return "/dashboard";
+    }
+  };
 
   return (
     <>
-      {/* Show Navbar only for 'user' role */}
+      {/* Navbar */}
       {isAuthenticated && user?.role === "user" && <Navbar />}
 
       <Routes>
         {/* Public routes */}
         <Route
           path="/"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Home />
-          }
+          element={isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Home />}
         />
         <Route
           path="/login"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Login />
-          }
+          element={isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Login />}
         />
         <Route
           path="/register"
-          element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Register />
-          }
+          element={isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Register />}
         />
         <Route
           path="/forgot-password"
-          element={
-            isAuthenticated ? (
-              <Navigate to={getRedirectPath()} />
-            ) : (
-              <ForgotPassword />
-            )
-          }
+          element={isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />}
         />
         <Route
           path="/reset-password/:uidb64/:token"
-          element={
-            isAuthenticated ? (
-              <Navigate to={getRedirectPath()} />
-            ) : (
-              <ResetPassword />
-            )
-          }
+          element={isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ResetPassword />}
         />
 
-        {/* Protected routes for each role */}
+        {/* Protected routes */}
         <Route
           path="/owner"
           element={
@@ -131,7 +114,7 @@ function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
       </Routes>
 
-      {/* Show Chatbot and Footer only for 'user' role */}
+      {/* Chatbot and Footer for user role */}
       {isAuthenticated && user?.role === "user" && <Chatbot />}
       {isAuthenticated && user?.role === "user" && <Footer />}
 

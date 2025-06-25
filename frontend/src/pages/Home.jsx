@@ -16,6 +16,7 @@ import Login from './Login';
 import Register from './Register';
 import healthy from "../assets/healthy.jpg"
 import flat from "../assets/flat.jpg"
+import Footer from "../components/components/Footer"
 
 const Home = () => {
    const navigate = useNavigate();
@@ -397,55 +398,10 @@ return (
       <Login onSwitchToRegister={openRegister} onClose={closeModals} />
       </ModalWrapper>
 
-{/* --------------------------------------------------- */}
+      <Footer/>
 
-{/* -------------------------------------- */}
-  <footer id='Contact' className=" bg-white border-t">
-<div className="container mx-auto lg:ml-30 space-x-10 grid grid-cols-1 sm:grid-cols-4  gap-8 text-center sm:text-left mt-10">
-          {/* Logo Section */}
-          <div>
-            <div className="flex items-center justify-center sm:justify-start space-x-2 mb-2">
-              {/* <span className="text-green-500 text-2xl">🍴</span> */}
-              <h3 className=""><img src={logo} alt="logo" className='h-10' /></h3>
-            </div>
-            <p className="text-gray-600 ">Smart nutrition tracking for a healthier you.</p>
-          </div>
-
-          {/* Product */}
-          <div>
-            <h4 className="font-semibold mb-2">Product</h4>
-            <ul className="space-y-1 text-gray-600">
-              <li>Features</li>
-              <li>Pricing</li>
-              <li>Download</li>
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div>
-            <h4 className="font-semibold mb-2">Support</h4>
-            <ul className="space-y-1 text-gray-600">
-              <li>Help Center</li>
-              <li>Contact Us</li>
-              <li>Privacy Policy</li>
-            </ul>
-          </div>
-
-          {/* Social */}
-          <div>
-            <h4 className="font-semibold mb-2">Follow Us</h4>
-            <div className="flex justify-center sm:justify-start space-x-3">
-              <a href="#" className="text-green-500 text-xl"><FaTwitter /></a>
-              <a href="#" className="text-orange-500 text-xl"><FaInstagram /></a>
-              <a href="#" className="text-yellow-400 text-xl"><FaFacebook /></a>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t mt-8 pt-4 text-center text-sm text-gray-500">
-          © 2025 TrackEats. All rights reserved.
-        </div>
-      </footer>
+       
+  
 
       </div>
         

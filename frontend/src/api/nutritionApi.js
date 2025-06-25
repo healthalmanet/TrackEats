@@ -48,3 +48,7 @@ export const fetchNutritionData = async (foodName) => {
     throw new Error('Failed to fetch nutrition data.');
   }
 };
+
+
+
+

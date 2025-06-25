@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from django.urls import include
 from .views import (
-    FoodItemListView, RegisterView, UserProfileDetailView, UserProfileCreateView,home,
+    DailyUserMealSummaryView, FoodItemListView, RegisterView, UserProfileDetailView, UserProfileCreateView,home,
     DiabeticProfileCreateView,DiabeticProfileDetailView,DiabeticProfileListView,
     UserMealViewSet,
     OwnerDashboardView,
@@ -167,6 +167,8 @@ urlpatterns = [
     #Blog APIs
     path('blogs/', BlogListCreateView.as_view(), name='blog-list-create'),
     path('blogs/<int:pk>/', BlogDetailView.as_view(), name='blog-detail'),
+
+    path('nutrition7day/', DailyUserMealSummaryView.as_view()),
 ]
 
 

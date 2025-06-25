@@ -21,6 +21,8 @@ import Navbar from "./components/components/Navbar";
 import Footer from "./components/components/Footer";
 import Chatbot from "./components/components/Chatbot";
 import ProtectedRoute from "./components/components/ProtectedRoute";
+import logo from "./assets/logo.png";
+import LogoutButton from "./components/LogoutButton"
 
 // Toast notifications
 import { ToastContainer } from "react-toastify";
@@ -51,7 +53,23 @@ function App() {
   return (
     <>
       {/* Navbar */}
-      {isAuthenticated && user?.role === "user" && <Navbar />}
+     {isAuthenticated && user?.role === "user" && (
+  <Navbar
+    logo={<img src={logo} alt="logo" className="h-10 w-auto" />}
+    align="center"
+    links={[
+      { label: "Home", to: "/dashboard" },
+      { label: "Profile", to: "/dashboard/user-profile" },
+      { label: "Tools", to: "/dashboard/tools" },
+      { label: "Health", to: "/dashboard/health-section" },
+      { label: "Meals", to: "/dashboard/meals" },
+      { label: "Reports", to: "/dashboard/reports" },
+    ]}
+    rightContent={<LogoutButton />}
+  />
+)}
+
+
 
       <Routes>
         {/* Public routes */}

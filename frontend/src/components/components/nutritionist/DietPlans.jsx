@@ -16,7 +16,7 @@ const DietPlans = () => {
   const [action, setAction] = useState("");
   const [comment, setComment] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [editedMeals, setEditedMeals] = useState({});
+  const [editedMeals, setEditedMeals] = useState(null);
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -38,7 +38,7 @@ const DietPlans = () => {
         const response = await getDietRecommendationUsers();
         const data = response?.data;
         if (Array.isArray(data?.results)) {
-          setDietPlans(data.results);
+          setDietPlans(data.results); // Don't filter out rejected
         }
       } catch (error) {
         console.error("Error fetching diet recommendations:", error);
@@ -56,7 +56,11 @@ const DietPlans = () => {
 
   const handleViewPlan = (plan) => {
     setSelectedPlan(plan);
-    setEditedMeals(plan.meals || {});
+    if (plan.status?.toLowerCase() !== "rejected") {
+      setEditedMeals(plan.meals || {});
+    } else {
+      setEditedMeals(null); // Hide meals if rejected
+    }
     setShowModal(true);
     setAction("");
     setComment("");
@@ -77,6 +81,17 @@ const DietPlans = () => {
     try {
       await reviewDietPlan(selectedPlan.id, action, comment.trim());
       toast.success("Review submitted successfully!");
+
+      if (action === "reject") {
+        setDietPlans((prev) =>
+          prev.map((plan) =>
+            plan.id === selectedPlan.id
+              ? { ...plan, status: "rejected" }
+              : plan
+          )
+        );
+      }
+
       setAction("");
       setComment("");
       setSelectedPlan(null);
@@ -168,104 +183,119 @@ const DietPlans = () => {
               Weekly Diet Plan
             </h3>
 
-            <div className="mb-4">
-              <p className="text-sm text-gray-700 font-medium">
-                Calories: {selectedPlan.calories} kcal
-              </p>
-              <p className="text-sm text-gray-700 font-medium">
-                Protein: {selectedPlan.protein} g
-              </p>
-              <p className="text-sm text-gray-700 font-medium">
-                Carbs: {selectedPlan.carbs} g
-              </p>
-              <p className="text-sm text-gray-700 font-medium">
-                Fats: {selectedPlan.fats} g
-              </p>
-            </div>
+            {editedMeals && (
+  <div className="mb-4">
+    <p className="text-sm text-gray-700 font-medium">
+      Calories: {selectedPlan.calories} kcal
+    </p>
+    <p className="text-sm text-gray-700 font-medium">
+      Protein: {selectedPlan.protein} g
+    </p>
+    <p className="text-sm text-gray-700 font-medium">
+      Carbs: {selectedPlan.carbs} g
+    </p>
+    <p className="text-sm text-gray-700 font-medium">
+      Fats: {selectedPlan.fats} g
+    </p>
+  </div>
+)}
+
 
             <div className="overflow-x-auto mb-6">
-              <div className="flex gap-4 min-w-full">
-                {Object.entries(editedMeals || {}).map(([date, details]) => (
-                  <div
-                    key={date}
-                    className="bg-gray-50 border border-gray-200 rounded-xl p-4 min-w-[220px] shadow hover:shadow-md transition-all duration-300"
-                  >
-                    <h4 className="text-md font-semibold text-gray-700 mb-2">
-                      {details.day}
-                      <span className="text-xs text-gray-500 block">{date}</span>
-                    </h4>
-                    {["breakfast", "lunch", "dinner", "snack"].map((mealType) => (
-                      <div key={mealType} className="mb-2">
-                        <label className="text-sm font-medium text-gray-600 capitalize">
-                          {mealType}:
-                        </label>
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            className="w-full border p-1 rounded text-sm mt-1"
-                            value={details.meals[mealType] || ""}
-                            onChange={(e) =>
-                              handleMealChange(date, mealType, e.target.value)
-                            }
-                          />
-                        ) : (
-                          <p className="text-sm text-gray-700 mt-1">
-                            {details.meals[mealType]}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Add a comment (optional)"
-              className="w-full p-2 border rounded mb-4"
-              rows={3}
-            />
-
-            <div className="flex items-center justify-between">
-              {!isEditing ? (
-                <button
-                  onClick={handleEdit}
-                  className="bg-green-400 hover:bg-green-500 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-                >
-                  Edit
-                </button>
+              {editedMeals ? (
+                <div className="flex gap-4 min-w-full">
+                  {Object.entries(editedMeals).map(([date, details]) => (
+                    <div
+                      key={date}
+                      className="bg-gray-50 border border-gray-200 rounded-xl p-4 min-w-[220px] shadow hover:shadow-md transition-all duration-300"
+                    >
+                      <h4 className="text-md font-semibold text-gray-700 mb-2">
+                        {details.day}
+                        <span className="text-xs text-gray-500 block">{date}</span>
+                      </h4>
+                      {["breakfast", "lunch", "dinner", "snack"].map((mealType) => (
+                        <div key={mealType} className="mb-2">
+                          <label className="text-sm font-medium text-gray-600 capitalize">
+                            {mealType}:
+                          </label>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              className="w-full border p-1 rounded text-sm mt-1"
+                              value={details.meals[mealType] || ""}
+                              onChange={(e) =>
+                                handleMealChange(date, mealType, e.target.value)
+                              }
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-700 mt-1">
+                              {details.meals[mealType]}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <button
-                  onClick={handleSaveEdit}
-                  className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-                >
-                  Save Changes
-                </button>
+                <p className="text-red-500 text-sm font-medium">
+                  This diet has been rejected. No meals to display.
+                </p>
               )}
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setAction("reject");
-                    handleSubmitReview();
-                  }}
-                  className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-                >
-                  Reject
-                </button>
-                <button
-                  onClick={() => {
-                    setAction("approve");
-                    handleSubmitReview();
-                  }}
-                  className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-                >
-                  Approve
-                </button>
-              </div>
             </div>
+
+           {editedMeals && (
+  <>
+    <textarea
+      value={comment}
+      onChange={(e) => setComment(e.target.value)}
+      placeholder="Add a comment (optional)"
+      className="w-full p-2 border rounded mb-4"
+      rows={3}
+    />
+
+    <div className="flex items-center justify-between">
+      {!isEditing && (
+        <button
+          onClick={handleEdit}
+          className="bg-green-400 hover:bg-green-500 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+        >
+          Edit
+        </button>
+      )}
+      {isEditing && (
+        <button
+          onClick={handleSaveEdit}
+          className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+        >
+          Save Changes
+        </button>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            setAction("reject");
+            handleSubmitReview();
+          }}
+          className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+        >
+          Reject
+        </button>
+        <button
+          onClick={() => {
+            setAction("approve");
+            handleSubmitReview();
+          }}
+          className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+        >
+          Approve
+        </button>
+      </div>
+    </div>
+  </>
+)}
+
           </div>
         </div>
       )}

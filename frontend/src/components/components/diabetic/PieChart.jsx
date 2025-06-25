@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const COLORS = ["#000080", "#10b981", "#8B008B"];
+const COLORS = ["	#0000FF", "#00bd00", "#FF5733"];
 
 const SummaryPieChart = ({ data }) => {
   const chartData = [

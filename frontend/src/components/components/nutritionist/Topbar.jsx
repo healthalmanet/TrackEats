@@ -1,20 +1,21 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FiLogOut } from "react-icons/fi"; // Logout icon
+import { FiLogOut } from "react-icons/fi";
 import logo from "../../../assets/logo.png";
+import { useAuth } from "../../context/AuthContext"; // ✅ Make sure path is correct
 
 const Topbar = () => {
   const username = "Dr. Nutritionist"; // Make dynamic later
   const navigate = useNavigate();
+  const { logout } = useAuth(); // ✅ Pull logout from context
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+    logout(); // ✅ Clears auth state properly
+    navigate("/", { replace: true }); // ✅ Redirects immediately
   };
 
   return (
     <header className="fixed top-0 left-0 w-full h-16 bg-white px-6 flex items-center justify-between z-40 shadow-sm">
-      {/* Logo */}
       <div className="flex items-center gap-3">
         <img
           src={logo}
@@ -24,15 +25,12 @@ const Topbar = () => {
         />
       </div>
 
-      {/* Profile & Logout */}
       <div className="flex items-center gap-4">
         <img
-          src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" // cleaner dashboard style icon
+          src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png"
           alt="Profile"
           className="w-10 h-10 rounded-full border border-gray-300 object-cover"
         />
-
-        {/* Logout Button Styled Like Image */}
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-all duration-200 font-medium"

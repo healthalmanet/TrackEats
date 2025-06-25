@@ -42,7 +42,7 @@ const BloodSugarChart = () => {
             {
               label: "Fasting Blood Sugar (mg/dL)",
               data: sugarValues,
-              backgroundColor: "#10b981",
+              backgroundColor: "#00bd00",
               borderRadius: 6,
               barThickness: 30,
             },

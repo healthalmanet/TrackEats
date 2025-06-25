@@ -187,7 +187,7 @@ const UserProfileForm = () => {
         onSubmit={handleSubmit}
         className="w-full max-w-4xl bg-white shadow-xl rounded-2xl overflow-hidden"
       >
-        <div className="w-full bg-gradient-to-r from-green-100 to-yellow-100">
+        <div className="w-full bg-gradient-to-r from-green-100 to-orange-50">
           <div className="text-center py-8">
             <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-green-400 to-yellow-300 flex items-center justify-center text-white text-2xl shadow-md">
               👤
@@ -332,7 +332,7 @@ const UserProfileForm = () => {
 
           <button
             type="submit"
-            className="w-full py-3 px-6 rounded-lg text-white font-semibold bg-gradient-to-r from-green-400 to-yellow-400 hover:scale-[1.02] active:scale-95"
+            className="w-full py-3 px-6 rounded-lg text-white font-semibold bg-gradient-to-r from-green-400 to-yellow-300 hover:scale-[1.02] active:scale-95"
           >
             {isEditing ? "Update Profile" : "Save Profile"}
           </button>

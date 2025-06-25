@@ -1,15 +1,17 @@
+
 // ReminderApi.js
 import axios from "axios";
 
-const BASE_URL = "https://trackeats.onrender.com/api/reminders";
+
+const BASE_URL = 'https://trackeats.onrender.com/api';
 
 // ✅ Shared Axios headers with timeout
 const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   return {
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     timeout: 15000, // 15 seconds timeout for slow responses
   };
@@ -17,19 +19,23 @@ const getAuthHeaders = () => {
 
 // ✅ Create Reminder
 export const reminderCreate = async (formData) => {
-  const response = await axios.post(
-    `${BASE_URL}/reminderCreate/`,
-    formData,
-    getAuthHeaders()
-  );
+
+const response = await axios.post(`${BASE_URL}/reminders/`, formData, getAuthHeaders());
   return response.data;
 };
 
 // ✅ Get All Reminders
 export const getAllReminder = async () => {
+
   const response = await axios.get(
     `${BASE_URL}/getAllReminders/`,
     getAuthHeaders()
   );
+
+};
+
+export const deleteReminder = async (id) => {
+  const response = await axios.delete(`${BASE_URL}/reminders/${id}/`, getAuthHeaders());
   return response.data;
 };
+

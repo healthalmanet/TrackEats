@@ -50,10 +50,17 @@ const PatientList = () => {
   };
 
   const handleAssign = async (patientId) => {
+    const user = users.find((u) => u.id === patientId);
+    if (user?.assigned) {
+      toast.info("This patient is already assigned.");
+      return;
+    }
+
     setAssigning(patientId);
     try {
       await assignPatient(patientId);
       toast.success("Patient assigned successfully!");
+      fetchUsers(); // Refresh to update assignment status
     } catch (error) {
       console.error("Failed to assign patient:", error);
       toast.error("Failed to assign patient.");
@@ -63,19 +70,26 @@ const PatientList = () => {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">Patient List</h2>
+    <div className="pt-23 pl-70 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h2 className="mt-8 text-3xl font-bold text-gray-800 mb-1">Patient List</h2>
+          <p className="text-sm text-gray-500">
+            This page shows all app users. As a nutritionist, you can assign patients to yourself from this list.
+          </p>
+        </div>
 
-      <div className="mb-8 flex justify-center">
         <input
           type="text"
           value={searchTerm}
           onChange={handleSearch}
           placeholder="🔍 Search patients by name..."
-          className="w-full md:w-2/3 lg:w-1/2 px-5 py-3 text-sm border border-gray-200 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-300"
+          className="w-full sm:w-80 px-5 py-3 bg-white text-sm border border-gray-200 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-300"
         />
       </div>
 
+      {/* Patient cards */}
       {users.length === 0 ? (
         <p className="text-gray-500 text-center">No users found.</p>
       ) : (
@@ -83,15 +97,24 @@ const PatientList = () => {
           {users.map((user) => (
             <div
               key={user.id}
-              className="bg-white rounded-2xl p-5 shadow hover:shadow-lg border border-gray-100 transition-all duration-300 flex flex-col justify-between"
+              className="bg-white rounded-2xl p-6 shadow hover:shadow-lg border border-gray-100 transition-all duration-300 flex flex-col justify-between"
             >
-              <div>
-                <p className="text-xl font-semibold text-gray-900 mb-1">{user.full_name}</p>
-                <p className="text-sm text-gray-600 mb-1">{user.email}</p>
-                <p className="text-xs text-gray-500">
-                  Joined: {new Date(user.date_joined).toLocaleDateString()}
-                </p>
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="text-xl font-semibold text-gray-900 mb-1">{user.full_name}</p>
+                  <p className="text-sm text-gray-600 mb-1">{user.email}</p>
+                  <p className="text-xs text-gray-500">
+                    Joined: {new Date(user.date_joined).toLocaleDateString()}
+                  </p>
+                </div>
+
+                {user.assigned && (
+                  <span className="text-xs font-medium bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                    Assigned
+                  </span>
+                )}
               </div>
+
               <div className="mt-4">
                 <button
                   onClick={() => handleAssign(user.id)}
@@ -99,10 +122,10 @@ const PatientList = () => {
                   className={`w-full py-2 text-sm font-medium rounded-xl transition-transform duration-200 shadow-md ${
                     assigning === user.id
                       ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                      : "bg-green-500 hover:bg-green-600 text-white hover:scale-105"
+                      : "bg-green-400 hover:bg-green-500 text-white hover:scale-105"
                   }`}
                 >
-                  {assigning === user.id ? "Assigning..." : "➕ Assign Patient"}
+                  {assigning === user.id ? "Assigning..." : "Assign as Patient"}
                 </button>
               </div>
             </div>

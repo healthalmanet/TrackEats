@@ -5,6 +5,8 @@ import {
   reviewDietPlan,
   editDiet,
 } from "../../../api/nutritionistApi";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const DietPlans = () => {
   const [patients, setPatients] = useState([]);
@@ -68,32 +70,26 @@ const DietPlans = () => {
 
   const handleSubmitReview = async () => {
     if (!action || !comment.trim()) {
-      alert("Please select an action and enter a comment before submitting.");
-      return;
-    }
-
-    const validActions = ["approve", "reject"];
-    if (!validActions.includes(action)) {
-      alert("Invalid action selected.");
+      toast.warn("Please enter a comment before submitting.");
       return;
     }
 
     try {
       await reviewDietPlan(selectedPlan.id, action, comment.trim());
-      alert("Review submitted successfully!");
+      toast.success("Review submitted successfully!");
       setAction("");
       setComment("");
       setSelectedPlan(null);
       setShowModal(false);
     } catch (error) {
       console.error("Failed to submit review:", error);
-      alert("Failed to submit review. Please try again.");
+      toast.error("Failed to submit review. Please try again.");
     }
   };
 
   const handleEdit = () => {
     setIsEditing(true);
-    alert("You can now start editing the meal plan.");
+    toast.info("You can now start editing the meal plan.");
   };
 
   const handleMealChange = (date, mealType, value) => {
@@ -115,17 +111,23 @@ const DietPlans = () => {
         const updatedMeals = editedMeals[date].meals;
         await editDiet(selectedPlan.id, selectedPlan.id, date, updatedMeals);
       }
-      alert("Diet plan updated successfully!");
+      toast.success("Diet plan updated successfully!");
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to update diet plan:", error);
-      alert("Failed to update diet plan. Please try again.");
+      toast.error("Failed to update diet plan. Please try again.");
     }
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-6 text-gray-800">Diet Plans</h2>
+    <div className="pt-23 pl-70 min-h-screen">
+      <ToastContainer />
+      <div>
+        <h2 className="mt-8 text-3xl font-bold text-gray-800 mb-1">Diet Plan</h2>
+        <p className="text-sm text-gray-500 mb-9">
+          Help your patients to take right nutrients
+        </p>
+      </div>
 
       {dietPlans.length === 0 ? (
         <p className="text-gray-500">No diet plans found.</p>
@@ -134,7 +136,7 @@ const DietPlans = () => {
           {dietPlans.map((plan) => (
             <div
               key={plan.id}
-              className="bg-white shadow-md rounded-2xl p-4 border hover:shadow-lg transition duration-300"
+              className="bg-white shadow-md rounded-2xl p-4 border border-gray-100 hover:shadow-xl transition-all duration-300"
             >
               <p className="text-lg font-medium text-gray-800">
                 Patient: {getPatientInfo(plan.patient_id)}
@@ -144,7 +146,7 @@ const DietPlans = () => {
               </p>
               <button
                 onClick={() => handleViewPlan(plan)}
-                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-1 rounded-lg"
+                className="mt-6 px-4 py-2 text-sm rounded-lg bg-green-400 hover:bg-green-500 text-white hover:scale-105 transition-all duration-200"
               >
                 View Diet Plan
               </button>
@@ -154,17 +156,18 @@ const DietPlans = () => {
       )}
 
       {showModal && selectedPlan && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-[90%] max-w-2xl shadow-lg relative overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 backdrop-blur-md bg-black/10 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-[90%] max-w-3xl shadow-lg relative overflow-y-auto max-h-[90vh]">
             <button
               onClick={handleCloseModal}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
             >
               ✕
             </button>
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Weekly Diet Plan</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              Weekly Diet Plan
+            </h3>
 
-            {/* Nutritional Info */}
             <div className="mb-4">
               <p className="text-sm text-gray-700 font-medium">
                 Calories: {selectedPlan.calories} kcal
@@ -180,75 +183,87 @@ const DietPlans = () => {
               </p>
             </div>
 
-            {Object.entries(editedMeals || {}).map(([date, details]) => (
-              <div key={date} className="mb-4">
-                <h4 className="text-md font-semibold text-gray-700 mb-1">
-                  {details.day} ({date})
-                </h4>
-                <div className="pl-4">
-                  {['breakfast', 'lunch', 'dinner'].map((mealType) => (
-                    <div key={mealType} className="mb-1">
-                      <label className="text-sm text-gray-600">
-                        {mealType.charAt(0).toUpperCase() + mealType.slice(1)}:
-                      </label>
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="ml-2 border p-1 rounded text-sm"
-                          value={details.meals[mealType] || ""}
-                          onChange={(e) => handleMealChange(date, mealType, e.target.value)}
-                        />
-                      ) : (
-                        <span className="ml-2 text-sm text-gray-600">
-                          {details.meals[mealType]}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+            <div className="overflow-x-auto mb-6">
+              <div className="flex gap-4 min-w-full">
+                {Object.entries(editedMeals || {}).map(([date, details]) => (
+                  <div
+                    key={date}
+                    className="bg-gray-50 border border-gray-200 rounded-xl p-4 min-w-[220px] shadow hover:shadow-md transition-all duration-300"
+                  >
+                    <h4 className="text-md font-semibold text-gray-700 mb-2">
+                      {details.day}
+                      <span className="text-xs text-gray-500 block">{date}</span>
+                    </h4>
+                    {["breakfast", "lunch", "dinner", "snack"].map((mealType) => (
+                      <div key={mealType} className="mb-2">
+                        <label className="text-sm font-medium text-gray-600 capitalize">
+                          {mealType}:
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="w-full border p-1 rounded text-sm mt-1"
+                            value={details.meals[mealType] || ""}
+                            onChange={(e) =>
+                              handleMealChange(date, mealType, e.target.value)
+                            }
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-700 mt-1">
+                            {details.meals[mealType]}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
 
-            <div className="mt-6">
-              <h4 className="text-md font-semibold text-gray-700 mb-2">Review Diet Plan</h4>
-              <select
-                value={action}
-                onChange={(e) => setAction(e.target.value)}
-                className="w-full mb-3 p-2 border rounded"
-              >
-                <option value="">Select Action</option>
-                <option value="approve">Approve</option>
-                <option value="reject">Reject</option>
-              </select>
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Add a comment (optional)"
-                className="w-full p-2 border rounded mb-3"
-                rows={3}
-              ></textarea>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Add a comment (optional)"
+              className="w-full p-2 border rounded mb-4"
+              rows={3}
+            />
+
+            <div className="flex items-center justify-between">
+              {!isEditing ? (
+                <button
+                  onClick={handleEdit}
+                  className="bg-green-400 hover:bg-green-500 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+                >
+                  Edit
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveEdit}
+                  className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+                >
+                  Save Changes
+                </button>
+              )}
+
               <div className="flex gap-2">
                 <button
-                  onClick={handleSubmitReview}
-                  className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded"
+                  onClick={() => {
+                    setAction("reject");
+                    handleSubmitReview();
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
                 >
-                  Submit Review
+                  Reject
                 </button>
-                {!isEditing ? (
-                  <button
-                    onClick={handleEdit}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-2 rounded"
-                  >
-                    Edit
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSaveEdit}
-                    className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded"
-                  >
-                    Save Changes
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    setAction("approve");
+                    handleSubmitReview();
+                  }}
+                  className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+                >
+                  Approve
+                </button>
               </div>
             </div>
           </div>

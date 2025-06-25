@@ -6,6 +6,7 @@ const BASE_URL = 'https://trackeats.onrender.com/api/logmeals';
 const createAxiosInstance = (token) =>
   axios.create({
     baseURL: BASE_URL,
+    timeout: 15000, // ⏱️ 15 seconds timeout
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -28,12 +29,14 @@ export const getMeals = async (token, url = null) => {
       Authorization: `Bearer ${token}`,
     };
 
-    // If a pagination URL is passed, replace http with https
     const finalUrl = url
       ? url.replace(/^http:\/\//, 'https://')
       : `${BASE_URL}/?page=1&page_size=5`;
 
-    const response = await axios.get(finalUrl, { headers });
+    const response = await axios.get(finalUrl, {
+      headers,
+      timeout: 15000, // ⏱️ Added timeout here
+    });
     return response.data;
   } catch (error) {
     console.error('❌ Error fetching meals:', error.response?.data || error.message);

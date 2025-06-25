@@ -16,9 +16,11 @@ const useMealLogger = () => {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-
   const unitOptions = ["g", "ml", "piece", "cup", "bowl", "tbsp", "tsp"];
   const token = localStorage.getItem("token");
+
+  const baseApiUrl =
+    import.meta.env.VITE_API_URL || "https://trackeats.onrender.com/api/logmeals/";
 
   const extractPageNumber = (url) => {
     if (!url) return 1;
@@ -37,7 +39,7 @@ const useMealLogger = () => {
         currentPageUrl: url,
       });
 
-      const pageNum = extractPageNumber(url || `${process.env.REACT_APP_API_URL || 'https://trackeats.onrender.com/api/logmeals/'}?page=1`);
+      const pageNum = extractPageNumber(url || `${baseApiUrl}?page=1`);
       setCurrentPage(pageNum);
     } catch (error) {
       toast.error("Failed to fetch meals.");
@@ -52,7 +54,6 @@ const useMealLogger = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const input = foodInputs[0];
-
     const data = {
       food_name: input.name,
       quantity: parseFloat(input.quantity),
@@ -64,8 +65,10 @@ const useMealLogger = () => {
     try {
       await createMeal(data, token);
       toast.success("Meal logged");
-      fetchMeals(pagination.currentPageUrl); // Refresh same page
-      setFoodInputs([{ name: "", unit: "", quantity: "", remark: "", date: "", time: "" }]);
+      fetchMeals(pagination.currentPageUrl);
+      setFoodInputs([
+        { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
+      ]);
     } catch (err) {
       console.error("Create meal error:", err.response?.data || err.message);
       toast.error("Failed to add meal");

@@ -52,12 +52,12 @@ const CholestrolChart = () => {
             {
               label: "Total Cholesterol (mg/dL)",
               data: cholesterolValues,
-              borderColor: "#8B008B", // Deep purple
-              backgroundColor: "#8B008B",
+              borderColor: "#FF5733", // Deep purple
+              backgroundColor: "#FF5733",
               tension: 0.3,
               pointBackgroundColor: "#fff",
-              pointBorderColor: "#8B008B",
-              pointHoverBackgroundColor: "#8B008B",
+              pointBorderColor: "#FF5733",
+              pointHoverBackgroundColor: "#FF5733",
               pointHoverBorderColor: "#fff",
             },
           ],

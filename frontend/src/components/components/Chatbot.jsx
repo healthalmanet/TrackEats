@@ -38,7 +38,7 @@ const App = () => {
       <div className="fixed bottom-4 right-4 z-50">
         <div
           onClick={() => setShowModal(true)}
-          className="bg-[#00bd00] hover:bg-green-700 rounded-full p-3 flex items-center gap-2 shadow-lg cursor-pointer transition-all duration-200 hover:scale-105"
+          className="bg-[#00bd00] hover:bg-[#00e62a] rounded-full p-3 flex items-center gap-2 shadow-lg cursor-pointer transition-all duration-200 hover:scale-105"
         >
           <FaRocketchat className="text-white" />
           <span className="text-white font-medium">Let's Chat</span>

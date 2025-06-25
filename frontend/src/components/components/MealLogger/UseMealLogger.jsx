@@ -1,19 +1,12 @@
-import { useState, useEffect } from 'react';
-import {
-  getMeals,
-  createMeal,
-  updateMeal,
-  patchMeal,
-  deleteMeal,
-} from '../../../api/mealLog';
+import { useEffect, useState } from "react";
+import { getMeals, createMeal, deleteMeal } from "../../../api/mealLog";
+import { toast } from "react-hot-toast";
 
-const unitOptions = ['g', 'kg', 'ml', 'l', 'piece', 'cup', 'tbsp', 'tsp', 'slice', 'bowl'];
-
-export default function useMealLogger() {
-  const [foodInputs, setFoodInputs] = useState([{ name: '', quantity: '', unit: '', remark: '' }]);
-  const [mealType, setMealType] = useState('breakfast');
-  const [weekDates, setWeekDates] = useState([]);
-  const [calendarDate, setCalendarDate] = useState(() => new Date().toISOString().split('T')[0]);
+const useMealLogger = () => {
+  const [foodInputs, setFoodInputs] = useState([
+    { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
+  ]);
+  const [mealType, setMealType] = useState("breakfast");
   const [loggedMeals, setLoggedMeals] = useState([]);
   const [pagination, setPagination] = useState({
     next: null,
@@ -22,157 +15,113 @@ export default function useMealLogger() {
     currentPageUrl: null,
   });
 
-  useEffect(() => {
-    const today = new Date();
-    const startOfWeek = today.getDate() - today.getDay() + 1;
-    const dates = [];
+  const [currentPage, setCurrentPage] = useState(1);
+  const unitOptions = ["g", "ml", "piece", "cup", "bowl", "tbsp", "tsp"];
+  const token = localStorage.getItem("token");
 
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(new Date().setDate(startOfWeek + i));
-      dates.push({
-        day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-        date: d.toISOString().split('T')[0],
+  const baseApiUrl =
+    import.meta.env.VITE_API_URL || "https://trackeats.onrender.com/api/logmeals/";
+
+  const extractPageNumber = (url) => {
+    if (!url) return 1;
+    const match = url.match(/page=(\d+)/);
+    return match ? parseInt(match[1], 10) : 1;
+  };
+
+  const fetchMeals = async (url = null) => {
+    try {
+      const data = await getMeals(token, url);
+      setLoggedMeals(data.results || []);
+      setPagination({
+        next: data.next,
+        previous: data.previous,
+        count: data.count,
+        currentPageUrl: url,
       });
-    }
 
-    setWeekDates(dates);
+      const pageNum = extractPageNumber(url || `${baseApiUrl}?page=1`);
+      setCurrentPage(pageNum);
+    } catch (error) {
+      toast.error("Failed to fetch meals.");
+      console.error("❌ Error fetching meals:", error.response?.data || error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchMeals();
   }, []);
 
-  useEffect(() => {
-    fetchLoggedMeals(); // initial load or when date changes
-  }, [calendarDate]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const input = foodInputs[0];
+    const data = {
+      food_name: input.name,
+      quantity: parseFloat(input.quantity),
+      unit: input.unit,
+      meal_type: mealType,
+      remarks: input.remark,
+    };
 
-  const fetchLoggedMeals = async (pageUrl = null) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+      await createMeal(data, token);
+      toast.success("Meal logged");
+      fetchMeals(pagination.currentPageUrl);
+      setFoodInputs([
+        { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
+      ]);
+    } catch (err) {
+      console.error("Create meal error:", err.response?.data || err.message);
+      toast.error("Failed to add meal");
+    }
+  };
 
-      const response = await getMeals(token, pageUrl);
-      const meals = response?.results || [];
+  const handleFoodChange = (idx, field, value) => {
+    setFoodInputs((prev) =>
+      prev.map((input, i) => (i === idx ? { ...input, [field]: value } : input))
+    );
+  };
 
-      const formatted = meals.map((m) => ({
-        id: m.id,
-        name: m.food_name || '',
-        quantity: m.quantity || '',
-        unit: m.unit || '',
-        mealType: m.meal_type || '',
-        remark: m.remarks || '',
-        date: m.date || '',
-        nutrition: {
-          calories: m.calories ?? 0,
-          protein: m.protein ?? 0,
-          carbs: m.carbs ?? 0,
-          fats: m.fats ?? 0,
-          sugar: m.sugar ?? 0,
-          fiber: m.fiber ?? 0,
-        },
-      }));
+  const addFoodField = () => {
+    setFoodInputs((prev) => [
+      ...prev,
+      { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
+    ]);
+  };
 
-      setLoggedMeals(formatted);
-      setPagination({
-        next: response.next,
-        previous: response.previous,
-        count: response.count,
-        currentPageUrl: pageUrl,
-      });
+  const removeFoodField = (index) => {
+    setFoodInputs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteMeal = async (id) => {
+    if (!id) {
+      toast.error("Invalid meal ID");
+      return;
+    }
+
+    try {
+      await deleteMeal(id, token);
+      toast.success("Meal deleted");
+      fetchMeals(pagination.currentPageUrl);
     } catch (error) {
-      console.error('❌ Error fetching meals:', error);
+      toast.error("Failed to delete meal");
+      console.error("❌ Error deleting meal:", error.response?.data || error.message);
     }
   };
 
   const handleNextPage = () => {
     if (pagination.next) {
-      fetchLoggedMeals(pagination.next);
+      fetchMeals(pagination.next);
     }
   };
 
   const handlePrevPage = () => {
     if (pagination.previous) {
-      fetchLoggedMeals(pagination.previous);
+      fetchMeals(pagination.previous);
     }
   };
 
-  const handleFoodChange = (index, field, value) => {
-    const updated = [...foodInputs];
-    updated[index][field] = value;
-    setFoodInputs(updated);
-  };
-
-  const addFoodField = () => {
-    setFoodInputs([...foodInputs, { name: '', quantity: '', unit: '', remark: '' }]);
-  };
-
-  const removeFoodField = (index) => {
-    const updated = foodInputs.filter((_, i) => i !== index);
-    setFoodInputs(updated);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    const newMeals = [];
-
-    for (const foodItem of foodInputs) {
-      const { name, quantity, unit, remark } = foodItem;
-      if (!name?.trim()) continue;
-
-      const parsedQuantity = Number(quantity);
-      if (!parsedQuantity || parsedQuantity <= 0 || isNaN(parsedQuantity)) continue;
-
-      if (!unit) continue;
-
-      const mealData = {
-        food_name: name.trim(),
-        quantity: parsedQuantity,
-        unit,
-        meal_type: mealType,
-        remarks: remark?.trim() || '',
-      };
-
-      try {
-        const created = await createMeal(mealData, token);
-        if (created) {
-          newMeals.push({
-            id: created.id,
-            name: created.food_name,
-            quantity: created.quantity,
-            unit: created.unit,
-            mealType: created.meal_type,
-            remark: created.remarks,
-            date: created.date || '',
-            nutrition: {
-              calories: created.calories ?? 0,
-              protein: created.protein ?? 0,
-              carbs: created.carbs ?? 0,
-              fats: created.fats ?? 0,
-              sugar: created.sugar ?? 0,
-              fiber: created.fiber ?? 0,
-            },
-          });
-        }
-      } catch (error) {
-        console.error(`❌ Error logging meal '${name}':`, error.response?.data || error);
-      }
-    }
-
-    setFoodInputs([{ name: '', quantity: '', unit: '', remark: '' }]);
-    await fetchLoggedMeals(pagination.currentPageUrl);
-  };
-
-  const handleDeleteMeal = async (mealId) => {
-    try {
-      console.log('Deleting meal with ID:', mealId);
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      await deleteMeal(mealId, token);
-      console.log('✅ Meal deleted');
-      await fetchLoggedMeals(pagination.currentPageUrl);
-    } catch (err) {
-      console.error('❌ Error deleting meal:', err.response?.data || err);
-    }
+  const handlePageChange = (pageUrl) => {
+    fetchMeals(pageUrl);
   };
 
   return {
@@ -182,16 +131,16 @@ export default function useMealLogger() {
     removeFoodField,
     mealType,
     setMealType,
-    weekDates,
-    calendarDate,
-    setCalendarDate,
     handleSubmit,
     unitOptions,
     loggedMeals,
-    handleDeleteMeal,
+    pagination,
+    currentPage,
     handleNextPage,
     handlePrevPage,
-    pagination,
-    fetchLoggedMeals,
+    handlePageChange,
+    handleDeleteMeal,
   };
-}
+};
+
+export default useMealLogger;

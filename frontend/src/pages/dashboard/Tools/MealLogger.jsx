@@ -15,7 +15,7 @@ const MealLogger = () => {
     handleQuickAdd,
     quickAddItems = [],
     dailySummary = { calories: 0, carbs: 0, protein: 0, fat: 0 },
-    goals = { caloriesTarget: 2000, waterLogged: 0, waterTarget: 8, stepsLogged: 0, stepsTarget: 10000 },
+    goals = { caloriesTarget: 2000, waterLogged: 0, waterTarget: 8 },
     loggedMeals = [],
     handleNextPage,
     handlePrevPage,
@@ -44,7 +44,7 @@ const MealLogger = () => {
               <h3 className="text-sm font-semibold text-gray-700">Add Food Item</h3>
 
               {foodInputs.map((input, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div>
                     <label className="text-xs text-gray-600 font-semibold mb-1 block">Food Name</label>
                     <input
@@ -86,6 +86,24 @@ const MealLogger = () => {
                       value={input.remark}
                       placeholder="Remarks"
                       onChange={(e) => handleFoodChange(idx, 'remark', e.target.value)}
+                      className="border border-gray-300 px-3 py-2 rounded-lg w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 font-semibold mb-1 block">Date</label>
+                    <input
+                      type="date"
+                      value={input.date}
+                      onChange={(e) => handleFoodChange(idx, 'date', e.target.value)}
+                      className="border border-gray-300 px-3 py-2 rounded-lg w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-600 font-semibold mb-1 block">Time</label>
+                    <input
+                      type="time"
+                      value={input.time}
+                      onChange={(e) => handleFoodChange(idx, 'time', e.target.value)}
                       className="border border-gray-300 px-3 py-2 rounded-lg w-full"
                     />
                   </div>
@@ -135,13 +153,12 @@ const MealLogger = () => {
                     {loggedMeals.map((meal) => (
                       <li
                         key={meal.id}
-                        className={`p-4 pl-5 rounded-md border bg-white shadow-sm relative ${mealColors[meal.mealType] || 'border-l-4 border-gray-300'}`}
+                        className={`p-4 pl-5 rounded-md border bg-white shadow-sm relative ${mealColors[meal.meal_type] || 'border-l-4 border-gray-300'}`}
                       >
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                          {/* Left Section: Meal Info */}
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
-                              <div className="font-semibold text-gray-800 text-base">{meal.name}</div>
+                              <div className="font-semibold text-gray-800 text-base">{meal.food_name}</div>
                               <button
                                 onClick={() => handleDeleteMeal(meal.id)}
                                 className="text-red-500 hover:text-red-600"
@@ -153,29 +170,34 @@ const MealLogger = () => {
 
                             <div className="text-sm text-gray-600 mt-0.5">
                               <span className="font-medium">{meal.quantity}</span> {meal.unit} •
-                              <span className="capitalize ml-1">{meal.mealType}</span>
+                              <span className="capitalize ml-1">{meal.meal_type}</span>
                             </div>
 
-                            <div className="text-xs text-gray-400 mt-0.5">
-                              {new Date(meal.date).toLocaleString('en-IN', {
-                                dateStyle: 'medium',
-                                timeStyle: 'short',
-                              })}
-                            </div>
+                            {(meal.date || meal.consumed_at) && (
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                {meal.date && <>📅 {meal.date} </>}
+                                {meal.consumed_at && <>⏰ {meal.consumed_at}</>}
+                              </div>
+                            )}
 
-                            {meal.remark && (
-                              <div className="text-xs text-blue-400 italic mt-1">“{meal.remark}”</div>
+                            {meal.remarks && (
+                              <div className="text-xs text-blue-400 italic mt-1">“{meal.remarks}”</div>
                             )}
                           </div>
 
-                          {/* Right Section: Nutrition */}
                           <div className="text-right min-w-[120px] mt-2 sm:mt-0">
-                            <div className="text-sm font-semibold text-green-600">{meal.nutrition.calories ?? 0} cal</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              <span className="text-purple-600 font-medium">{meal.nutrition.protein ?? 0}g</span> P •{' '}
-                              <span className="text-yellow-600 font-medium">{meal.nutrition.carbs ?? 0}g</span> C •{' '}
-                              <span className="text-pink-600 font-medium">{meal.nutrition.fats ?? 0}g</span> F
-                            </div>
+                            {meal.calories !== undefined ? (
+                              <>
+                                <div className="text-sm font-semibold text-green-600">{meal.calories} cal</div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  <span className="text-purple-600 font-medium">{meal.protein ?? 0}g</span> P •{' '}
+                                  <span className="text-yellow-600 font-medium">{meal.carbs ?? 0}g</span> C •{' '}
+                                  <span className="text-pink-600 font-medium">{meal.fats ?? 0}g</span> F
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-xs text-gray-400 italic">No nutrition data</div>
+                            )}
                           </div>
                         </div>
                       </li>
@@ -211,7 +233,6 @@ const MealLogger = () => {
 
           {/* Sidebar */}
           <div className="space-y-6 flex flex-col h-full">
-            {/* Daily Summary */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md">
               <h4 className="font-semibold text-sm text-gray-700 mb-3">Daily Summary</h4>
               <p className="text-xl font-bold text-green-600">{dailySummary?.calories ?? 0} cal</p>
@@ -225,7 +246,6 @@ const MealLogger = () => {
               </div>
             </div>
 
-            {/* Goals */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md">
               <h4 className="font-semibold text-sm text-gray-700 mb-3">Today's Goals</h4>
               <div className="text-sm space-y-2">

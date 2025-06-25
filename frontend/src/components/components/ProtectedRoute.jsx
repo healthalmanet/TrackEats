@@ -3,19 +3,24 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, loading } = useAuth(); // ⬅️ include loading
 
-  // If not logged in, redirect to home/login
+  // ⏳ Wait until AuthContext finishes loading from localStorage
+  if (loading) {
+    return <div className="text-center py-10">Loading...</div>; // or your custom loader
+  }
+
+  // 🔒 Not logged in
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  // If a specific role is required but the user's role doesn't match
-  if (requiredRole && role !== requiredRole) {
+  // 🚫 Role mismatch
+  if (requiredRole && role?.toLowerCase() !== requiredRole.toLowerCase()) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // Authorized
+  // ✅ Access granted
   return children;
 };
 

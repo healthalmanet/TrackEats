@@ -232,3 +232,8 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ['id', 'sender', 'receiver', 'text', 'timestamp', 'is_read']
         read_only_fields = ['id', 'sender', 'timestamp', 'is_read']
+
+class FoodItemSerializer2(serializers.ModelSerializer):
+    class Meta:
+        model = FoodItem
+        fields = '__all__'

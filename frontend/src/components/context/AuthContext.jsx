@@ -10,6 +10,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [token, setTokenState] = useState(null);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ NEW: loading state
 
   useEffect(() => {
     const existingToken = getToken();
@@ -21,13 +22,20 @@ export const AuthProvider = ({ children }) => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
+
+    setLoading(false); // ✅ Done loading
   }, []);
 
   const login = (newToken, userInfo) => {
+    const normalizedUser = {
+      ...userInfo,
+      role: userInfo.role?.toLowerCase() || "user",
+    };
+
     storeToken(newToken);
     setTokenState(newToken);
-    setUser(userInfo);
-    localStorage.setItem("user", JSON.stringify(userInfo));
+    setUser(normalizedUser);
+    localStorage.setItem("user", JSON.stringify(normalizedUser));
   };
 
   const logout = () => {
@@ -49,6 +57,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         user,
         role,
+        loading, // ✅ Export loading to consumers
       }}
     >
       {children}

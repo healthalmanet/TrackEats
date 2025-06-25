@@ -10,8 +10,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/" replace />;
   }
 
-  // If a specific role is required but the user's role doesn't match
-  if (requiredRole && role !== requiredRole) {
+  // If a specific role is required but the user's role doesn't match (case-insensitive)
+  if (requiredRole && role?.toLowerCase() !== requiredRole.toLowerCase()) {
     return <Navigate to="/unauthorized" replace />;
   }
 

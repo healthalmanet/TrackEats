@@ -1,47 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
-import { getAllReminder,reminderCreate } from '../../../api/CustomReminderApi';
+import { reminderCreate, getAllReminder, deleteReminder } from '../../../api/CustomReminderApi';
 
 const CustomReminder = () => {
   const [activeReminders, setActiveReminders] = useState([]);
   const [showForm, setShowForm] = useState(false);
-
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    type: 'meal',
     title: '',
     time: '',
     frequency: 'Daily',
-    days: ['M', 'T', 'W', 'T', 'F'],
     message: ''
   });
 
-  const reminderTypes = [
-    { type: 'meal', label: 'Meal Reminder', icon: '🍽️' },
-    { type: 'water', label: 'Water Intake', icon: '💧' },
-    { type: 'supplement', label: 'Supplement', icon: '💊' },
-    { type: 'weigh', label: 'Weigh-in', icon: '⚖️' }
-  ];
-
-  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-  const getColorForType = (type) => {
-    const colors = {
-      meal: 'bg-green-100 text-green-800',
-      water: 'bg-blue-100 text-blue-800',
-      supplement: 'bg-orange-100 text-orange-800',
-      weigh: 'bg-purple-100 text-purple-800'
-    };
-    return colors[type] || 'bg-gray-100 text-gray-800';
-  };
-
   const fetchReminders = async () => {
-    try {
-      const data = await getAllReminder();
-      setActiveReminders(data);
-    } catch (error) {
-      console.error("Error fetching reminders:", error);
-    }
-  };
+  setLoading(true);
+  try {
+    const data = await getAllReminder();
+    console.log("Fetched reminders:", data);
+    setActiveReminders(Array.isArray(data.results) ? data.results : []);
+  } catch (error) {
+    console.error("Error fetching reminders:", error);
+    setActiveReminders([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchReminders();
@@ -51,48 +37,40 @@ const CustomReminder = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const toggleDay = (day) => {
-    setFormData(prev => ({
-      ...prev,
-      days: prev.days.includes(day)
-        ? prev.days.filter(d => d !== day)
-        : [...prev.days, day]
-    }));
-  };
-
   const handleSaveReminder = async () => {
     if (formData.title && formData.time) {
       try {
+        setSaving(true);
         const payload = {
-          ...formData,
-          icon: reminderTypes.find(t => t.type === formData.type)?.icon,
-          color: getColorForType(formData.type)
+          title: formData.title,
+          description: formData.message,
+          reminder_time: formData.time,
+          frequency: formData.frequency.toLowerCase()
         };
-        await reminderCreate(payload);           // ✅ Save to backend
-        await fetchReminders();                  // ✅ Refresh list
-        setShowForm(false);                      // ✅ Hide form
-        setFormData({
-          type: 'meal',
-          title: '',
-          time: '',
-          frequency: 'Daily',
-          days: ['M', 'T', 'W', 'T', 'F'],
-          message: ''
-        });
+        await reminderCreate(payload); // commit 
+        await fetchReminders();
+        setShowForm(false);
+        setFormData({ title: '', time: '', frequency: 'Daily', message: '' });
       } catch (error) {
         console.error("Error saving reminder:", error);
+      } finally {
+        setSaving(false);
       }
     }
   };
 
-  const removeReminder = (id) => {
-    setActiveReminders(prev => prev.filter(r => r.id !== id));
+  const handleDeleteReminder = async (id) => {
+    try {
+      await deleteReminder(id);
+      setActiveReminders(prev => prev.filter(r => r.id !== id));
+    } catch (error) {
+      console.error("Failed to delete reminder:", error);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Custom Reminders</h1>
@@ -102,17 +80,14 @@ const CustomReminder = () => {
             onClick={() => setShowForm(true)}
             className="mt-4 sm:mt-0 bg-gradient-to-r from-green-400 to-green-500 text-white px-6 py-2 rounded-full font-medium hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center gap-2"
           >
-            <Plus size={20} />
-            Add Reminder
+            <Plus size={20} /> Add Reminder
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Create New Reminder Form */}
           {showForm && (
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
               <h2 className="text-xl font-semibold mb-6">Create New Reminder</h2>
-
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Title</label>
                 <input
@@ -123,7 +98,6 @@ const CustomReminder = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
@@ -147,26 +121,6 @@ const CustomReminder = () => {
                   </select>
                 </div>
               </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Days of Week</label>
-                <div className="flex gap-2">
-                  {dayLabels.map((day, index) => (
-                    <button
-                      key={index}
-                      onClick={() => toggleDay(day)}
-                      className={`w-12 h-12 rounded-full font-medium transition-all duration-200 ${
-                        formData.days.includes(day)
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                    >
-                      {day}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Custom Message</label>
                 <textarea
@@ -177,13 +131,13 @@ const CustomReminder = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
-
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveReminder}
-                  className="flex-1 bg-gradient-to-r from-green-400 to-green-500 text-white py-3 rounded-xl font-medium hover:from-green-500 hover:to-green-600 transition-all duration-200"
+                  disabled={saving}
+                  className="flex-1 bg-gradient-to-r from-green-400 to-green-500 text-white py-3 rounded-xl font-medium hover:from-green-500 hover:to-green-600 transition-all duration-200 disabled:opacity-50"
                 >
-                  Save Reminder
+                  {saving ? 'Saving...' : 'Save Reminder'}
                 </button>
                 <button
                   onClick={() => setShowForm(false)}
@@ -195,34 +149,34 @@ const CustomReminder = () => {
             </div>
           )}
 
-          {/* Active Reminders */}
-          <div className={`${showForm ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
+          <div className={showForm ? 'lg:col-span-1' : 'lg:col-span-2'}>
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h2 className="text-xl font-semibold mb-6">Active Reminders</h2>
-              <div className="space-y-4">
-                {activeReminders.map((reminder) => (
-                  <div key={reminder.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${reminder.color}`}>
-                        <span className="text-lg">{reminder.icon}</span>
-                      </div>
+              {loading ? (
+                <p className="text-gray-500">Loading reminders...</p>
+              ) : activeReminders.length === 0 ? (
+                <p className="text-gray-500">No reminders yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {activeReminders.map((reminder) => (
+                    <div key={reminder.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                       <div>
                         <h3 className="font-medium text-gray-900">{reminder.title}</h3>
-                        <p className="text-sm text-gray-600">{reminder.time} • {reminder.frequency}</p>
+                        <p className="text-sm text-gray-600">{reminder.reminder_time} • {reminder.frequency}</p>
+                        <p className="text-xs text-gray-500">{reminder.description}</p>
                       </div>
+                      <button
+                        onClick={() => handleDeleteReminder(reminder.id)}
+                        className="text-gray-400 hover:text-red-500 transition-colors duration-200"
+                      >
+                        <X size={20} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => removeReminder(reminder.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors duration-200"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -230,3 +184,5 @@ const CustomReminder = () => {
 };
 
 export default CustomReminder;
+
+

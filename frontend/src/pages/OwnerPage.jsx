@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import { getOwner } from '../api/owner';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/context/AuthContext';
+import  {useAuth}  from '../components/context/AuthContext';
 import { Tooltip } from 'chart.js';
 
 const Dashboard = () => {

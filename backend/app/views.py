@@ -1283,3 +1283,33 @@ class BlogDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.user != instance.author:
             raise PermissionDenied("You can only delete your own blogs.")
         instance.delete()
+
+
+#weekly data calories protien carbs 
+class DailyUserMealSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        start_date_str = request.query_params.get('start_date')
+        if start_date_str:
+            try:
+                start_date = parse_date(start_date_str)
+                end_date = start_date + timedelta(days=6)
+                meals = UserMeal.objects.filter(user=request.user, date__range=(start_date, end_date))
+            except:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
+        else:
+            meals = UserMeal.objects.filter(user=request.user)
+
+        summary = (
+            meals.values('date')
+            .annotate(
+                calories=Sum('calories'),
+                protein=Sum('protein'),
+                carbs=Sum('carbs'),
+                fats=Sum('fats')
+            )
+            .order_by('date')
+        )
+
+        return Response(summary)

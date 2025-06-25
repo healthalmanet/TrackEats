@@ -11,7 +11,7 @@ from .views import (
     SendReminderView,
     UserContactListView,
     OperatorReportView,
-    WeeklyDietRecommendationView,
+    dietPlant15Day,
     DailyDietRecommendationView,
     RegenerateDailyDietRecommendationView,
     submit_diet_feedback,
@@ -111,7 +111,7 @@ urlpatterns = [
 
 
     #User Diet Recommendations
-    path('diet/week/', WeeklyDietRecommendationView.as_view(), name='weekly-diet'),
+    path('diet/week/', dietPlant15Day.as_view(), name='dietPlant15Day'),
     path('diet/daily/', DailyDietRecommendationView.as_view(), name='daily-diet'),
     path('diet/daily/regenerate/', RegenerateDailyDietRecommendationView.as_view(), name='regenerate-daily-diet'),
 

@@ -816,63 +816,141 @@ class OperatorReportView(APIView):
 #             'approved': recommendation.approved_by_nutritionist,
 #         })
 
-class WeeklyDietRecommendationView(views.APIView):
+# class WeeklyDietRecommendationView(views.APIView):
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get(self, request):
+#         try:
+#             profile = request.user.userprofile
+#         except UserProfile.DoesNotExist:
+#             return Response({'error': 'User profile not found.'}, status=404)
+
+#         start_date = now().date()
+#         recommendation = DietRecommendation.objects.filter(user=request.user, for_week_starting=start_date).first()
+
+#         # If recommendation does not exist → generate a new one (still unapproved)
+#         if not recommendation:
+#             generated = recommend_meals(profile, start_date=start_date, days_count=15)
+#             daily_nutrition = generated['daily_nutrition']
+#             nutrition = {
+#                 'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 15, 2),
+#                 'protein': round(sum(day['protein'] for day in daily_nutrition.values()) / 15, 2),
+#                 'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 15, 2),
+#                 'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 15, 2),
+#             }
+#             recommendation, _ = DietRecommendation.objects.update_or_create(
+#                 user=request.user,
+#                 for_week_starting=start_date,
+#                 defaults={
+#                     'meals': generated['meals'],
+#                     'calories': nutrition['calories'],
+#                     'protein': nutrition['protein'],
+#                     'carbs': nutrition['carbs'],
+#                     'fats': nutrition['fats'],
+#                     'approved_by_nutritionist': False,
+#                     'reviewed_by': None,
+#                     'nutritionist_comment': '',
+#                 }
+#             )
+
+#         # Return only if approved
+#         if not recommendation.approved_by_nutritionist:
+#             return Response({'message': 'Diet recommendation is not yet approved by your nutritionist.'}, status=202)
+
+#         return Response({
+#             'id': recommendation.id,
+#             'week_starting': str(start_date),
+#             'meals': recommendation.meals,
+#             'total_average_nutrition': {
+#                 'calories': recommendation.calories,
+#                 'protein': recommendation.protein,
+#                 'carbs': recommendation.carbs,
+#                 'fats': recommendation.fats,
+#             },
+#             'nutritionist_comment': recommendation.nutritionist_comment,
+#             'reviewed_by': recommendation.reviewed_by.email if recommendation.reviewed_by else None,
+#             'nutritionist_full_name': recommendation.reviewed_by.full_name if recommendation.reviewed_by else None,
+#             'approved': recommendation.approved_by_nutritionist,
+#         })
+
+class dietPlant15Day(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         try:
             profile = request.user.userprofile
-        except UserProfile.DoesNotExist:
+        except:
             return Response({'error': 'User profile not found.'}, status=404)
 
-        start_date = now().date()
-        recommendation = DietRecommendation.objects.filter(user=request.user, for_week_starting=start_date).first()
+        today = now().date()
 
-        # If recommendation does not exist → generate a new one (still unapproved)
-        if not recommendation:
-            generated = recommend_meals(profile, start_date=start_date, days_count=15)
-            daily_nutrition = generated['daily_nutrition']
-            nutrition = {
-                'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 15, 2),
-                'protein': round(sum(day['protein'] for day in daily_nutrition.values()) / 15, 2),
-                'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 15, 2),
-                'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 15, 2),
-            }
-            recommendation, _ = DietRecommendation.objects.update_or_create(
-                user=request.user,
-                for_week_starting=start_date,
-                defaults={
-                    'meals': generated['meals'],
-                    'calories': nutrition['calories'],
-                    'protein': nutrition['protein'],
-                    'carbs': nutrition['carbs'],
-                    'fats': nutrition['fats'],
-                    'approved_by_nutritionist': False,
-                    'reviewed_by': None,
-                    'nutritionist_comment': '',
-                }
-            )
+        # ✅ 1. Check if pending exists (most recent)
+        pending = DietRecommendation.objects.filter(
+            user=request.user,
+            status='pending',
+            for_week_starting__gte=today - timedelta(days=15)
+        ).order_by('-for_week_starting').first()
 
-        # Return only if approved
-        if not recommendation.approved_by_nutritionist:
-            return Response({'message': 'Diet recommendation is not yet approved by your nutritionist.'}, status=202)
+        if pending:
+            return Response({'message': 'Your diet is under review.', 'status': 'pending'}, status=202)
+
+        # ✅ 2. If approved and still in 15-day window, return it
+        approved = DietRecommendation.objects.filter(
+            user=request.user,
+            status='approved',
+            for_week_starting__lte=today
+        ).order_by('-for_week_starting').first()
+
+        if approved and (today - approved.for_week_starting).days < 15:
+            return Response({
+                'id': approved.id,
+                'week_starting': str(approved.for_week_starting),
+                'meals': approved.meals,
+                'total_average_nutrition': {
+                    'calories': approved.calories,
+                    'protein': approved.protein,
+                    'carbs': approved.carbs,
+                    'fats': approved.fats,
+                },
+                'nutritionist_comment': approved.nutritionist_comment,
+                'reviewed_by': approved.reviewed_by.email if approved.reviewed_by else None,
+                'nutritionist_full_name': approved.reviewed_by.full_name if approved.reviewed_by else None,
+                'status': approved.status,
+            })
+
+        # ✅ 3. Check if most recent diet was rejected and no pending exists
+        latest = DietRecommendation.objects.filter(user=request.user).order_by('-created_at').first()
+        if latest and latest.status != 'rejected':
+            return Response({'message': 'No need to generate a new diet yet.'}, status=202)
+
+        # ✅ 4. Generate new diet
+        start_date = today
+        generated = recommend_meals(profile, start_date=start_date, days_count=15)
+        daily_nutrition = generated['daily_nutrition']
+        avg_nutrition = {
+            'calories': round(sum(day['calories'] for day in daily_nutrition.values()) / 15, 2),
+            'protein': round(sum(day['protein'] for day in daily_nutrition.values()) / 15, 2),
+            'carbs': round(sum(day['carbs'] for day in daily_nutrition.values()) / 15, 2),
+            'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 15, 2),
+        }
+
+        new_rec = DietRecommendation.objects.create(
+            user=request.user,
+            for_week_starting=start_date,
+            meals=generated['meals'],
+            calories=avg_nutrition['calories'],
+            protein=avg_nutrition['protein'],
+            carbs=avg_nutrition['carbs'],
+            fats=avg_nutrition['fats'],
+            status='pending',
+            reviewed_by=None,
+            nutritionist_comment='',
+        )
 
         return Response({
-            'id': recommendation.id,
-            'week_starting': str(start_date),
-            'meals': recommendation.meals,
-            'total_average_nutrition': {
-                'calories': recommendation.calories,
-                'protein': recommendation.protein,
-                'carbs': recommendation.carbs,
-                'fats': recommendation.fats,
-            },
-            'nutritionist_comment': recommendation.nutritionist_comment,
-            'reviewed_by': recommendation.reviewed_by.email if recommendation.reviewed_by else None,
-            'nutritionist_full_name': recommendation.reviewed_by.full_name if recommendation.reviewed_by else None,
-            'approved': recommendation.approved_by_nutritionist,
-        })
-
+            'message': 'New diet generated and is now under review.',
+            'status': new_rec.status
+        }, status=202)
 
 class DailyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -929,6 +1007,7 @@ class DailyDietRecommendationView(views.APIView):
             'approved': recommendation.approved_by_nutritionist,
         })
 # POST Regenerate Full 15-Day Diet Recommendation
+
 class RegenerateDailyDietRecommendationView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -941,6 +1020,19 @@ class RegenerateDailyDietRecommendationView(views.APIView):
 
         today = now().date()
 
+        # ⚠️ Check if a plan already exists today
+        existing = DietRecommendation.objects.filter(
+            user=user,
+            for_week_starting=today
+        ).first()
+
+        if existing:
+            # Optional: Reject the previous one (if still pending)
+            if not existing.approved_by_nutritionist and not existing.nutritionist_comment:
+                existing.nutritionist_comment = "Auto-rejected due to manual regeneration."
+                existing.save()
+
+        # ✅ Always create a new one with today as start
         generated = recommend_meals(profile, start_date=today, days_count=15)
         daily_nutrition = generated['daily_nutrition']
 
@@ -951,28 +1043,26 @@ class RegenerateDailyDietRecommendationView(views.APIView):
             'fats': round(sum(day['fats'] for day in daily_nutrition.values()) / 15, 2),
         }
 
-        recommendation, created = DietRecommendation.objects.update_or_create(
+        new_recommendation = DietRecommendation.objects.create(
             user=user,
             for_week_starting=today,
-            defaults={
-                'meals': generated['meals'],  # ✅ FIXED → FLAT meals dictionary
-                'calories': nutrition['calories'],
-                'protein': nutrition['protein'],
-                'carbs': nutrition['carbs'],
-                'fats': nutrition['fats'],
-                # 'approved_by_nutritionist': False,  # ✅ Reset approval
-                # 'reviewed_by': None,                # ✅ Remove reviewer
-                # 'nutritionist_comment': '',         # ✅ Clear comment
-            }
+            meals=generated['meals'],
+            calories=nutrition['calories'],
+            protein=nutrition['protein'],
+            carbs=nutrition['carbs'],
+            fats=nutrition['fats'],
+            approved_by_nutritionist=False,
+            reviewed_by=None,
+            nutritionist_comment='',
         )
 
         return Response({
-            'id': recommendation.id,
-            'status': 'success',
+            'id': new_recommendation.id,
+            'status': 'new_plan_generated',
             'generated_for_start_date': str(today),
             'meals': generated['meals'],
             'daily_nutrition': daily_nutrition,
-        }, status=200)
+        }, status=201)
 
 
 #User diet feedback model
@@ -1097,103 +1187,103 @@ class PatientMealLogView(APIView):
             for meal in result_page
         ])
 #Approve reject edit diet plan
-class ApproveOrRejectDietView(APIView):
+# class ApproveOrRejectDietView(APIView):
 
-    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+#     permission_classes = [permissions.IsAuthenticated, IsNutritionist]
 
-    def post(self, request, recommendation_id):
-        action = request.data.get("action")  # 'approve' or 'reject'
-        comment = request.data.get("comment", "")
+#     def post(self, request, recommendation_id):
+#         action = request.data.get("action")  # 'approve' or 'reject'
+#         comment = request.data.get("comment", "")
 
-        try:
-            recommendation = DietRecommendation.objects.get(id=recommendation_id)
-        except DietRecommendation.DoesNotExist:
-            return Response({'error': 'Recommendation not found'}, status=404)
+#         try:
+#             recommendation = DietRecommendation.objects.get(id=recommendation_id)
+#         except DietRecommendation.DoesNotExist:
+#             return Response({'error': 'Recommendation not found'}, status=404)
 
-        if action == "approve":
-            recommendation.approved_by_nutritionist = True
-        elif action == "reject":
-            recommendation.approved_by_nutritionist = False
-        else:
-            return Response({'error': 'Invalid action'}, status=400)
+#         if action == "approve":
+#             recommendation.approved_by_nutritionist = True
+#         elif action == "reject":
+#             recommendation.approved_by_nutritionist = False
+#         else:
+#             return Response({'error': 'Invalid action'}, status=400)
 
-        recommendation.reviewed_by = request.user
-        recommendation.nutritionist_comment = comment
-        recommendation.save()
-        return Response({'message': f'Diet {action}d successfully'})
+#         recommendation.reviewed_by = request.user
+#         recommendation.nutritionist_comment = comment
+#         recommendation.save()
+#         return Response({'message': f'Diet {action}d successfully'})
 
-#feeback + rating 
-class NutritionistFeedbackOnDiet(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+# #feeback + rating 
+# class NutritionistFeedbackOnDiet(APIView):
+#     permission_classes = [permissions.IsAuthenticated, IsNutritionist]
 
-    def post(self, request, recommendation_id):
-        feedback = request.data.get("feedback", "")
-        approved = request.data.get("approved", False)
+#     def post(self, request, recommendation_id):
+#         feedback = request.data.get("feedback", "")
+#         approved = request.data.get("approved", False)
 
-        try:
-            recommendation = DietRecommendation.objects.get(id=recommendation_id)
-            DietRecommendationFeedback.objects.create(
-                recommendation=recommendation,
-                nutritionist=request.user,
-                feedback=feedback,
-                approved_for_training=approved
-            )
-            return Response({'message': 'Feedback submitted for retraining'})
-        except DietRecommendation.DoesNotExist:
-            return Response({'error': 'Recommendation not found'}, status=404)
+#         try:
+#             recommendation = DietRecommendation.objects.get(id=recommendation_id)
+#             DietRecommendationFeedback.objects.create(
+#                 recommendation=recommendation,
+#                 nutritionist=request.user,
+#                 feedback=feedback,
+#                 approved_for_training=approved
+#             )
+#             return Response({'message': 'Feedback submitted for retraining'})
+#         except DietRecommendation.DoesNotExist:
+#             return Response({'error': 'Recommendation not found'}, status=404)
 
-#edit diet plant
-class EditDietPlanView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+# #edit diet plant
+# class EditDietPlanView(APIView):
+#     permission_classes = [permissions.IsAuthenticated, IsNutritionist]
 
-    def patch(self, request, pk):
-        patient_id = request.data.get("patient_id")
-        if not patient_id:
-            return Response({"error": "patient_id is required"}, status=400)
+#     def patch(self, request, pk):
+#         patient_id = request.data.get("patient_id")
+#         if not patient_id:
+#             return Response({"error": "patient_id is required"}, status=400)
 
-        # Check if nutritionist is assigned to this patient
-        if not PatientAssignment.objects.filter(nutritionist=request.user, patient_id=patient_id).exists():
-            return Response({'error': 'Unauthorized: Patient not assigned to you'}, status=403)
+#         # Check if nutritionist is assigned to this patient
+#         if not PatientAssignment.objects.filter(nutritionist=request.user, patient_id=patient_id).exists():
+#             return Response({'error': 'Unauthorized: Patient not assigned to you'}, status=403)
 
-        try:
-            recommendation = DietRecommendation.objects.get(pk=pk, user_id=patient_id)
-        except DietRecommendation.DoesNotExist:
-            return Response({'error': 'Diet recommendation not found'}, status=404)
+#         try:
+#             recommendation = DietRecommendation.objects.get(pk=pk, user_id=patient_id)
+#         except DietRecommendation.DoesNotExist:
+#             return Response({'error': 'Diet recommendation not found'}, status=404)
 
-        data = request.data.copy()
+#         data = request.data.copy()
 
-        # Deep merge meals
-        if 'meals' in data:
-         current_meals = copy.deepcopy(recommendation.meals or {})
+#         # Deep merge meals
+#         if 'meals' in data:
+#          current_meals = copy.deepcopy(recommendation.meals or {})
 
-        for date, incoming_data in data['meals'].items():
-            if date not in current_meals:
-             current_meals[date] = incoming_data
-        else:
-            # Merge the inner structure correctly
-            current_day = current_meals[date]
-            incoming_day = incoming_data
+#         for date, incoming_data in data['meals'].items():
+#             if date not in current_meals:
+#              current_meals[date] = incoming_data
+#         else:
+#             # Merge the inner structure correctly
+#             current_day = current_meals[date]
+#             incoming_day = incoming_data
 
-            # Merge 'day'
-            current_day['day'] = incoming_day.get('day', current_day.get('day'))
+#             # Merge 'day'
+#             current_day['day'] = incoming_day.get('day', current_day.get('day'))
 
-            # Merge 'meals'
-            if 'meals' in incoming_day:
-                current_day_meals = current_day.get('meals', {})
-                current_day_meals.update(incoming_day['meals'])
-                current_day['meals'] = current_day_meals
+#             # Merge 'meals'
+#             if 'meals' in incoming_day:
+#                 current_day_meals = current_day.get('meals', {})
+#                 current_day_meals.update(incoming_day['meals'])
+#                 current_day['meals'] = current_day_meals
 
-            current_meals[date] = current_day
+#             current_meals[date] = current_day
 
-            data['meals'] = current_meals
+#             data['meals'] = current_meals
 
-        serializer = DietRecommendationPatchSerializer(recommendation, data=data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+#         serializer = DietRecommendationPatchSerializer(recommendation, data=data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=400)
 
-#dIET RECOMMENDATION of all users
+# #dIET RECOMMENDATION of all users
 
 class NutritionistDietRecommendationsView(ListAPIView):
     permission_classes = [IsAuthenticated, IsNutritionist]
@@ -1220,6 +1310,95 @@ class NutritionistPatientDietRecommendationsView(generics.ListAPIView):
 
         return DietRecommendation.objects.filter(user_id=patient_id).order_by('-for_week_starting')
 
+class ApproveOrRejectDietView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def post(self, request, recommendation_id):
+        action = request.data.get("action")  # 'approve' or 'reject'
+        comment = request.data.get("comment", "")
+
+        try:
+            recommendation = DietRecommendation.objects.get(id=recommendation_id)
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'Recommendation not found'}, status=404)
+
+        if action not in ["approve", "reject"]:
+            return Response({'error': 'Invalid action. Use "approve" or "reject".'}, status=400)
+
+        recommendation.status = "approved" if action == "approve" else "rejected"
+        recommendation.reviewed_by = request.user
+        recommendation.nutritionist_comment = comment
+        recommendation.save()
+
+        return Response({'message': f'Diet {action}d successfully'})
+
+class NutritionistFeedbackOnDiet(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def post(self, request, recommendation_id):
+        feedback = request.data.get("feedback", "")
+        approved = request.data.get("approved", False)
+
+        try:
+            recommendation = DietRecommendation.objects.get(id=recommendation_id)
+            DietRecommendationFeedback.objects.create(
+                recommendation=recommendation,
+                nutritionist=request.user,
+                feedback=feedback,
+                approved_for_training=approved
+            )
+            return Response({'message': 'Feedback submitted for retraining'})
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'Recommendation not found'}, status=404)
+
+class EditDietPlanView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+
+    def patch(self, request, pk):
+        patient_id = request.data.get("patient_id")
+        if not patient_id:
+            return Response({"error": "patient_id is required"}, status=400)
+
+        if not PatientAssignment.objects.filter(nutritionist=request.user, patient_id=patient_id).exists():
+            return Response({'error': 'Unauthorized: Patient not assigned to you'}, status=403)
+
+        try:
+            recommendation = DietRecommendation.objects.get(pk=pk, user_id=patient_id)
+        except DietRecommendation.DoesNotExist:
+            return Response({'error': 'Diet recommendation not found'}, status=404)
+
+        if recommendation.status == 'approved':
+            return Response({'error': 'Approved diet cannot be edited.'}, status=403)
+
+        data = request.data.copy()
+
+        # Deep merge meals
+        if 'meals' in data:
+            current_meals = copy.deepcopy(recommendation.meals or {})
+
+            for date, incoming_data in data['meals'].items():
+                if date not in current_meals:
+                    current_meals[date] = incoming_data
+                else:
+                    current_day = current_meals[date]
+                    incoming_day = incoming_data
+
+                    current_day['day'] = incoming_day.get('day', current_day.get('day'))
+
+                    if 'meals' in incoming_day:
+                        current_day_meals = current_day.get('meals', {})
+                        current_day_meals.update(incoming_day['meals'])
+                        current_day['meals'] = current_day_meals
+
+                    current_meals[date] = current_day
+
+            data['meals'] = current_meals
+
+        serializer = DietRecommendationPatchSerializer(recommendation, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 ############-------------End of Nutritionist Dashboard View-----------------###############
 
 

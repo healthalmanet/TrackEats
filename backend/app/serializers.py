@@ -132,7 +132,7 @@ class DietRecommendationWithPatientSerializer(serializers.ModelSerializer):
             'protein',
             'carbs',
             'fats',
-            'approved_by_nutritionist',
+            'status',  # 🔁 replaced 'approved_by_nutritionist'
             'nutritionist_comment',
             'reviewed_by',
             'created_at',
@@ -140,6 +140,12 @@ class DietRecommendationWithPatientSerializer(serializers.ModelSerializer):
             'full_name',
             'email',
         ]
+
+    def get_full_name(self, obj):
+        return obj.user.full_name if obj.user else None
+
+    def get_email(self, obj):
+        return obj.user.email if obj.user else None
 
     def get_full_name(self, obj):
      return obj.user.full_name or obj.user.email
@@ -181,11 +187,10 @@ class DietRecommendationPatchSerializer(serializers.ModelSerializer):
             'protein', 
             'carbs', 
             'fats', 
-            'approved_by_nutritionist', 
+            'status',  # 🔁 replaced 'approved_by_nutritionist'
             'nutritionist_comment'
         ]
         extra_kwargs = {field: {'required': False} for field in fields}
-
 
 #User Application FeedBack
 class FeedbackSerializer(serializers.ModelSerializer):

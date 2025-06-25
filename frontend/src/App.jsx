@@ -2,71 +2,92 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./components/context/AuthContext";
 
+// Public pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./components/components/ForgotPassword";
+import ResetPassword from "./components/components/ResetPassword";
+import Unauthorized from "./pages/Unauthorized";
 
+// Role-based dashboards
 import OwnerPage from "./pages/OwnerPage";
 import OperatorPage from "./pages/OperatorPage";
 import NutritionistPage from "./pages/NutritionistPage";
+import Dashboard from "./pages/Dashboard"; // user dashboard
 
-import Dashboard from "./pages/Dashboard";
-import ResetPassword from "./components/components/ResetPassword";
-
+// Shared UI components
 import Navbar from "./components/components/Navbar";
-import ProtectedRoute from "./components/components/ProtectedRoute";
+import Footer from "./components/components/Footer";
 import Chatbot from "./components/components/Chatbot";
-import ForgotPassword from "./components/components/ForgotPassword";
-// import { Layout } from "lucide-react";
+import ProtectedRoute from "./components/components/ProtectedRoute";
 
-// ✅ Import ToastContainer and its CSS
+// Toast notifications
 import { ToastContainer } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
   const { isAuthenticated, user } = useAuth();
 
-  // Determine where to redirect based on user role
+  // Determine redirection path based on user role
   const getRedirectPath = () => {
-    if (user && user.role) {
+    if (user?.role) {
       return `/${user.role.toLowerCase()}`;
     }
-    return "/dashboard"; // Default for standard users
+    return "/dashboard"; // Default route if no specific role
   };
 
   return (
     <>
-      {isAuthenticated && <Navbar />}
+      {/* Show Navbar only for 'user' role */}
+      {isAuthenticated && user?.role === "user" && <Navbar />}
 
       <Routes>
-         {/* <Route path="/" element={<Layout />}> */}
+        {/* Public routes */}
         <Route
           path="/"
           element={
             isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Home />
           }
         />
-
-        
         <Route
-          path="/forgot-password/"
+          path="/login"
           element={
-            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ForgotPassword />
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Login />
           }
         />
         <Route
-        path="/reset-password/:uidb64/:token"
-        element={
-        isAuthenticated ? <Navigate to={getRedirectPath()} /> : <ResetPassword />
-  }
-/>
+          path="/register"
+          element={
+            isAuthenticated ? <Navigate to={getRedirectPath()} /> : <Register />
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to={getRedirectPath()} />
+            ) : (
+              <ForgotPassword />
+            )
+          }
+        />
+        <Route
+          path="/reset-password/:uidb64/:token"
+          element={
+            isAuthenticated ? (
+              <Navigate to={getRedirectPath()} />
+            ) : (
+              <ResetPassword />
+            )
+          }
+        />
 
-
-        {/* Protected routes based on user role */}
+        {/* Protected routes for each role */}
         <Route
           path="/owner"
           element={
-            <ProtectedRoute requiredRole="Owner">
+            <ProtectedRoute requiredRole="owner">
               <OwnerPage />
             </ProtectedRoute>
           }
@@ -74,36 +95,37 @@ function App() {
         <Route
           path="/operator"
           element={
-            <ProtectedRoute requiredRole="Operator">
+            <ProtectedRoute requiredRole="operator">
               <OperatorPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/nutritionist"
+          path="/nutritionist/*"
           element={
-            <ProtectedRoute requiredRole="Nutritionist">
+            <ProtectedRoute requiredRole="nutritionist">
               <NutritionistPage />
             </ProtectedRoute>
           }
         />
-
-        {/* Generic dashboard for standard users */}
         <Route
           path="/dashboard/*"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="user">
               <Dashboard />
             </ProtectedRoute>
           }
         />
-        {/* </Route> */}
 
+        {/* Unauthorized fallback */}
+        <Route path="/unauthorized" element={<Unauthorized />} />
       </Routes>
 
-      {isAuthenticated && <Chatbot />}
+      {/* Show Chatbot and Footer only for 'user' role */}
+      {isAuthenticated && user?.role === "user" && <Chatbot />}
+      {isAuthenticated && user?.role === "user" && <Footer />}
 
-      {/* ✅ Toast container for showing messages globally */}
+      {/* Toast notifications */}
       <ToastContainer position="top-right" autoClose={3000} pauseOnHover theme="light" />
     </>
   );

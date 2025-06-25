@@ -10,11 +10,11 @@ const Footer = () => {
         <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-           <div className="mb-4">
+            <div className="flex items-center gap-3 mb-4">
   <img
     src={logo}
     alt="TrackEats Logo"
-    className="h-12 w-auto object-contain"
+    className="h-10 w-auto object-contain"
   />
 </div>
             <p className="text-gray-600 leading-relaxed mb-6 max-w-md">

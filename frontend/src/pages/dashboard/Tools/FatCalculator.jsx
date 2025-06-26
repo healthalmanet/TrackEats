@@ -1,140 +1,105 @@
 import React, { useState } from "react";
-import { FaMars, FaVenus, FaPlus, FaMinus } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { FaMars, FaVenus, FaCalculator, FaClipboard } from "react-icons/fa";
 
-const FatCalculator = () => {
+export default function FatCalculator() {
   const [gender, setGender] = useState("male");
-  const [height, setHeight] = useState(180); // cm
-  const [weight, setWeight] = useState(60);  // kg
-  const [age, setAge] = useState(20);        // years
-  const [fat, setFat] = useState(null);      // body fat %
-
+  const [height, setHeight] = useState(170);
+  const [age, setAge] = useState(25);
+  const [weight, setWeight] = useState(70);
+  const [result, setResult] = useState(null);
 
   const calculateFat = () => {
-    const heightInMeters = height / 100;
-    const bmi = weight / (heightInMeters * heightInMeters);
-    const bfp =
-      gender === "male"
-        ? (1.2 * bmi + 0.23 * age - 16.2).toFixed(1)
-        : (1.2 * bmi + 0.23 * age - 5.4).toFixed(1);
-    setFat(bfp);
-  };
-
-   const navigate = useNavigate();
-
-  const handleClick = () => {
-    navigate('/fat-result'); // Replace with your target route
+    // Sample estimation using BMI-based formula
+    const bmi = weight / Math.pow(height / 100, 2);
+    let fat = 0;
+    if (gender === "male") {
+      fat = 1.2 * bmi + 0.23 * age - 16.2;
+    } else {
+      fat = 1.2 * bmi + 0.23 * age - 5.4;
+    }
+    setResult(fat.toFixed(1));
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-sm bg-white p-4 rounded-xl shadow-md">
-        <div className="text-center font-semibold text-gray-700 text-lg mb-4">
-          FAT CALCULATOR
-        </div>
-
-        {/* Gender */}
-        <div className="flex justify-around mb-6">
-          <div
-            onClick={() => setGender("male")}
-            className={`w-24 h-24 flex flex-col items-center justify-center rounded-full border-2 ${
-              gender === "male" ? "border-orange-500 bg-orange-100" : "border-gray-300"
-            } cursor-pointer`}
-          >
-            <FaMars className="text-2xl text-blue-400" />
-            <span className="mt-2 font-medium">Male</span>
-          </div>
-          <div
-            onClick={() => setGender("female")}
-            className={`w-24 h-24 flex flex-col items-center justify-center rounded-full border-2 ${
-              gender === "female" ? "border-orange-500 bg-orange-100" : "border-gray-300"
-            } cursor-pointer`}
-          >
-            <FaVenus className="text-2xl text-orange-400" />
-            <span className="mt-2 font-medium">Female</span>
-          </div>
-        </div>
-
-        {/* Height */}
-        <div className="bg-gray-100 rounded-xl p-4 mb-6 shadow-inner text-center">
-          <p className="text-sm text-gray-500 mb-2">HEIGHT</p>
-          <h2 className="text-3xl font-bold">{height} <span className="text-sm">cm</span></h2>
-          <input
-            type="range"
-            min={100}
-            max={220}
-            value={height}
-            onChange={(e) => setHeight(Number(e.target.value))}
-            className="w-full mt-4 accent-orange-500"
-          />
-        </div>
-
-        {/* Weight and Age */}
-        <div className="flex justify-between mb-6">
-          <div className="w-1/2 text-center px-2">
-            <p className="text-sm text-gray-500 mb-1">WEIGHT</p>
-            <h2 className="text-3xl font-bold mb-2">{weight}</h2>
-            <div className="flex justify-center gap-4">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center font-sans">
+      <div className="w-full max-w-4xl bg-white p-8 rounded-xl shadow-md grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left Section - Input */}
+        <div>
+          <h2 className="text-xl font-semibold mb-6 text-gray-800">Enter Your Details</h2>
+          <div className="mb-4">
+            <label className="font-medium mb-1 block">Gender</label>
+            <div className="flex gap-2">
               <button
-                onClick={() => setWeight(weight > 1 ? weight - 1 : 1)}
-                className="bg-orange-500 text-white p-2 rounded-full"
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-white font-medium ${
+                  gender === "male" ? "bg-green-500" : "bg-white text-gray-700 border"
+                }`}
+                onClick={() => setGender("male")}
               >
-                <FaMinus />
+                <FaMars /> Male
               </button>
               <button
-                onClick={() => setWeight(weight + 1)}
-                className="bg-orange-500 text-white p-2 rounded-full"
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium ${
+                  gender === "female" ? "bg-green-500 text-white" : "bg-white text-gray-700 border"
+                }`}
+                onClick={() => setGender("female")}
               >
-                <FaPlus />
+                <FaVenus /> Female
               </button>
             </div>
           </div>
-          <div className="w-1/2 text-center px-2">
-            <p className="text-sm text-gray-500 mb-1">AGE</p>
-            <h2 className="text-3xl font-bold mb-2">{age}</h2>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setAge(age > 1 ? age - 1 : 1)}
-                className="bg-orange-500 text-white p-2 rounded-full"
-              >
-                <FaMinus />
-              </button>
-              <button
-                onClick={() => setAge(age + 1)}
-                className="bg-orange-500 text-white p-2 rounded-full"
-              >
-                <FaPlus />
-              </button>
+
+          <div className="mb-4">
+            <label className="block font-medium mb-1">Height (cm)</label>
+            <input
+              type="range"
+              min="100"
+              max="220"
+              value={height}
+              onChange={(e) => setHeight(Number(e.target.value))}
+              className="w-full"
+            />
+            <div className="text-right text-sm mt-1 text-gray-600">{height} cm</div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block font-medium mb-1">Age (years)</label>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setAge(age > 1 ? age - 1 : 1)} className="bg-gray-100 px-3 py-1 rounded-md">-</button>
+              <span className="w-12 text-center">{age}</span>
+              <button onClick={() => setAge(age + 1)} className="bg-gray-100 px-3 py-1 rounded-md">+</button>
             </div>
           </div>
-        </div>
-  
-        <button onClick={handleClick }
-        
-         className="w-full bg-orange-500
-         text-white py-3 rounded-full text-sm
-          font-bold">Calculate</button>
 
-        {/* Calculate Button */}
-        {/* <button
-          onClick={calculateFat}
-          className="w-full bg-orange-500 text-white py-3 rounded-full text-sm font-bold"
-        >
-          CALCULATE
-        </button>
-
-        {/* Result */}
-         
-        {fat && (
-          <div className="mt-4 text-center">
-            {/* <p className="text-gray-600 text-sm mt-2">Your Body Fat % is</p> */}
-            {/* <h2 className="text-2xl font-bold text-orange-600">{fat} %</h2> */}
+          <div className="mb-6">
+            <label className="block font-medium mb-1">Weight (kg)</label>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setWeight(weight > 1 ? weight - 1 : 1)} className="bg-gray-100 px-3 py-1 rounded-md">-</button>
+              <span className="w-12 text-center">{weight}</span>
+              <button onClick={() => setWeight(weight + 1)} className="bg-gray-100 px-3 py-1 rounded-md">+</button>
+            </div>
           </div>
-        )}
 
+          <button
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg flex items-center justify-center gap-2"
+            onClick={calculateFat}
+          >
+            <FaCalculator /> Calculate Fat
+          </button>
+        </div>
+
+        {/* Right Section - Result */}
+        <div className="flex flex-col items-center justify-center text-center">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Results</h2>
+          {result ? (
+            <div className="text-3xl font-bold text-green-600">{result}% Body Fat</div>
+          ) : (
+            <div className="text-gray-500 flex flex-col items-center gap-2">
+              <FaClipboard className="text-3xl" />
+              <p className="text-sm">Your body fat calculation results will appear here once you enter your details and click "Calculate Fat".</p>
+            </div>
+          )}
+        </div>
       </div>
-     </div> 
-  ); 
-};
-
-export default FatCalculator;
+    </div>
+  );
+}

@@ -85,14 +85,16 @@ const Home = () => {
 {/* -----------------------------------------start Home page -------------------------------------------------------- */}
  
 return (
-    <div className="min-h-screen  overflow-x-hidden bg-gradient-to-br from-white to-[#f4fbf8] font-sans text-gray-800">
+    <div  id = "home" className="min-h-screen   overflow-x-hidden bg-gradient-to-br from-white to-[#f4fbf8] font-sans text-gray-800">
       {/* Header Section */}
      <Navbar
   logo={<img src={logo} alt="logo" className="h-10 w-30" />}
   align="right"   // <- Add this line
   links={[
-    { label: "About", to: "#about" },
+    { label: "Home", to: "#home" },
+     { label: "About", to: "#about" },
     { label: "Features", to: "#features" },
+     { label: "Blogs", to: "#blogs" },
     { label: "Contact", to: "#contact" },
   ]}
   rightContent={
@@ -110,8 +112,8 @@ return (
       {/* ---------------------------imran---------------------------------------- */}
 
       {/* Main Content Section hai  */}
-      <main className="container mx-auto px-4 sm:px-6 py-8 md:py-15">
-        <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-8 md:gap-16">
+      <main  className="container mx-auto px-4 sm:px-6 py-8 md:py-15">
+        <div   className="flex flex-col-reverse md:flex-row items-center justify-between gap-8 md:gap-16">
           {/* Left Content */}
           <div className="w-full md:w-1/2 space-y-5">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 leading-tight ">
@@ -340,7 +342,7 @@ return (
 </section>
 {/* ------------------------------------------------------------------------------------------------- */}
 
- <div className="min-h-screen overflow-x-hidden bg-gray-50 flex flex-col items-center p-6">
+ <div  id = "blogs" className="min-h-screen overflow-x-hidden bg-gray-50 flex flex-col items-center p-6">
       <h1 className="text-3xl font-bold mb-8">Explore</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
         {items.map((item, index) => (

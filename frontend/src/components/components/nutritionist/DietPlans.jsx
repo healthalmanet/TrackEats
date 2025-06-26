@@ -38,7 +38,10 @@ const DietPlans = () => {
         const response = await getDietRecommendationUsers();
         const data = response?.data;
         if (Array.isArray(data?.results)) {
-          setDietPlans(data.results); // Don't filter out rejected
+          const filteredPlans = data.results.filter(
+            (plan) => plan.status?.toLowerCase() !== "approved"
+          );
+          setDietPlans(filteredPlans);
         }
       } catch (error) {
         console.error("Error fetching diet recommendations:", error);
@@ -59,7 +62,7 @@ const DietPlans = () => {
     if (plan.status?.toLowerCase() !== "rejected") {
       setEditedMeals(plan.meals || {});
     } else {
-      setEditedMeals(null); // Hide meals if rejected
+      setEditedMeals(null);
     }
     setShowModal(true);
     setAction("");
@@ -85,10 +88,14 @@ const DietPlans = () => {
       if (action === "reject") {
         setDietPlans((prev) =>
           prev.map((plan) =>
-            plan.id === selectedPlan.id
-              ? { ...plan, status: "rejected" }
-              : plan
+            plan.id === selectedPlan.id ? { ...plan, status: "rejected" } : plan
           )
+        );
+      }
+
+      if (action === "approve") {
+        setDietPlans((prev) =>
+          prev.filter((plan) => plan.id !== selectedPlan.id)
         );
       }
 
@@ -184,22 +191,21 @@ const DietPlans = () => {
             </h3>
 
             {editedMeals && (
-  <div className="mb-4">
-    <p className="text-sm text-gray-700 font-medium">
-      Calories: {selectedPlan.calories} kcal
-    </p>
-    <p className="text-sm text-gray-700 font-medium">
-      Protein: {selectedPlan.protein} g
-    </p>
-    <p className="text-sm text-gray-700 font-medium">
-      Carbs: {selectedPlan.carbs} g
-    </p>
-    <p className="text-sm text-gray-700 font-medium">
-      Fats: {selectedPlan.fats} g
-    </p>
-  </div>
-)}
-
+              <div className="mb-4">
+                <p className="text-sm text-gray-700 font-medium">
+                  Calories: {selectedPlan.calories} kcal
+                </p>
+                <p className="text-sm text-gray-700 font-medium">
+                  Protein: {selectedPlan.protein} g
+                </p>
+                <p className="text-sm text-gray-700 font-medium">
+                  Carbs: {selectedPlan.carbs} g
+                </p>
+                <p className="text-sm text-gray-700 font-medium">
+                  Fats: {selectedPlan.fats} g
+                </p>
+              </div>
+            )}
 
             <div className="overflow-x-auto mb-6">
               {editedMeals ? (
@@ -211,7 +217,9 @@ const DietPlans = () => {
                     >
                       <h4 className="text-md font-semibold text-gray-700 mb-2">
                         {details.day}
-                        <span className="text-xs text-gray-500 block">{date}</span>
+                        <span className="text-xs text-gray-500 block">
+                          {date}
+                        </span>
                       </h4>
                       {["breakfast", "lunch", "dinner", "snack"].map((mealType) => (
                         <div key={mealType} className="mb-2">
@@ -244,58 +252,57 @@ const DietPlans = () => {
               )}
             </div>
 
-           {editedMeals && (
-  <>
-    <textarea
-      value={comment}
-      onChange={(e) => setComment(e.target.value)}
-      placeholder="Add a comment (optional)"
-      className="w-full p-2 border rounded mb-4"
-      rows={3}
-    />
+            {editedMeals && (
+              <>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Add a comment (optional)"
+                  className="w-full p-2 border rounded mb-4"
+                  rows={3}
+                />
 
-    <div className="flex items-center justify-between">
-      {!isEditing && (
-        <button
-          onClick={handleEdit}
-          className="bg-green-400 hover:bg-green-500 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-        >
-          Edit
-        </button>
-      )}
-      {isEditing && (
-        <button
-          onClick={handleSaveEdit}
-          className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-        >
-          Save Changes
-        </button>
-      )}
+                <div className="flex items-center justify-between">
+                  {!isEditing && (
+                    <button
+                      onClick={handleEdit}
+                      className="bg-green-400 hover:bg-green-500 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {isEditing && (
+                    <button
+                      onClick={handleSaveEdit}
+                      className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+                    >
+                      Save Changes
+                    </button>
+                  )}
 
-      <div className="flex gap-2">
-        <button
-          onClick={() => {
-            setAction("reject");
-            handleSubmitReview();
-          }}
-          className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-        >
-          Reject
-        </button>
-        <button
-          onClick={() => {
-            setAction("approve");
-            handleSubmitReview();
-          }}
-          className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
-        >
-          Approve
-        </button>
-      </div>
-    </div>
-  </>
-)}
-
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setAction("reject");
+                        handleSubmitReview();
+                      }}
+                      className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAction("approve");
+                        handleSubmitReview();
+                      }}
+                      className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded transition-transform hover:scale-105"
+                    >
+                      Approve
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

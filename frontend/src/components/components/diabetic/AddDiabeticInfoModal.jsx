@@ -6,65 +6,71 @@ import {
 } from "../../../api/diabeticApi";
 import { toast } from "react-hot-toast";
 
+const defaultForm = {
+  hba1c: "",
+  fasting_blood_sugar: "",
+  insulin_dependent: false,
+  medications: "",
+  diagnosis_date: "",
+  diabetes_type: "type2",
+  total_cholesterol: "",
+};
+
 const AddDiabeticInfoModal = ({
   isOpen,
   onClose,
   onSubmit,
   mode: initialMode = "create",
 }) => {
-  const [formData, setFormData] = useState({
-    hba1c: "",
-    fasting_blood_sugar: "",
-    insulin_dependent: false,
-    medications: "",
-    diagnosis_date: "",
-    diabetes_type: "type2",
-    total_cholesterol: "",
-  });
-
+  const [formData, setFormData] = useState(defaultForm);
   const [recordId, setRecordId] = useState(null);
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
 
+  // Reset to fresh form on open if in create mode
+  useEffect(() => {
+    if (isOpen && initialMode === "create") {
+      setMode("create");
+      setFormData(defaultForm);
+      setRecordId(null);
+    }
+  }, [isOpen, initialMode]);
+
+  // Fetch existing data if in edit mode
   useEffect(() => {
     if (mode === "edit" && isOpen) {
-      const fetchExistingData = async () => {
-        try {
-          const res = await getDiabeticProfile();
-          const latest = res?.results?.[res.results.length - 1];
-
-          if (latest) {
-            const id = latest.id || latest._id;
-            if (!id) {
-              toast.error("No ID found in profile.");
-              return;
-            }
-
-            setFormData({
-              hba1c: latest.hba1c || "",
-              fasting_blood_sugar: latest.fasting_blood_sugar || "",
-              insulin_dependent: latest.insulin_dependent || false,
-              medications: latest.medications || "",
-              diagnosis_date: latest.diagnosis_date || "",
-              diabetes_type: latest.diabetes_type || "type2",
-              total_cholesterol: latest.total_cholesterol || "",
-            });
-
-            setRecordId(id);
-          } else {
-            toast.error("No existing profile to edit.");
-          }
-        } catch (err) {
-          toast.error("Failed to load existing diabetic info");
-          console.error("GET error:", err);
-        }
-      };
-
-      fetchExistingData();
+      fetchLatestProfileForEdit();
     }
   }, [mode, isOpen]);
 
-  if (!isOpen) return null;
+  const fetchLatestProfileForEdit = async () => {
+    try {
+      const res = await getDiabeticProfile();
+      const latest = res?.results?.[res.results.length - 1];
+      if (latest) {
+        const id = latest.id || latest._id;
+        if (!id) {
+          toast.error("No ID found in profile.");
+          return;
+        }
+        setFormData({
+          hba1c: latest.hba1c || "",
+          fasting_blood_sugar: latest.fasting_blood_sugar || "",
+          insulin_dependent: latest.insulin_dependent || false,
+          medications: latest.medications || "",
+          diagnosis_date: latest.diagnosis_date || "",
+          diabetes_type: latest.diabetes_type || "type2",
+          total_cholesterol: latest.total_cholesterol || "",
+        });
+        setRecordId(id);
+      } else {
+        toast.error("No existing profile found.");
+      }
+    } catch (err) {
+      toast.error("Failed to load diabetic info.");
+      console.error("GET error:", err);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -80,60 +86,43 @@ const AddDiabeticInfoModal = ({
     try {
       if (mode === "edit") {
         if (!recordId) {
-          toast.error("Diabetic profile ID is missing.");
+          toast.error("Profile ID missing.");
           return;
         }
-
         await updateDiabeticProfile({ ...formData, id: recordId });
-        toast.success("Diabetic info updated successfully!");
+        toast.success("Diabetic info updated.");
       } else {
         await createDiabeticProfile(formData);
-        toast.success("Diabetic info submitted successfully!");
+        toast.success("Diabetic info added.");
       }
 
-      if (onSubmit) onSubmit(); // parent refetch
-      onClose();
+      if (onSubmit) onSubmit();
+      handleClose(); // use reset close
     } catch (err) {
-      toast.error("Submission failed. Please try again.");
+      toast.error("Submission failed.");
       console.error("Submission error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditClick = async () => {
+  const handleEditClick = () => {
     setMode("edit");
-    try {
-      const res = await getDiabeticProfile();
-      const latest = res?.results?.[res.results.length - 1];
-      if (latest) {
-        const id = latest.id || latest._id;
-        if (!id) {
-          toast.error("No ID found in latest profile.");
-          return;
-        }
-        setFormData({
-          hba1c: latest.hba1c || "",
-          fasting_blood_sugar: latest.fasting_blood_sugar || "",
-          insulin_dependent: latest.insulin_dependent || false,
-          medications: latest.medications || "",
-          diagnosis_date: latest.diagnosis_date || "",
-          diabetes_type: latest.diabetes_type || "type2",
-          total_cholesterol: latest.total_cholesterol || "",
-        });
-        setRecordId(id);
-        toast.success("Loaded latest info for editing.");
-      } else {
-        toast.error("No profile found to edit.");
-      }
-    } catch (err) {
-      toast.error("Failed to fetch profile for editing.");
-      console.error("Edit fetch error:", err);
-    }
   };
 
+  const handleClose = () => {
+    onClose();
+    setTimeout(() => {
+      setMode("create");
+      setFormData(defaultForm);
+      setRecordId(null);
+    }, 300);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/30">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
       <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-xl mx-4 sm:mx-6">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">
           {mode === "edit" ? "Edit Diabetic Information" : "Add Diabetic Information"}
@@ -202,7 +191,9 @@ const AddDiabeticInfoModal = ({
           </div>
 
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">Diabetes Type</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Diabetes Type
+            </label>
             <select
               name="diabetes_type"
               value={formData.diabetes_type}
@@ -220,7 +211,7 @@ const AddDiabeticInfoModal = ({
           <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
             >
               Cancel
@@ -232,7 +223,7 @@ const AddDiabeticInfoModal = ({
                 loading ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
-              {loading ? "Submitting..." : mode === "edit" ? "Submit" : "Submit"}
+              {loading ? "Submitting..." : "Submit"}
             </button>
           </div>
         </form>

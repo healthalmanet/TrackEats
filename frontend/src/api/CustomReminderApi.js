@@ -28,9 +28,10 @@ const response = await axios.post(`${BASE_URL}/reminders/`, formData, getAuthHea
 export const getAllReminder = async () => {
 
   const response = await axios.get(
-    `${BASE_URL}/getAllReminders/`,
+    `${BASE_URL}/reminders/`,
     getAuthHeaders()
   );
+  return response.data;
 
 };
 

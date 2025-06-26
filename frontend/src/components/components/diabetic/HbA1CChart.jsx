@@ -24,7 +24,8 @@ ChartJS.register(
   Legend
 );
 
-const HbA1cChart = ({ refreshTrigger = 0 }) => {
+
+const HbA1CChart = ({ refreshTrigger = 0 }) => {
   const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -150,4 +151,4 @@ const HbA1cChart = ({ refreshTrigger = 0 }) => {
   );
 };
 
-export default HbA1cChart;
+export default HbA1CChart;

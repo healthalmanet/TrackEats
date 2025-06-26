@@ -3,7 +3,6 @@ import { Flame, Dumbbell, Drumstick } from "lucide-react";
 import { BsSunFill, BsFillCloudSunFill, BsFillMoonStarsFill } from "react-icons/bs";
 import { FaFire, FaDumbbell, FaBreadSlice, FaFish } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
-import Footer from '../../components/components/Footer';
 import { getDietApi } from '../../api/dietApi'; // Ensure this path is correct
 
 const Meals = () => {
@@ -223,8 +222,6 @@ const Meals = () => {
           )}
         </div>
       </div>
-
-      <Footer />
     </>
   );
 };

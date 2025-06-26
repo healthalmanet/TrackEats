@@ -87,6 +87,7 @@ const Home = () => {
 return (
     <div className="min-h-screen  overflow-x-hidden bg-gradient-to-br from-white to-[#f4fbf8] font-sans text-gray-800">
       {/* Header Section */}
+
      <Navbar
   logo={<img src={logo} alt="logo" className="h-10 w-30" />}
   align="right"   // <- Add this line
@@ -104,8 +105,6 @@ return (
     </button>
   }
 />
-
-
   
       {/* ---------------------------imran---------------------------------------- */}
 

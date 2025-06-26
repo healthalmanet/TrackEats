@@ -5,7 +5,6 @@ import {
   BarChart, Bar, CartesianGrid, Legend, ReferenceLine
 } from "recharts";
 import { FaAppleAlt, FaCoffee, FaHamburger, FaFireAlt, FaDrumstickBite, FaBreadSlice, FaTint } from "react-icons/fa";
-import Footer from '../components/components/Footer';
 
 // --- DYNAMIC API IMPORT ---
 // This now imports the functions that make real network requests.
@@ -143,8 +142,6 @@ const Reports = () => {
             <div className="lg:col-span-2 w-full flex flex-col gap-4"><h2 className="text-green-600 font-semibold text-lg">Today's Meal Log</h2>{mealData.length > 0 ? mealData.map((meal, index) => (<div key={index} className="flex items-start justify-between p-4 rounded-xl shadow bg-white hover:bg-green-50 transition-colors"><div className="flex gap-4"><div className="bg-[#d1fae5] p-2 rounded-full text-green-600 mt-1 text-lg">{getIcon(meal.title)}</div><div><p className="font-semibold text-gray-700">{meal.title}</p><p className="text-sm text-gray-500">{meal.meal}</p></div></div><div className="text-right"><p className="text-green-500 font-semibold">{meal.calories}</p><p className="text-sm text-gray-400">{meal.time}</p></div></div>)) : <p className="text-gray-500 p-4 bg-white rounded-xl shadow">No meals logged for today.</p>}</div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMeals, createMeal, deleteMeal } from "../../../api/mealLog";
+import { getMeals, createMeal, deleteMeal } from "../../../api/mealLog"; // ❌ Removed getDailySummary
 import { toast } from "react-hot-toast";
 
 const useMealLogger = () => {
@@ -19,6 +19,19 @@ const useMealLogger = () => {
   const unitOptions = ["g", "ml", "piece", "cup", "bowl", "tbsp", "tsp"];
   const token = localStorage.getItem("token");
 
+  const [dailySummary, setDailySummary] = useState({
+    calories: 0,
+    carbs: 0,
+    protein: 0,
+    fat: 0,
+  });
+
+  const [goals, setGoals] = useState({
+    caloriesTarget: 2000,
+    waterLogged: 0,
+    waterTarget: 8,
+  });
+
   const baseApiUrl =
     import.meta.env.VITE_API_URL || "https://trackeats.onrender.com/api/logmeals/";
 
@@ -31,7 +44,9 @@ const useMealLogger = () => {
   const fetchMeals = async (url = null) => {
     try {
       const data = await getMeals(token, url);
-      setLoggedMeals(data.results || []);
+      const meals = data.results || [];
+
+      setLoggedMeals(meals);
       setPagination({
         next: data.next,
         previous: data.previous,
@@ -41,6 +56,20 @@ const useMealLogger = () => {
 
       const pageNum = extractPageNumber(url || `${baseApiUrl}?page=1`);
       setCurrentPage(pageNum);
+
+      // ✅ Calculate daily summary from meals
+      const summary = meals.reduce(
+        (acc, meal) => {
+          acc.calories += meal.calories || 0;
+          acc.carbs += meal.carbs || 0;
+          acc.protein += meal.protein || 0;
+          acc.fat += meal.fats || 0;
+          return acc;
+        },
+        { calories: 0, carbs: 0, protein: 0, fat: 0 }
+      );
+
+      setDailySummary(summary);
     } catch (error) {
       toast.error("Failed to fetch meals.");
       console.error("❌ Error fetching meals:", error.response?.data || error.message);
@@ -140,6 +169,8 @@ const useMealLogger = () => {
     handlePrevPage,
     handlePageChange,
     handleDeleteMeal,
+    dailySummary,
+    goals,
   };
 };
 

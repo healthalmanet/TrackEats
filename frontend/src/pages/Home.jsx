@@ -129,9 +129,7 @@ return (
                Get Started Free
               </button>
 
-              <button className="border border-orange-400 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-full font-semibold">
-                Watch Demo
-              </button>
+              
             </div>
             {/* ======================================================================== */}
               <div className="absolute left-27 flex justify-center align-start w-25 h-25 bg-orange-200 rounded-full opacity-70"></div>
@@ -383,9 +381,7 @@ return (
         <button onClick={openRegister} className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
         Start Free Trial
          </button>
-        <button  className="bg-white text-red-500 border-2 border-red-400 hover:bg-red-500 hover:text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
-          Learn More
-        </button>
+       
         
 
       </div>

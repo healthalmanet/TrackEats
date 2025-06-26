@@ -17,7 +17,7 @@ const getAuthHeaders = () => {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    timeout: 15000, // ✅ 15 seconds timeout to handle slow responses
+    timeout: 30000, // ✅ 15 seconds timeout to handle slow responses
   };
 };
 

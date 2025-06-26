@@ -10,7 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { getDiabeticProfile } from "../../../api/diabeticApi"; // adjust path if needed
+import { getDiabeticProfile } from "../../../api/diabeticApi";
 import { toast } from "react-hot-toast";
 
 // Register chart components
@@ -24,18 +24,30 @@ ChartJS.register(
   Legend
 );
 
-const CholestrolChart = () => {
+const CholestrolChart = ({ refreshTrigger = 0 }) => {
   const [chartData, setChartData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchCholesterolData = async () => {
+      setLoading(true);
       try {
         const res = await getDiabeticProfile();
         const results = res?.results || [];
 
-        const sorted = [...results].sort(
-          (a, b) => new Date(a.diagnosis_date) - new Date(b.diagnosis_date)
-        );
+        const sorted = [...results]
+          .filter((item) => item.diagnosis_date && item.total_cholesterol != null)
+          .sort(
+            (a, b) =>
+              new Date(a.diagnosis_date).getTime() - new Date(b.diagnosis_date).getTime()
+          );
+
+        if (sorted.length === 0) {
+          toast.error("No valid cholesterol data found.");
+          setChartData(null);
+          setLoading(false);
+          return;
+        }
 
         const labels = sorted.map((item) =>
           new Date(item.diagnosis_date).toLocaleDateString("en-IN", {
@@ -52,7 +64,7 @@ const CholestrolChart = () => {
             {
               label: "Total Cholesterol (mg/dL)",
               data: cholesterolValues,
-              borderColor: "#FF5733", // Deep purple
+              borderColor: "#FF5733",
               backgroundColor: "#FF5733",
               tension: 0.3,
               pointBackgroundColor: "#fff",
@@ -65,11 +77,14 @@ const CholestrolChart = () => {
       } catch (err) {
         toast.error("Failed to load cholesterol data.");
         console.error("Cholesterol chart error:", err);
+        setChartData(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchCholesterolData();
-  }, []);
+  }, [refreshTrigger]); // Rerun on refreshTrigger change
 
   const options = {
     responsive: true,
@@ -78,7 +93,7 @@ const CholestrolChart = () => {
       legend: {
         position: "top",
         labels: {
-          color: "#4B5563", // gray-700
+          color: "#4B5563",
           font: {
             size: 12,
             weight: "bold",
@@ -89,10 +104,10 @@ const CholestrolChart = () => {
     scales: {
       x: {
         ticks: {
-          color: "#6B7280", // gray-500
+          color: "#6B7280",
         },
         grid: {
-          color: "#E5E7EB", // light gray
+          color: "#E5E7EB",
         },
       },
       y: {
@@ -113,10 +128,12 @@ const CholestrolChart = () => {
         Cholesterol Tracking
       </h3>
       <div className="h-[calc(100%-2rem)]">
-        {chartData ? (
+        {loading ? (
+          <p className="text-sm text-gray-500">Loading chart...</p>
+        ) : chartData ? (
           <Line data={chartData} options={options} />
         ) : (
-          <p className="text-sm text-gray-500">Loading chart...</p>
+          <p className="text-sm text-gray-500">No chart data available.</p>
         )}
       </div>
     </div>

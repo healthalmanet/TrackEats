@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Droplet, Flame, HeartPulse, Syringe } from "lucide-react";
-import { getDiabeticProfile } from "../../../api/diabeticApi";
 
-// Card component — stateless
+// Reusable Card component
 const Card = ({ title, value, unit, icon, color, description }) => {
   return (
     <div className="bg-white rounded-xl shadow-md p-4 flex items-center gap-4">
@@ -12,56 +11,28 @@ const Card = ({ title, value, unit, icon, color, description }) => {
       <div>
         <h4 className="text-sm font-medium text-gray-600">{title}</h4>
         <div className="text-lg font-semibold text-gray-800 flex items-baseline">
-          {value}
+          {value ?? "N/A"}
           {unit && <span className="ml-1 text-sm text-gray-500">{unit}</span>}
         </div>
-        {description && (
-          <p className="text-xs text-red-500 mt-1">{description}</p>
-        )}
+        {description && <p className="text-xs text-red-500 mt-1">{description}</p>}
       </div>
     </div>
   );
 };
 
-const HealthSummary = () => {
-  const [hba1c, setHba1c] = useState(null);
-  const [fastingSugar, setFastingSugar] = useState(null);
-  const [cholesterol, setCholesterol] = useState(null);
-  const [diabetesType, setDiabetesType] = useState("");
-  const [insulinDependent, setInsulinDependent] = useState(false);
+// HealthSummary component using props
+const HealthSummary = ({ data = {} }) => {
+  const {
+    hba1c = null,
+    bloodSugar = null,
+    cholesterol = null,
+    diabetesType = "type2",
+    insulinDependent = false,
+  } = data;
 
-  useEffect(() => {
-    const fetchHealthData = async () => {
-      try {
-        const response = await getDiabeticProfile(); // full object with .results
-        console.log("Fetched diabetic profiles:", response);
+  const isEmpty = hba1c === null && bloodSugar === null && cholesterol === null;
 
-        const results = response.results;
-        if (Array.isArray(results) && results.length > 0) {
-          const latest = results[results.length - 1]; // ✅ pick the latest added entry
-
-          setHba1c(latest.hba1c);
-          setFastingSugar(latest.fasting_blood_sugar);
-          setCholesterol(latest.total_cholesterol);
-          setDiabetesType(latest.diabetes_type);
-          setInsulinDependent(latest.insulin_dependent);
-        } else {
-          console.warn("No diabetic profile data found.");
-        }
-      } catch (error) {
-        console.error("Error fetching diabetic profile:", error);
-      }
-    };
-
-    fetchHealthData();
-  }, []);
-
-  if (
-    hba1c === null &&
-    fastingSugar === null &&
-    cholesterol === null &&
-    diabetesType === ""
-  ) {
+  if (isEmpty) {
     return <div className="text-gray-500">Loading health summary...</div>;
   }
 
@@ -77,14 +48,14 @@ const HealthSummary = () => {
       />
       <Card
         title="Fasting Sugar"
-        value={fastingSugar}
+        value={bloodSugar}
         unit="mg/dL"
         icon={<Flame className="text-blue-500" size={18} />}
         color="bg-blue-100"
       />
       <Card
         title="Total Cholesterol"
-        value={cholesterol || "N/A"}
+        value={cholesterol}
         unit="mg/dL"
         icon={<HeartPulse className="text-purple-500" size={18} />}
         color="bg-purple-100"

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { getDiabeticProfile } from "../../../api/diabeticApi";
 
 import HealthSummary from "./HealthSummary";
-import HbA1cChart from "./HbA1cChart";
+import HbA1CChart from "./HbA1CChart";
 import BloodSugarChart from "./BloodSugarChart";
 import CholesterolChart from "./CholestrolChart";
 import AddInfoButton from "./AddInfoButton";
@@ -77,7 +77,7 @@ const HealthDashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-        <HbA1cChart />
+        <HbA1CChart />
         <BloodSugarChart />
         <CholesterolChart />
         <SummaryPieChart data={summaryData} />

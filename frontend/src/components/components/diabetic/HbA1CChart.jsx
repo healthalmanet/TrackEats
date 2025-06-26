@@ -23,7 +23,7 @@ ChartJS.register(
   Legend
 );
 
-const HbA1cChart = () => {
+const HbA1CChart = () => {
   const [chartData, setChartData] = useState(null);
 
   useEffect(() => {
@@ -105,4 +105,4 @@ const HbA1cChart = () => {
   );
 };
 
-export default HbA1cChart;
+export default HbA1CChart;

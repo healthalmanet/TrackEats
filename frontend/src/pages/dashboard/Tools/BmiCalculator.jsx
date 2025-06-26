@@ -205,7 +205,7 @@ export default function BMICalculator() {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {/* <div className="flex gap-3">
               <button className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors">
                 📊 View History
               </button>
@@ -215,7 +215,7 @@ export default function BMICalculator() {
               <button className="flex-1 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors">
                 📤 Share
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

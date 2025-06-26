@@ -31,6 +31,11 @@ const MealLogger = () => {
     snack: 'border-l-4 border-indigo-400',
   };
 
+  const getProgressPercent = (value, target) => {
+    const percent = Math.min((value / target) * 100, 100);
+    return percent.toFixed(1);
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen px-6 py-10">
       <div className="max-w-6xl mx-auto">
@@ -231,18 +236,33 @@ const MealLogger = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar Summary with Progress Bars */}
           <div className="space-y-6 flex flex-col h-full">
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md">
               <h4 className="font-semibold text-sm text-gray-700 mb-3">Daily Summary</h4>
-              <p className="text-xl font-bold text-green-600">{dailySummary?.calories ?? 0} cal</p>
+              <p className="text-xl font-bold text-green-600">{dailySummary.calories} cal</p>
               <p className="text-xs text-gray-400 mb-3">
-                {(goals?.caloriesTarget ?? 0) - (dailySummary?.calories ?? 0)} remaining
+                {(goals.caloriesTarget ?? 0) - (dailySummary.calories ?? 0)} remaining
               </p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span>Carbs</span><span>{dailySummary?.carbs ?? 0}g / 250g</span></div>
-                <div className="flex justify-between"><span>Protein</span><span>{dailySummary?.protein ?? 0}g / 50g</span></div>
-                <div className="flex justify-between"><span>Fat</span><span>{dailySummary?.fat ?? 0}g / 67g</span></div>
+              <div className="space-y-4 text-sm">
+                {[
+                  { label: 'Carbs', value: dailySummary.carbs, target: 250, color: 'bg-yellow-400' },
+                  { label: 'Protein', value: dailySummary.protein, target: 50, color: 'bg-orange-400' },
+                  { label: 'Fat', value: dailySummary.fat, target: 67, color: 'bg-green-400' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="flex justify-between">
+                      <span>{item.label}</span>
+                      <span>{item.value ?? 0}g / {item.target}g</span>
+                    </div>
+                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-1">
+                      <div
+                        className={`${item.color} h-full`}
+                        style={{ width: `${getProgressPercent(item.value, item.target)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

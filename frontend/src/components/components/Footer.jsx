@@ -5,7 +5,7 @@ import logo from "../../assets/logo.png"
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
+    <footer className="bg-[#f9fafb] border-t border-gray-200">
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-8">
           {/* Brand Section */}
@@ -119,18 +119,19 @@ const Footer = () => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-200 mt-12 pt-8">
+        {/* <div className="border-t border-gray-200 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
 
            
           </div>
                
-
-        </div>
-      </div>
-        <p className="text-center text-gray-500 text-sm">
+         
+        </div> */}
+        
+        <p className="text-center pt-20  text-gray-500 text-sm">
               © 2025 TrackEats. All rights reserved.
             </p>
+      </div>
         
     </footer>
   );

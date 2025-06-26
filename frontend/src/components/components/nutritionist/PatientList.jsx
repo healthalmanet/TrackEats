@@ -8,13 +8,34 @@ const PatientList = () => {
   const [assigning, setAssigning] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Load assigned IDs from localStorage
+  const getAssignedIds = () => {
+    try {
+      const ids = JSON.parse(localStorage.getItem("assignedPatients")) || [];
+      return Array.isArray(ids) ? ids : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const addAssignedId = (id) => {
+    const current = getAssignedIds();
+    const updated = [...new Set([...current, id])];
+    localStorage.setItem("assignedPatients", JSON.stringify(updated));
+  };
+
+  const filterAssignedLocally = (userList) => {
+    const assignedIds = getAssignedIds();
+    return userList.filter((user) => !assignedIds.includes(user.id));
+  };
+
   const fetchUsers = async () => {
     try {
       const response = await getAllUsers();
       const data = response?.data;
-
       if (Array.isArray(data?.results)) {
-        setUsers(data.results);
+        const filtered = filterAssignedLocally(data.results);
+        setUsers(filtered);
       } else {
         console.error("Unexpected response format:", data);
       }
@@ -40,7 +61,8 @@ const PatientList = () => {
       const response = await searchUsersByName(value);
       const data = response?.data;
       if (Array.isArray(data?.results)) {
-        setUsers(data.results);
+        const filtered = filterAssignedLocally(data.results);
+        setUsers(filtered);
       } else {
         console.error("Unexpected search response:", data);
       }
@@ -51,16 +73,14 @@ const PatientList = () => {
 
   const handleAssign = async (patientId) => {
     const user = users.find((u) => u.id === patientId);
-    if (user?.assigned) {
-      toast.info("This patient is already assigned.");
-      return;
-    }
+    if (!user) return;
 
     setAssigning(patientId);
     try {
       await assignPatient(patientId);
+      addAssignedId(patientId);
       toast.success("Patient assigned successfully!");
-      fetchUsers(); // Refresh to update assignment status
+      setUsers((prev) => prev.filter((u) => u.id !== patientId));
     } catch (error) {
       console.error("Failed to assign patient:", error);
       toast.error("Failed to assign patient.");
@@ -107,12 +127,6 @@ const PatientList = () => {
                     Joined: {new Date(user.date_joined).toLocaleDateString()}
                   </p>
                 </div>
-
-                {user.assigned && (
-                  <span className="text-xs font-medium bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                    Assigned
-                  </span>
-                )}
               </div>
 
               <div className="mt-4">

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { loginUser } from "../api/auth";
-import { useAuth } from "../components/context/AuthContext";
+import {useAuth } from "../components/context/AuthContext";
 import { Mail, Lock } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";

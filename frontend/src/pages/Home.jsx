@@ -17,6 +17,7 @@ import Register from './Register';
 import healthy from "../assets/healthy.jpg"
 import flat from "../assets/flat.jpg"
 import Footer from "../components/components/Footer"
+import Navbar from '../components/components/Navbar';
 
 const Home = () => {
    const navigate = useNavigate();
@@ -86,26 +87,25 @@ const Home = () => {
 return (
     <div className="min-h-screen  overflow-x-hidden bg-gradient-to-br from-white to-[#f4fbf8] font-sans text-gray-800">
       {/* Header Section */}
-      <header className="shadow-sm bg-white">
-        <div className="container mx-auto flex justify-between items-center px-4 sm:px-6 py-4">
-          <div className="flex items-center space-x-2">
-            <div className="text-green-500 text-2xl font-bold"></div>
-            <h1 className="text-xl font-semibold"><img src={logo} alt="logo" className='h-10 w-30' /></h1>
-          </div>
-          <nav className="hidden md:flex text-gray-700 font-medium space-x-6 text-sm">
-            <a href="#" className="hover:text-green-500">About</a>
-            <a href="#" className="hover:text-green-500">Features</a>
-            <a href="#" className="hover:text-green-500">Contact</a>
-            <button onClick={openRegister} className="bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600">Sign In</button>
-          </nav>
-          <button className="block md:hidden text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>  
-          </button>
-        </div>
+     <Navbar
+  logo={<img src={logo} alt="logo" className="h-10 w-30" />}
+  align="right"   // <- Add this line
+  links={[
+    { label: "About", to: "#about" },
+    { label: "Features", to: "#features" },
+    { label: "Contact", to: "#contact" },
+  ]}
+  rightContent={
+    <button
+      onClick={openRegister}
+      className="bg-green-500 hover:bg-green-600 text-white  ml-5 px-5 py-2 rounded-full font-semibold"
+    >
+      Sign In
+    </button>
+  }
+/>
 
-    </header>
+
   
       {/* ---------------------------imran---------------------------------------- */}
 
@@ -129,9 +129,7 @@ return (
                Get Started Free
               </button>
 
-              <button className="border border-orange-400 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-full font-semibold">
-                Watch Demo
-              </button>
+              
             </div>
             {/* ======================================================================== */}
               <div className="absolute left-27 flex justify-center align-start w-25 h-25 bg-orange-200 rounded-full opacity-70"></div>
@@ -186,7 +184,7 @@ return (
     {/* new aera hai why choose tracking  */}
 
   
-       <section id='choose' className=" bg-gray-50 py-12 px-4 text-center">
+       <section id='about' className=" bg-gray-50 py-12 px-4 text-center">
       <h2 className="text-4xl font-bold mb-5">
         Why Choose <span className="text-green-500">TrackEats</span>?
       </h2>
@@ -383,9 +381,7 @@ return (
         <button onClick={openRegister} className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
         Start Free Trial
          </button>
-        <button  className="bg-white text-red-500 border-2 border-red-400 hover:bg-red-500 hover:text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300">
-          Learn More
-        </button>
+       
         
 
       </div>
@@ -398,7 +394,11 @@ return (
       <Login onSwitchToRegister={openRegister} onClose={closeModals} />
       </ModalWrapper>
 
-      <Footer/>
+  <div id="contact">
+  <Footer />
+</div>
+
+      
 
        
   

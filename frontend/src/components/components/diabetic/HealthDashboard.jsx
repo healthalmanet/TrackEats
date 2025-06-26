@@ -12,18 +12,22 @@ import SummaryPieChart from "./PieChart";
 
 const HealthDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0); // 🔁 trigger for chart refresh
+
   const [summaryData, setSummaryData] = useState({
     hba1c: 0,
     bloodSugar: 0,
     cholesterol: 0,
+    diabetes_type: "type2",
+    insulin_dependent: false,
   });
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  const handleSubmit = (formData) => {
-    console.log("Form submitted:", formData);
-    fetchProfileData(); // Refresh after submitting
+  const handleSubmit = () => {
+    fetchProfileData();
+    setRefreshCount((prev) => prev + 1); // 🔁 update chart components
     closeModal();
   };
 
@@ -38,6 +42,8 @@ const HealthDashboard = () => {
           hba1c: latest.hba1c || 0,
           bloodSugar: latest.fasting_blood_sugar || 0,
           cholesterol: latest.total_cholesterol || 0,
+          diabetes_type: latest.diabetes_type || "type2",
+          insulin_dependent: latest.insulin_dependent || false,
         });
       }
     } catch (error) {
@@ -67,7 +73,17 @@ const HealthDashboard = () => {
       </div>
 
       {/* Health Summary Cards */}
-      <HealthSummary />
+      <HealthSummary
+        data={{
+          hba1c: summaryData.hba1c,
+          bloodSugar: summaryData.bloodSugar,
+          cholesterol: summaryData.cholesterol,
+          diabetesType: summaryData.diabetes_type,
+          insulinDependent: summaryData.insulin_dependent,
+        }}
+        type={summaryData.diabetes_type}
+        insulin={summaryData.insulin_dependent}
+      />
 
       {/* Section Title & Add Info */}
       <div className="flex justify-between items-center mt-10 mb-4">
@@ -77,9 +93,9 @@ const HealthDashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
-        <HbA1cChart />
-        <BloodSugarChart />
-        <CholesterolChart />
+        <HbA1cChart refreshTrigger={refreshCount} />
+        <BloodSugarChart refreshTrigger={refreshCount} />
+        <CholesterolChart refreshTrigger={refreshCount} />
         <SummaryPieChart data={summaryData} />
       </div>
 

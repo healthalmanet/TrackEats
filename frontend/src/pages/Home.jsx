@@ -394,6 +394,7 @@ return (
       </ModalWrapper>
 
   <div id="contact">
+  <Footer />
 </div>
 
       

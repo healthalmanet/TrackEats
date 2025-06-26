@@ -16,6 +16,7 @@ import {
 import { getOwner } from '../api/owner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/context/AuthContext';
+import { Tooltip } from 'chart.js';
 
 const Dashboard = () => {
   const [userStatsView, setUserStatsView] = useState('Weekly');
@@ -35,6 +36,31 @@ const Dashboard = () => {
     };
     fetchData();
   }, []);
+
+
+  const getMealsData = () => {
+  if (!ownerData || !ownerData.usage) return [];
+
+  const total =
+    mealsView === 'Weekly'
+      ? ownerData.usage.meals_logged_week
+      : ownerData.usage.meals_logged_month;
+
+  const count = mealsView === 'Weekly' ? 7 : 4;
+  const labels = mealsView === 'Weekly'
+    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    : ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+
+  const perUnit = Math.round(total / count);
+
+  return labels.map((label) => ({
+    name: label,
+    meals: perUnit,
+  }));
+};
+
+const mealsData = getMealsData();
+ 
 
   const handleLogout = () => {
     logout();         // ✅ clears token + user from context and localStorage
@@ -70,6 +96,21 @@ const Dashboard = () => {
     </button>
   );
 
+  
+
+const countryData = ownerData?.users_by_country?.map((item, index) => {
+  const totalUsers = ownerData?.user_stats?.total_users || 1;
+  const percentage = ((item.user_count / totalUsers) * 100).toFixed(1);
+  return {
+    name: item.country,
+    value: item.user_count,
+    percentage,
+    color: countryColors[index % countryColors.length]
+  };
+}) || [];
+
+
+
   if (!ownerData) return <div className="p-4">Loading...</div>;
 
   return (
@@ -99,111 +140,135 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Meals Logged</h3>
-              <div className="flex space-x-1">
-                <TabButton active={mealsView === 'Weekly'} onClick={() => setMealsView('Weekly')}>Weekly</TabButton>
-                <TabButton active={mealsView === 'Monthly'} onClick={() => setMealsView('Monthly')}>Monthly</TabButton>
-              </div>
-            </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={[
-                    {
-                      name: mealsView,
-                      meals:
-                        mealsView === 'Weekly'
-                          ? ownerData.usage.meals_logged_week
-                          : ownerData.usage.meals_logged_month
-                    }
-                  ]}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Line
-                    type="monotone"
-                    dataKey="meals"
-                    stroke="#8b5cf6"
-                    strokeWidth={3}
-                    dot={{ fill: '#8b5cf6', r: 6 }}
-                    activeDot={{ r: 8 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          {/* Meals Logged */}
+<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+  <div className="flex justify-between items-center mb-6">
+    <h3 className="text-lg font-semibold text-gray-900">Meals Logged</h3>
+    <div className="flex space-x-1">
+      <TabButton active={mealsView === 'Weekly'} onClick={() => setMealsView('Weekly')}>
+        Weekly
+      </TabButton>
+      <TabButton active={mealsView === 'Monthly'} onClick={() => setMealsView('Monthly')}>
+        Monthly
+      </TabButton>
+    </div>
+  </div>
+  <div className="h-64">
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={mealsData}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+        <Line 
+          type="monotone" 
+          dataKey="meals" 
+          stroke="#8b5cf6" 
+          strokeWidth={3}
+          dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+          activeDot={{ r: 6, stroke: '#8b5cf6', strokeWidth: 2 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  </div>
+</div>
 
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Users by Country</h3>
-            </div>
-            <div className="h-64">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={ownerData.users_by_country.map((item, i) => ({
-                      ...item,
-                      value: item.user_count
-                    }))}
-                    dataKey="value"
-                    nameKey="country"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {ownerData.users_by_country.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={countryColors[index % countryColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Latest Feedback</h3>
-            {ownerData.feedback_summary.latest_feedbacks.map((fb) => (
-              <div key={fb.id} className="mb-4 border-b pb-4">
-                <p className="text-sm text-gray-800 font-medium">{fb.user_email}</p>
-                <div className="flex items-center text-yellow-500 mb-1">
-                  {[...Array(fb.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-500" />
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600">{fb.message}</p>
-              </div>
+          {/* Users by Country */}
+<div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+  <div className="flex justify-between items-center mb-6">
+    <h3 className="text-lg font-semibold text-gray-900">Users by Country</h3>
+    <button className="text-blue-600 text-xs font-medium hover:text-blue-700">
+      Export
+    </button>
+  </div>
+  <div className="flex items-center justify-center mb-6">
+    <div className="w-32 h-32">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={countryData}
+            cx="50%"
+            cy="50%"
+            innerRadius={25}
+            outerRadius={60}
+            paddingAngle={2}
+            dataKey="value"
+          >
+            {countryData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Promotions</h3>
-            {ownerData.promotions.map((promo, idx) => (
-              <div key={idx} className="mb-4 border-b pb-4">
-                <div className="flex justify-between">
-                  <p className="text-sm font-medium text-gray-800">{promo.campaign}</p>
-                  <span className={`text-xs font-medium ${
-                    promo.status === 'Running'
-                      ? 'text-green-600'
-                      : promo.status === 'Ended'
-                      ? 'text-red-600'
-                      : 'text-gray-600'
-                  }`}>
-                    {promo.status}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600">Reach: {promo.reach}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+          </Pie>
+          </PieChart>
+        </ResponsiveContainer>
       </div>
     </div>
+    <div className="space-y-3">
+      {countryData.map((country, index) => (
+        <div key={index} className="flex items-center justify-between text-sm">
+          <div className="flex items-center">
+            <div 
+              className="w-3 h-3 rounded-full mr-3"
+              style={{ backgroundColor: country.color }}
+            ></div>
+            <span className="text-gray-700">{country.name}</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-900 font-medium">{country.value.toLocaleString()}</span>
+            <span className="text-gray-500 min-w-[3rem] text-right">{country.percentage}%</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  {/* Feedback Card */}
+  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+    <h3 className="text-lg font-semibold text-gray-900 mb-4">Latest Feedback</h3>
+    {ownerData.feedback_summary.latest_feedbacks.map((fb) => (
+      <div key={fb.id} className="mb-4 border-b pb-4">
+        <p className="text-sm text-gray-800 font-medium">{fb.user_email}</p>
+        <div className="flex items-center text-yellow-500 mb-1">
+          {[...Array(fb.rating)].map((_, i) => (
+            <Star key={i} className="w-4 h-4 fill-yellow-500" />
+          ))}
+        </div>
+        <p className="text-sm text-gray-600">{fb.message}</p>
+      </div>
+    ))}
+  </div>
+
+  {/* Promotions Card */}
+  <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+    <h3 className="text-lg font-semibold text-gray-900 mb-4">Promotions</h3>
+    {ownerData.promotions.map((promo, idx) => (
+      <div key={idx} className="mb-4 border-b pb-4">
+        <div className="flex justify-between">
+          <p className="text-sm font-medium text-gray-800">{promo.campaign}</p>
+          <span
+            className={`text-xs font-medium ${
+              promo.status === 'Running'
+                ? 'text-green-600'
+                : promo.status === 'Ended'
+                ? 'text-red-600'
+                : 'text-gray-600'
+            }`}
+          >
+            {promo.status}
+          </span>
+        </div>
+        <p className="text-sm text-gray-600">Reach: {promo.reach}</p>
+      </div>
+    ))}
+  </div>
+</div>
+
+
+        </div>
+      </div>
+    
   );
 };
 

@@ -275,7 +275,8 @@ const FoodNutritionApp = () => {
       </div>
     </div>
   );
-};
+}; 
+
 
 export default FoodNutritionApp;
 

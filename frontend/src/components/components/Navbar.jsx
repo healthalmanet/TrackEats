@@ -1,72 +1,84 @@
 import React, { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import LogoutButton from "./LogoutButton";
-import logo from "../../assets/logo.png";
 
-const Navbar = () => {
+const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
   const [isOpen, setIsOpen] = useState(false);
-
   const toggleMenu = () => setIsOpen(!isOpen);
 
-  const navLinks = [
-    { to: "/dashboard", label: "Home" },
-    { to: "/dashboard/user-profile", label: "Profile" },
-    { to: "/dashboard/tools", label: "Tools" },
-    { to: "/dashboard/health-section", label: "Health" },
-    { to: "/dashboard/meals", label: "Meals" },
-    { to: "/dashboard/reports", label: "Reports" },
-  ];
+  const renderNavLink = ({ to, label }) => {
+    const isHashLink = to.startsWith("#");
 
-  const renderNavLink = ({ to, label }) => (
-    <NavLink
-      key={to}
-      to={to}
-      end={to === "/dashboard"}
-      onClick={() => setIsOpen(false)}
-      className={({ isActive }) =>
-        isActive ? "text-green-500" : "text-gray-500 hover:text-green-500"
-      }
-    >
-      {label}
-    </NavLink>
-  );
+    if (isHashLink) {
+      return (
+        <a
+          key={to}
+          href={to}
+          className="text-gray-600 hover:text-green-500 font-semibold transition-colors duration-200"
+        >
+          {label}
+        </a>
+      );
+    }
+
+    return (
+      <NavLink
+        key={to}
+        to={to}
+        end={to === "/dashboard"}
+        onClick={() => setIsOpen(false)}
+        className={({ isActive }) =>
+          isActive
+            ? "text-green-500 font-semibold"
+            : "text-gray-500 hover:text-green-500 font-semibold transition-colors duration-200"
+        }
+      >
+        {label}
+      </NavLink>
+    );
+  };
+
+  const alignmentClasses = {
+    center: "absolute left-1/2 transform -translate-x-1/2",
+    right: "ml-auto",
+  };
 
   return (
     <nav className="bg-white h-16 px-6 flex items-center justify-between relative shadow-sm z-50">
       {/* Logo */}
-      <div className="flex items-center h-full">
-        <Link to="/dashboard">
-          <img src={logo} alt="TrackEats Logo" className="h-13 w-auto cursor-pointer" />
-        </Link>
+      <Link to="/">
+        {logo}
+      </Link>
+
+      {/* Desktop nav list (center or right aligned) */}
+      <div
+        className={`hidden md:flex gap-8 text-base ${alignmentClasses[align] || ""}`}
+      >
+        {links.map(renderNavLink)}
       </div>
 
-      {/* Desktop Nav */}
-      <div className="hidden md:flex gap-8 font-poppins font-medium text-base">
-        {navLinks.map(renderNavLink)}
-      </div>
-
-      {/* Right Section with Logout */}
+      {/* Right side: Desktop right content + Mobile toggle */}
       <div className="flex items-center gap-4">
-        {/* Mobile Hamburger */}
+        {/* Right content (Sign In / Logout) - only visible on desktop */}
+        <div className="hidden md:block">
+          {rightContent}
+        </div>
+
+        {/* Hamburger for mobile */}
         <div className="md:hidden">
-          <button onClick={toggleMenu} className="focus:outline-none">
+          <button onClick={toggleMenu}>
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
-
-        {/* Logout Button (always visible on all screens) */}
-        <div className="hidden md:block">
-          <LogoutButton />
-        </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Dropdown */}
       {isOpen && (
-        <div className="absolute top-16 left-0 w-full bg-white flex flex-col items-center py-4 z-40 gap-3">
-          {navLinks.map(renderNavLink)}
-          {/* Show logout in mobile menu too */}
-          <LogoutButton />
+        <div className="absolute top-16 left-0 w-full bg-white flex flex-col items-center py-4 z-40 gap-3 shadow-md border-t">
+          {links.map(renderNavLink)}
+          <div className="block md:hidden">
+            {rightContent}
+          </div>
         </div>
       )}
     </nav>

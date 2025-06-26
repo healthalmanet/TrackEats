@@ -35,7 +35,7 @@ export const getMeals = async (token, url = null) => {
 
     const response = await axios.get(finalUrl, {
       headers,
-      timeout: 15000, // ⏱️ Added timeout here
+      timeout: 30000, // ⏱️ Added timeout here
     });
     return response.data;
   } catch (error) {

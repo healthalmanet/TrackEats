@@ -37,18 +37,20 @@ function App() {
   }
 
   const getRedirectPath = () => {
-    if (!user?.role) return "/dashboard"; // fallback
-    const role = user.role.toLowerCase();
-    switch (role) {
-      case "owner":
-      case "operator":
-      case "nutritionist":
-        return `/${role}`;
-      case "user":
-      default:
-        return "/dashboard";
-    }
-  };
+  const role = user?.role?.toLowerCase();
+  if (!role) return "/"; // or "/login" — not "/dashboard" (to avoid looping)
+  
+  switch (role) {
+    case "owner":
+    case "operator":
+    case "nutritionist":
+      return `/${role}`;
+    case "user":
+    default:
+      return "/dashboard";
+  }
+};
+
 
   return (
     <>

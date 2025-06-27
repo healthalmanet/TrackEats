@@ -14,7 +14,7 @@ const defaultConfig = {
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000, // 15 seconds timeout
+   // 15 seconds timeout
 };
 
 // ✅ Login API

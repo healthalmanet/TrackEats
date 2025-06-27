@@ -3,16 +3,18 @@ import { Flame, Droplet, Weight } from "lucide-react";
 import heroImage from "../../assets/heroImage.png";
 import { getUserProfile } from "../../api/userProfile";
 import { getMeals } from "../../api/mealLog";
-import { getWaterByDate } from "../../api/water";
+import { getWater } from "../../api/WaterTracker";
+import { targetApi } from "../../api/reportsApi";
 import { toast } from "react-hot-toast";
 
-const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
+const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
   const [weight, setWeight] = useState(null);
   const [waterIntakeML, setWaterIntakeML] = useState(0);
   const [caloriesToday, setCaloriesToday] = useState(0);
+  const [calorieGoal, setCalorieGoal] = useState(null);
+  const [waterGoalML, setWaterGoalML] = useState(3000);
 
   const glassSizeML = 250;
-  const waterGoalGlasses = 8;
   const today = new Date().toISOString().split("T")[0];
 
   const waterIntakeGlasses = useMemo(() => {
@@ -20,7 +22,10 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
     return isNaN(glasses) ? 0 : glasses;
   }, [waterIntakeML]);
 
-  // Fetch weight
+  const waterGoalGlasses = useMemo(() => {
+    return Math.round(waterGoalML / glassSizeML);
+  }, [waterGoalML]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -34,7 +39,22 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
     fetchProfile();
   }, []);
 
-  // Fetch today's calorie intake
+  useEffect(() => {
+    const fetchGoal = async () => {
+      try {
+        const data = await targetApi();
+        setCalorieGoal(data.recommended_calories || 2000);
+        setWaterGoalML(data.water?.recommended_ml || 3000);
+      } catch (error) {
+        console.error("❌ Error fetching targets:", error);
+        toast.error("Failed to load nutrition goals");
+        setCalorieGoal(2000);
+        setWaterGoalML(3000);
+      }
+    };
+    fetchGoal();
+  }, []);
+
   useEffect(() => {
     const fetchTodayCalories = async () => {
       try {
@@ -51,7 +71,7 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
           0
         );
 
-        setCaloriesToday(totalCalories.toFixed(0));
+        setCaloriesToday(Number(totalCalories.toFixed(0)));
       } catch (error) {
         console.error("❌ Error fetching calories:", error);
         toast.error("Failed to load calorie data");
@@ -59,27 +79,20 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
     };
 
     fetchTodayCalories();
-  }, [today]);
+  }, [today, mealUpdateTrigger]);
 
-  // Fetch today's water intake in ml
   useEffect(() => {
     const fetchWaterIntake = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const data = await getWaterByDate(token, today);
+        const data = await getWater(today);
+        const entries = data.results || [];
 
-        let amount = 0;
+        const totalML = entries.reduce(
+          (sum, item) => sum + Number(item.amount_ml || 0),
+          0
+        );
 
-        if (Array.isArray(data)) {
-          amount = data.reduce(
-            (sum, item) => sum + Number(item.amount_ml || 0),
-            0
-          );
-        } else {
-          amount = Number(data?.amount_ml) || 0;
-        }
-
-        setWaterIntakeML(amount);
+        setWaterIntakeML(totalML);
       } catch (error) {
         console.error("❌ Error fetching water intake:", error);
         toast.error("Failed to load water intake data");
@@ -87,7 +100,7 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
     };
 
     fetchWaterIntake();
-  }, [today, waterUpdateTrigger]); // 🔁 Refetch on trigger
+  }, [today, waterUpdateTrigger]);
 
   return (
     <div className="w-full min-h-[350px] bg-gradient-to-r from-green-50 to-orange-50 p-8 md:p-12 rounded-lg flex flex-col md:flex-row justify-between items-center">
@@ -101,7 +114,7 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
         </p>
 
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Calories Card */}
+          {/* ✅ Calories Card (updated) */}
           <div className="flex-1 bg-white rounded-lg shadow p-6 border border-gray-200 hover:scale-105 hover:shadow-lg transition-transform relative">
             <div className="absolute top-3 right-3 text-red-500">
               <Flame size={22} />
@@ -112,12 +125,22 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
             <p className="text-2xl font-bold text-gray-800 mb-1">
               {caloriesToday}
             </p>
-            <p className="text-sm text-gray-500 font-semibold mb-4">
-              Goal: {calorieGoal}
-            </p>
+
+            {calorieGoal !== null && (
+              <>
+                <p className="text-sm text-gray-500 font-semibold">
+                  Goal: {calorieGoal}
+                </p>
+                {caloriesToday >= calorieGoal && (
+                  <p className="text-sm text-green-600 font-semibold mt-1">
+                    You've hit your calorie goal!
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
-          {/* Water Intake Card */}
+          {/* ✅ Water Card (restored original logic & formatting) */}
           <div className="flex-1 bg-white rounded-lg shadow p-6 border border-gray-200 hover:scale-105 hover:shadow-lg transition-transform relative">
             <div className="absolute top-3 right-3 text-blue-500">
               <Droplet size={22} />
@@ -125,15 +148,26 @@ const HeroSection = ({ calorieGoal = 2000, waterUpdateTrigger = 0 }) => {
             <p className="text-sm text-gray-600 font-medium mb-2">
               Water Intake
             </p>
+
             <p className="text-2xl font-bold text-gray-800 mb-1">
-              {waterIntakeGlasses}/{waterGoalGlasses} Glasses
+              {waterIntakeGlasses} Glass{waterIntakeGlasses !== 1 ? "es" : ""}
             </p>
-            <p className="text-sm text-gray-500 font-semibold">
-              ({waterIntakeML} ml)
-            </p>
+
+            {waterIntakeGlasses <= waterGoalGlasses ? (
+              <p className="text-sm text-gray-500 font-semibold">
+                Goal: {waterGoalGlasses} Glasses
+              </p>
+            ) : (
+              <p className="text-sm text-green-600 font-semibold">
+                Goal surpassed by {waterIntakeGlasses - waterGoalGlasses} glass
+                {waterIntakeGlasses - waterGoalGlasses > 1 ? "es" : ""}!
+              </p>
+            )}
+
+            <p className="text-sm text-gray-400 mt-1">({waterIntakeML} ml)</p>
           </div>
 
-          {/* Weight Card */}
+          {/* ✅ Weight Card */}
           <div className="flex-1 bg-white rounded-lg shadow p-6 border border-gray-200 hover:scale-105 hover:shadow-lg transition-transform relative">
             <div className="absolute top-3 right-3 text-green-500">
               <Weight size={22} />

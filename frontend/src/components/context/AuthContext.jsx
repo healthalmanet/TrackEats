@@ -45,7 +45,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const isAuthenticated = !!token;
+  const isAuthenticated = !!token && !!user;
+
   const role = user?.role || null;
 
   return (

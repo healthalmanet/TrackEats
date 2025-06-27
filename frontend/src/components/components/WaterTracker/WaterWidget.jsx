@@ -1,4 +1,6 @@
+import { useState } from "react";
 import useWaterTracker from "./UseWaterTracker";
+import { toast } from "react-hot-toast";
 
 const WaterIntakeWidget = ({ onWaterLogged }) => {
   const {
@@ -9,11 +11,26 @@ const WaterIntakeWidget = ({ onWaterLogged }) => {
   } = useWaterTracker();
 
   const maxGlasses = 10;
+  const [lastAddedIndex, setLastAddedIndex] = useState(null);
 
   const handleAddGlass = async () => {
-    const success = await addGlass(); // Only add if successful
-    if (success && typeof onWaterLogged === "function") {
-      onWaterLogged(); // Notify parent to re-fetch
+    const success = await addGlass();
+
+    if (success) {
+      toast.success("Logged 250ml of water!");
+      setLastAddedIndex(totalGlasses); // Index is 0-based
+
+      if (totalGlasses >= maxGlasses) {
+        toast("🎉 You've surpassed your goal!", { icon: "💧" });
+      }
+
+      if (typeof onWaterLogged === "function") {
+        onWaterLogged();
+      }
+
+      setTimeout(() => {
+        setLastAddedIndex(null);
+      }, 1000);
     }
   };
 
@@ -24,7 +41,7 @@ const WaterIntakeWidget = ({ onWaterLogged }) => {
           Water Intake Tracker
         </h2>
 
-        {/* Date Picker - Styled */}
+        {/* Date Picker */}
         <div className="flex justify-center mb-6">
           <input
             type="date"
@@ -34,14 +51,16 @@ const WaterIntakeWidget = ({ onWaterLogged }) => {
           />
         </div>
 
-        {/* Vertical Capsule Indicators */}
+        {/* Vertical Capsules */}
         <div className="flex justify-center flex-wrap gap-3 mb-5">
-          {Array.from({ length: maxGlasses }).map((_, i) => (
+          {Array.from({ length: Math.max(totalGlasses, maxGlasses) }).map((_, i) => (
             <div
               key={i}
               className={`w-5 h-10 sm:w-6 sm:h-12 rounded-full border-2 transition-all duration-300 ${
                 i < totalGlasses
-                  ? "bg-blue-500 border-blue-500"
+                  ? i < maxGlasses
+                    ? `bg-blue-500 border-blue-500 ${i === lastAddedIndex ? "animate-pop" : ""}`
+                    : `bg-blue-500 border-blue-500 ${i === lastAddedIndex ? "animate-pop" : ""}`
                   : "bg-white border-gray-300"
               }`}
               title={`Glass ${i + 1}`}
@@ -49,17 +68,23 @@ const WaterIntakeWidget = ({ onWaterLogged }) => {
           ))}
         </div>
 
-        {/* Progress Text */}
-        <p className="text-center font-semibold text-gray-600 mb-4">
-          {totalGlasses} out of {maxGlasses} glasses completed
+        {/* ✅ Updated Progress Text */}
+        <p className="text-center font-semibold text-gray-600 mb-2">
+          {totalGlasses} {totalGlasses > maxGlasses ? "glasses logged" : `out of ${maxGlasses} glasses completed`}
         </p>
+
+        {totalGlasses > maxGlasses && (
+          <p className="text-center text-green-600 font-semibold mb-4">
+             You've surpassed your goal by {totalGlasses - maxGlasses} glass
+            {totalGlasses - maxGlasses > 1 ? "es" : ""}!
+          </p>
+        )}
 
         {/* Add Glass Button */}
         <div className="flex justify-center">
           <button
             onClick={handleAddGlass}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-semibold"
-            disabled={totalGlasses >= maxGlasses}
           >
             + Add Glass
           </button>

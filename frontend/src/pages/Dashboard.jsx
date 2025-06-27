@@ -1,8 +1,6 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useState } from "react";
-
-// Import from your context
-import { useAuth } from "../components/context/AuthContext"; // Adjust the path if needed
+import { useAuth } from "../components/context/AuthContext";
 
 // Dashboard tools and pages
 import UserProfileForm from "./dashboard/UserProfileForm";
@@ -19,7 +17,7 @@ import HealthSection from "./dashboard/Tools/HealthSection";
 import Meals from "./dashboard/Meals";
 import Reports from "./Reports";
 
-// Components visible on dashboard main screen
+// Dashboard main components
 import HeroSection from "../components/components/HeroSection";
 import QuickMealLogger from "../components/components/MealLogger/QuickMealLogger";
 import WaterIntakeWidget from "../components/components/WaterTracker/WaterWidget";
@@ -28,10 +26,11 @@ import DietRecommendations from "../components/components/RecommendationSection"
 
 function Dashboard() {
   const location = useLocation();
-  const { user } = useAuth(); // Get logged-in user info
-  const [waterUpdateTrigger, setWaterUpdateTrigger] = useState(0);
+  const { user } = useAuth();
 
-  // Redirect to homepage if user is not a regular user
+  const [waterUpdateTrigger, setWaterUpdateTrigger] = useState(0);
+  const [mealUpdateTrigger, setMealUpdateTrigger] = useState(0); // ✅ New state
+
   if (!user || user.role !== "user") {
     return <Navigate to="/" />;
   }
@@ -40,8 +39,13 @@ function Dashboard() {
     <div>
       {location.pathname === "/dashboard" && (
         <>
-          <HeroSection waterUpdateTrigger={waterUpdateTrigger} />
-          <QuickMealLogger />
+          <HeroSection
+            waterUpdateTrigger={waterUpdateTrigger}
+            mealUpdateTrigger={mealUpdateTrigger} // ✅ Passed down
+          />
+          <QuickMealLogger
+            onMealLogged={() => setMealUpdateTrigger((prev) => prev + 1)} // ✅ Triggers refresh
+          />
           <WaterIntakeWidget
             onWaterLogged={() => setWaterUpdateTrigger((prev) => prev + 1)}
           />

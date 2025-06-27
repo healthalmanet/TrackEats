@@ -1,9 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { logWaterGlass } from '../../../api/water'; // Your API file
+import { getWater,postWater } from '../../../api/WaterTracker';
 import { toast } from 'react-hot-toast';
-
-const GLASS_SIZE_ML = 250;
 
 const useWaterTracker = () => {
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -11,32 +8,33 @@ const useWaterTracker = () => {
     return today.toISOString().split('T')[0];
   });
 
-  const [waterLogs, setWaterLogs] = useState({}); // { "2025-06-23": 2, ... }
-
+  const [waterLogs, setWaterLogs] = useState({});
   const totalGlasses = waterLogs[selectedDate] || 0;
 
-  
-  
-
-  // Add a glass and log to backend
-  const addGlass = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('Login required');
-      return;
-    }
-
+  const fetchWaterLogs = async (date) => {
     try {
-      await logWaterGlass(token); // logs 500ml to backend
-      // Update local log (1 glass = 250ml, 500ml = 2 glasses)
+      const response = await getWater(date);
+      const totalMl = response.results.reduce((sum, entry) => sum + entry.amount_ml, 0);
+      const glasses = Math.floor(totalMl / 250);
       setWaterLogs((prev) => ({
         ...prev,
-        [selectedDate]: (prev[selectedDate] || 0) + 1,
+        [date]: glasses,
       }));
-      toast.success('Logged 500ml (1 glasses) of water');
+    } catch (err) {
+      console.error("❌ Failed to fetch water data:", err);
+    }
+  };
+
+  const addGlass = async () => {
+    try {
+      await postWater({ amount_ml: 250, date: selectedDate }); // 💧 Log 250ml
+      await fetchWaterLogs(selectedDate); // 🌀 Refresh
+      toast.success("250ml of water logged!");
+      return true;
     } catch (error) {
-      console.error('❌ Failed to log water to backend:', error);
-      toast.error('Failed to sync with server');
+      console.error("❌ Error logging water:", error);
+      toast.error("Failed to log water");
+      return false;
     }
   };
 
@@ -45,16 +43,15 @@ const useWaterTracker = () => {
       ...prev,
       [selectedDate]: 0,
     }));
-    // Optional: add API reset if needed
   };
 
-  const changeDate = (newDate) => {
-    setSelectedDate(newDate);
-  };
+  useEffect(() => {
+    fetchWaterLogs(selectedDate);
+  }, [selectedDate]);
 
   return {
     selectedDate,
-    setSelectedDate: changeDate,
+    setSelectedDate: (date) => setSelectedDate(date),
     totalGlasses,
     addGlass,
     resetGlasses,

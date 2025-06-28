@@ -1,6 +1,8 @@
 import React from 'react';
 import useMealLogger from '../../../components/components/MealLogger/UseMealLogger';
 import { Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { X } from 'lucide-react';
+
 
 const MealLogger = () => {
   const {
@@ -22,6 +24,9 @@ const MealLogger = () => {
     pagination = {},
     currentPage = 1,
     handleDeleteMeal,
+    searchDate,
+    setSearchDate,
+    searchByDate,
   } = useMealLogger();
 
   const mealColors = {
@@ -149,7 +154,49 @@ const MealLogger = () => {
 
             {/* Logged Meals */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-md">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Today's Logged Foods</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Logged Meals</h3>
+               <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-4">
+  <label className="text-sm text-gray-700 font-sm">Search logged meals by date:</label>
+  <div className="flex gap-2 w-full sm:w-auto">
+   <div className="relative w-full sm:w-105">
+  <input
+    type="date"
+    value={searchDate}
+    onChange={(e) => {
+      const newDate = e.target.value;
+      setSearchDate(newDate);
+      if (newDate === '') {
+        searchByDate('');
+      }
+    }}
+    placeholder="Search logged meals by date"
+    className="border border-gray-300 px-3 py-2 rounded-lg text-sm w-full pr-10"
+  />
+  {searchDate && (
+    <button
+      type="button"
+      onClick={() => {
+        setSearchDate('');
+        searchByDate('');
+      }}
+      title="Reset and show all today's meals"
+      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500"
+    >
+      <X size={16} />
+    </button>
+  )}
+</div>
+
+
+    <button
+      onClick={() => searchByDate(searchDate)}
+      className="bg-green-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+    >
+      Search
+    </button>
+  </div>
+</div>
+
               {loggedMeals.length === 0 ? (
                 <p className="text-sm text-gray-400">No meals logged yet.</p>
               ) : (
@@ -236,47 +283,49 @@ const MealLogger = () => {
             </div>
           </div>
 
-          {/* Sidebar Summary with Progress Bars */}
-          <div className="space-y-6 flex flex-col h-full">
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md">
-              <h4 className="font-semibold text-sm text-gray-700 mb-3">Daily Summary</h4>
-              <p className="text-xl font-bold text-green-600">{dailySummary.calories} cal</p>
-              <p className="text-xs text-gray-400 mb-3">
-                {(goals.caloriesTarget ?? 0) - (dailySummary.calories ?? 0)} remaining
-              </p>
-              <div className="space-y-4 text-sm">
-                {[
-                  { label: 'Carbs', value: dailySummary.carbs, target: 250, color: 'bg-yellow-400' },
-                  { label: 'Protein', value: dailySummary.protein, target: 50, color: 'bg-orange-400' },
-                  { label: 'Fat', value: dailySummary.fat, target: 67, color: 'bg-green-400' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between">
-                      <span>{item.label}</span>
-                      <span>{item.value ?? 0}g / {item.target}g</span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-1">
-                      <div
-                        className={`${item.color} h-full`}
-                        style={{ width: `${getProgressPercent(item.value, item.target)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md">
-              <h4 className="font-semibold text-sm text-gray-700 mb-3">Today's Goals</h4>
-              <div className="text-sm space-y-2">
-                <p>💧 Water: {goals?.waterLogged ?? 0}/{goals?.waterTarget ?? 0} glasses</p>
-                <p>🔥 Calories: {dailySummary?.calories ?? 0}/{goals?.caloriesTarget ?? 0}</p>
-              </div>
-            </div>
+          <div className="flex flex-col items-start space-y-6">
+  {/* Daily Summary (width-fit) */}
+  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md w-full">
+    <h4 className="font-semibold text-sm text-gray-700 mb-3">Daily Summary</h4>
+    <p className="text-xl font-bold text-green-600">{dailySummary.calories?.toFixed(1)} cal</p>
+    <p className="text-xs text-gray-400 mb-3">
+      {(goals.caloriesTarget ?? 0) - (dailySummary.calories ?? 0).toFixed(1)} remaining
+    </p>
+    <div className="space-y-4 text-sm">
+      {[
+        { label: 'Carbs', value: dailySummary.carbs, target: 250, color: 'bg-yellow-400' },
+        { label: 'Protein', value: dailySummary.protein, target: 50, color: 'bg-orange-400' },
+        { label: 'Fat', value: dailySummary.fat, target: 67, color: 'bg-green-400' },
+      ].map((item) => (
+        <div key={item.label}>
+          <div className="flex justify-between">
+            <span>{item.label}</span>
+            <span>{(item.value ?? 0).toFixed(1)}g / {item.target}g</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-1">
+            <div
+              className={`${item.color} h-full`}
+              style={{ width: `${getProgressPercent(item.value, item.target)}%` }}
+            ></div>
           </div>
         </div>
-      </div>
+      ))}
     </div>
+  </div>
+
+  {/* Today's Goals */}
+  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md w-full">
+    <h4 className="font-semibold text-sm text-gray-700 mb-3">Today's Goals</h4>
+    <div className="text-sm space-y-2">
+      <p>💧 Water: {goals?.waterLogged ?? 0}/{goals?.waterTarget ?? 0} glasses</p>
+      <p>🔥 Calories: {dailySummary?.calories ?? 0}/{goals?.caloriesTarget ?? 0}</p>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+</div>
+    
   );
 };
 

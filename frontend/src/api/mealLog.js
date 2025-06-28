@@ -91,3 +91,20 @@ export const deleteMeal = async (mealId, token) => {
     throw error;
   }
 };
+
+export const getMealsByDate = async (token, date) => {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+
+    const url = `https://trackeats.onrender.com/api/logmeals/?date=${date}&page=1`;
+    const response = await axios.get(url, { headers });
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching meals by date:', error.response?.data || error.message);
+    throw error;
+  }
+};
+

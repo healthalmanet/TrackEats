@@ -153,6 +153,8 @@ DATABASES = {
     'default': dj_database_url.parse(config('DATABASE_URL'))
 }
 
+GEMINI_API_KEY = config("GEMINI_API_KEY")
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=3650),  # Default is 5 minutes
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Default is 1 day

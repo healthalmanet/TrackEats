@@ -144,79 +144,165 @@ class DiabeticProfile(models.Model):
     def __str__(self):
         return f"Diabetes Profile for {self.user_profile.name}"
     
-# ------------------------
-# Food Items
-# ------------------------
+
 # class FoodItem(models.Model):
 #     FOOD_TYPE_CHOICES = [
-#         ("vegetarian", "Vegetarian"),
-#         ("non_vegetarian", "Non-Vegetarian"),
+#         ("veg", "Vegetarian"),
+#         ("non_veg", "Non-Vegetarian"),
 #         ("vegan", "Vegan"),
 #         ("eggetarian", "Eggetarian"),
 #         ("other", "Other"),
 #     ]
 
-#     HEALTH_CONDITION_CHOICES = [
-#         ("none", "None"),
-#         ("diabetes", "Diabetes"),
-#         ("thyroid", "Thyroid"),
-#         ("hypertension", "Hypertension"),
+#     MEAL_TYPE_CHOICES = [
+#         ("breakfast", "Breakfast"),
+#         ("lunch_dinner", "Lunch/Dinner"),
+#         ("snack", "Snack"),
+#         ("unknown", "Unknown"),
 #     ]
 
-#     GOAL_CHOICES = [
-#         ("weight_loss", "Weight Loss"),
-#         ("maintain", "Maintain Weight"),
-#         ("gain_weight", "Gain Weight"),
-#     ]
-
-#     name = models.CharField(max_length=100)
+#     name = models.CharField(max_length=150, unique=True)
 #     calories = models.FloatField()
-#     protein_g = models.FloatField()
-#     carbs_g = models.FloatField()
-#     fats_g = models.FloatField()
-#     sugar_g = models.FloatField()
-#     fiber_g = models.FloatField()
-#     glycemic_index = models.FloatField(null=True, blank=True)
+#     protein = models.FloatField(help_text="Protein (g)")
+#     carbs = models.FloatField(help_text="Carbohydrates (g)")
+#     fats = models.FloatField(help_text="Fats (g)")
+#     estimated_gi = models.FloatField(null=True, blank=True, help_text="Estimated Glycemic Index")
+#     glycemic_load = models.FloatField(null=True, blank=True)
 
-#     food_type = models.CharField(max_length=20, choices=FOOD_TYPE_CHOICES, default="other")
-#     suitable_for_conditions = models.CharField(max_length=50, choices=HEALTH_CONDITION_CHOICES, default="none")
-#     suitable_for_goal = models.CharField(max_length=20, choices=GOAL_CHOICES, default="maintain")
+#     food_type = models.CharField(max_length=15, choices=FOOD_TYPE_CHOICES, default="other")
+#     meal_type = models.CharField(max_length=15, choices=MEAL_TYPE_CHOICES, default="unknown")
+
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
 #     def __str__(self):
-#         return f"{self.name} ({self.food_type})"
+#         return f"{self.name} ({self.get_food_type_display()} - {self.get_meal_type_display()})"
+
+
 
 class FoodItem(models.Model):
     FOOD_TYPE_CHOICES = [
-        ("veg", "Vegetarian"),
-        ("non_veg", "Non-Vegetarian"),
-        ("vegan", "Vegan"),
+        ("vegetarian", "Vegetarian"),
+        ("non-vegetarian", "Non-Vegetarian"),
         ("eggetarian", "Eggetarian"),
+        ("vegan", "Vegan"),
         ("other", "Other"),
     ]
 
     MEAL_TYPE_CHOICES = [
         ("breakfast", "Breakfast"),
-        ("lunch_dinner", "Lunch/Dinner"),
+        ("lunch", "Lunch"),
+        ("dinner", "Dinner"),
         ("snack", "Snack"),
+        ("dessert", "Dessert"),
+        ("beverage", "Beverage"),
         ("unknown", "Unknown"),
     ]
 
     name = models.CharField(max_length=150, unique=True)
+    default_quantity = models.FloatField(help_text="Standard portion size (numeric)", default=1)
+    default_unit = models.CharField(max_length=20, help_text="e.g., gram, bowl, tsp", default="g")
+    gram_equivalent = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Weight in grams for the default_quantity (e.g., 1 plate = 250g)"
+    )
+
+    # Macronutrients
     calories = models.FloatField()
     protein = models.FloatField(help_text="Protein (g)")
     carbs = models.FloatField(help_text="Carbohydrates (g)")
     fats = models.FloatField(help_text="Fats (g)")
-    estimated_gi = models.FloatField(null=True, blank=True, help_text="Estimated Glycemic Index")
+    sugar = models.FloatField(help_text="Sugar (g)", null=True, blank=True)
+    fiber = models.FloatField(help_text="Fiber (g)", null=True, blank=True)
+
+    # Glycemic data
+    estimated_gi = models.FloatField(null=True, blank=True)
     glycemic_load = models.FloatField(null=True, blank=True)
 
-    food_type = models.CharField(max_length=15, choices=FOOD_TYPE_CHOICES, default="other")
-    meal_type = models.CharField(max_length=15, choices=MEAL_TYPE_CHOICES, default="unknown")
+    # Classification
+    food_type = models.CharField(max_length=20, choices=FOOD_TYPE_CHOICES, default="other")
+    meal_type = ArrayField(
+        models.CharField(max_length=20, choices=MEAL_TYPE_CHOICES),
+        default=list,
+        help_text="List of meals this food is suitable for (e.g., breakfast, lunch, dinner)"
+    )
+
+    remarks = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} ({self.get_food_type_display()} - {self.get_meal_type_display()})"
+        return f"{self.name} ({self.food_type} - {', '.join(self.meal_type)})"
+
+
+class UserMeal(models.Model):
+    UNIT_CHOICES = [
+        ("g", "Grams"), ("kg", "Kilograms"),
+        ("ml", "Milliliters"), ("l", "Liters"),
+        ("cup", "Cup"), ("bowl", "Bowl"),
+        ("piece", "Piece"), ("tbsp", "Tablespoon"),
+        ("tsp", "Teaspoon"), ("slice", "Slice"),
+        ("other", "Other"),
+    ]
+
+    MEAL_CHOICES = [
+        ("breakfast", "Breakfast"),
+        ("lunch", "Lunch"),
+        ("dinner", "Dinner"),
+        ("snack", "Snack"),
+    ]
+
+    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    food_item = models.ForeignKey('FoodItem', on_delete=models.SET_NULL, null=True, blank=True)
+    food_name = models.CharField(max_length=100, blank=True, null=True)
+
+    quantity = models.FloatField()
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default="g")
+    meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
+
+    consumed_at = models.DateTimeField(blank=True, null=True)
+    date = models.DateField(blank=True, null=True)
+    remarks = models.TextField(blank=True)
+
+    # Nutritional snapshot
+    total_grams = models.FloatField(blank=True, null=True, help_text="Estimated total weight in grams")
+    calories = models.FloatField(blank=True, null=True)
+    protein = models.FloatField(blank=True, null=True)
+    carbs = models.FloatField(blank=True, null=True)
+    fats = models.FloatField(blank=True, null=True)
+    sugar = models.FloatField(blank=True, null=True)
+    fiber = models.FloatField(blank=True, null=True)
+    estimated_gi = models.FloatField(blank=True, null=True)
+    glycemic_load = models.FloatField(blank=True, null=True)
+    food_type = models.CharField(max_length=20, blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-fill from food_item if missing
+        if self.food_item:
+            self.food_name = self.food_name or self.food_item.name
+            self.calories = self.calories or self.food_item.calories
+            self.protein = self.protein or self.food_item.protein
+            self.carbs = self.carbs or self.food_item.carbs
+            self.fats = self.fats or self.food_item.fats
+            self.sugar = self.sugar or self.food_item.sugar
+            self.fiber = self.fiber or self.food_item.fiber
+            self.estimated_gi = self.estimated_gi or self.food_item.estimated_gi
+            self.glycemic_load = self.glycemic_load or self.food_item.glycemic_load
+            self.food_type = self.food_type or self.food_item.food_type
+
+        if not self.consumed_at:
+            self.consumed_at = timezone.now()
+
+        if not self.date:
+            self.date = self.consumed_at.date()
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user.email} ate {self.food_name or 'Unknown'} on {self.date} — {self.quantity} {self.unit}"
+
 
 
 # class UserMeal(models.Model):
@@ -249,23 +335,40 @@ class FoodItem(models.Model):
 
 #     remarks = models.TextField(blank=True)
 
+#     # Nutritional snapshot at the time of logging
 #     calories = models.FloatField(blank=True, null=True)
 #     protein = models.FloatField(blank=True, null=True)
 #     carbs = models.FloatField(blank=True, null=True)
 #     fats = models.FloatField(blank=True, null=True)
 #     sugar = models.FloatField(blank=True, null=True)
 #     fiber = models.FloatField(blank=True, null=True)
+#     estimated_gi = models.FloatField(blank=True, null=True)
+#     glycemic_load = models.FloatField(blank=True, null=True)
+#     food_type = models.CharField(max_length=20, blank=True, null=True)  # <-- added
 
 #     def save(self, *args, **kwargs):
-#         # Auto-populate food_name if not provided but food_item is set
-#         if not self.food_name and self.food_item:
-#             self.food_name = self.food_item.name
+#         # Auto-populate food_name & nutrition from food_item
+#         if self.food_item:
+#             if not self.food_name:
+#                 self.food_name = self.food_item.name
+#             if not self.calories:
+#                 self.calories = self.food_item.calories
+#             if not self.protein:
+#                 self.protein = self.food_item.protein
+#             if not self.carbs:
+#                 self.carbs = self.food_item.carbs
+#             if not self.fats:
+#                 self.fats = self.food_item.fats
+#             if not self.estimated_gi:
+#                 self.estimated_gi = self.food_item.estimated_gi
+#             if not self.glycemic_load:
+#                 self.glycemic_load = self.food_item.glycemic_load
+#             if not self.food_type:
+#                 self.food_type = self.food_item.food_type
 
-#         # ✅ If consumed_at not provided → set to now
 #         if not self.consumed_at:
 #             self.consumed_at = timezone.now()
 
-#         # ✅ If date not provided → set from consumed_at.date()
 #         if not self.date:
 #             self.date = self.consumed_at.date()
 
@@ -273,78 +376,6 @@ class FoodItem(models.Model):
 
 #     def __str__(self):
 #         return f"{self.user.email} ate {self.food_name or 'Unknown'} on {self.date} — {self.quantity} {self.unit}"
-
-class UserMeal(models.Model):
-    UNIT_CHOICES = [
-        ("g", "Grams"), ("kg", "Kilograms"),
-        ("ml", "Milliliters"), ("l", "Liters"),
-        ("cup", "Cup"), ("bowl", "Bowl"),
-        ("piece", "Piece"), ("tbsp", "Tablespoon"),
-        ("tsp", "Teaspoon"), ("slice", "Slice"),
-        ("other", "Other"),
-    ]
-
-    MEAL_CHOICES = [
-        ("breakfast", "Breakfast"),
-        ("lunch", "Lunch"),
-        ("dinner", "Dinner"),
-        ("snack", "Snack"),
-    ]
-
-    user = models.ForeignKey('User', on_delete=models.CASCADE)
-    food_item = models.ForeignKey('FoodItem', on_delete=models.SET_NULL, null=True, blank=True)
-    food_name = models.CharField(max_length=100, blank=True, null=True)
-
-    quantity = models.FloatField()
-    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default="g")
-    meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
-
-    consumed_at = models.DateTimeField(blank=True, null=True)
-    date = models.DateField(blank=True, null=True)
-
-    remarks = models.TextField(blank=True)
-
-    # Nutritional snapshot at the time of logging
-    calories = models.FloatField(blank=True, null=True)
-    protein = models.FloatField(blank=True, null=True)
-    carbs = models.FloatField(blank=True, null=True)
-    fats = models.FloatField(blank=True, null=True)
-    sugar = models.FloatField(blank=True, null=True)
-    fiber = models.FloatField(blank=True, null=True)
-    estimated_gi = models.FloatField(blank=True, null=True)
-    glycemic_load = models.FloatField(blank=True, null=True)
-    food_type = models.CharField(max_length=20, blank=True, null=True)  # <-- added
-
-    def save(self, *args, **kwargs):
-        # Auto-populate food_name & nutrition from food_item
-        if self.food_item:
-            if not self.food_name:
-                self.food_name = self.food_item.name
-            if not self.calories:
-                self.calories = self.food_item.calories
-            if not self.protein:
-                self.protein = self.food_item.protein
-            if not self.carbs:
-                self.carbs = self.food_item.carbs
-            if not self.fats:
-                self.fats = self.food_item.fats
-            if not self.estimated_gi:
-                self.estimated_gi = self.food_item.estimated_gi
-            if not self.glycemic_load:
-                self.glycemic_load = self.food_item.glycemic_load
-            if not self.food_type:
-                self.food_type = self.food_item.food_type
-
-        if not self.consumed_at:
-            self.consumed_at = timezone.now()
-
-        if not self.date:
-            self.date = self.consumed_at.date()
-
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.user.email} ate {self.food_name or 'Unknown'} on {self.date} — {self.quantity} {self.unit}"
 
 
 # ------------------------For OWNER/OPERATOR

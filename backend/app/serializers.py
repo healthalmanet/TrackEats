@@ -74,6 +74,7 @@ class UserMealSerializer(serializers.ModelSerializer):
     food_name = serializers.CharField(required=False)
     quantity = serializers.FloatField()
     unit = serializers.CharField()
+    gram_equivalent = serializers.FloatField(source="food_item.gram_equivalent", read_only=True)
     meal_type = serializers.ChoiceField(choices=UserMeal.MEAL_CHOICES)
     remarks = serializers.CharField(required=False, allow_blank=True)
 
@@ -101,11 +102,12 @@ class UserMealSerializer(serializers.ModelSerializer):
             "estimated_gi",
             "glycemic_load",
             "food_type",
+             "gram_equivalent",  # ✅ Added here
         ]
         read_only_fields = [
             "id", "user", "calories", "protein", "carbs", "fats", "sugar",
             "fiber", "estimated_gi", "glycemic_load", "food_type",
-            "consumed_at", "date"
+            "consumed_at", "date","gram_equivalent"
         ]
 # Patient Reminders
 class PatientReminderSerializer(serializers.ModelSerializer):

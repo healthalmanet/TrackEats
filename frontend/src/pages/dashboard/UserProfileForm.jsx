@@ -67,7 +67,7 @@ const dietTypeOptions = [
 const UserProfileForm = () => {
   const [formData, setFormData] = useState({
     name: "",
-    dob: "", // replaced age with dob
+    dob: "",
     gender: "",
     height_cm: "",
     weight_kg: "",
@@ -77,6 +77,7 @@ const UserProfileForm = () => {
     health_conditions: [],
     country: "",
     diet_type: "",
+    occupation: "", // ✅ added
   });
 
   const [originalData, setOriginalData] = useState(null);
@@ -99,6 +100,7 @@ const UserProfileForm = () => {
     if (data.goal) result.goal = goalMap[data.goal] || data.goal;
     if (data.country) result.country = data.country;
     if (data.diet_type) result.diet_type = data.diet_type.toLowerCase();
+    if (data.occupation) result.occupation = data.occupation; // ✅ added
     if (Array.isArray(data.health_conditions)) {
       result.health_conditions = data.health_conditions.map((h) => h.toLowerCase());
     }
@@ -168,6 +170,7 @@ const UserProfileForm = () => {
               h.charAt(0).toUpperCase() + h.slice(1)
             )
             : [],
+          occupation: data.occupation || "", // ✅ added
         };
 
         setFormData(normalizedData);
@@ -209,6 +212,7 @@ const UserProfileForm = () => {
             { label: "Height (cm)", type: "number", name: "height_cm", placeholder: "e.g. 170" },
             { label: "Weight (kg)", type: "number", name: "weight_kg", placeholder: "e.g. 65" },
             { label: "Mobile Number", type: "tel", name: "mobile_number", placeholder: "Enter mobile number" },
+            { label: "Occupation", type: "text", name: "occupation", placeholder: "Enter your occupation" }, // ✅ added
           ].map((field, index) => (
             <div key={index}>
               <label className="block text-gray-700 font-medium mb-1">{field.label}</label>
@@ -298,7 +302,7 @@ const UserProfileForm = () => {
             />
           </div>
 
-          <div className="col-span-1 sm:col-span-2">
+          <div >
             <label className="block text-gray-700 font-medium mb-1">Diet Type</label>
             <Select
               options={dietTypeOptions}

@@ -67,7 +67,7 @@ const dietTypeOptions = [
 const UserProfileForm = () => {
   const [formData, setFormData] = useState({
     name: "",
-    age: "",
+    dob: "", // replaced age with dob
     gender: "",
     height_cm: "",
     weight_kg: "",
@@ -90,7 +90,7 @@ const UserProfileForm = () => {
   const formatDataForBackend = (data) => {
     const result = {};
     if (data.name) result.name = data.name;
-    if (data.age) result.age = parseInt(data.age, 10);
+    if (data.dob) result.dob = data.dob;
     if (data.gender) result.gender = data.gender.toLowerCase();
     if (data.height_cm) result.height_cm = parseFloat(data.height_cm);
     if (data.weight_kg) result.weight_kg = parseFloat(data.weight_kg);
@@ -154,6 +154,7 @@ const UserProfileForm = () => {
       if (data) {
         const normalizedData = {
           ...data,
+          dob: data.dob || "",
           gender: data.gender.charAt(0).toUpperCase() + data.gender.slice(1),
           diet_type: data.diet_type.charAt(0).toUpperCase() + data.diet_type.slice(1),
           activity_level: Object.keys(activityLevelMap).find(
@@ -202,10 +203,9 @@ const UserProfileForm = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-8 md:p-10">
-          {/* Name, Age, Height, Weight, Mobile Number */}
           {[
             { label: "Name", type: "text", name: "name", placeholder: "Enter your name" },
-            { label: "Age", type: "number", name: "age", placeholder: "Enter your age" },
+            { label: "Date of Birth", type: "date", name: "dob", placeholder: "Select your date of birth" },
             { label: "Height (cm)", type: "number", name: "height_cm", placeholder: "e.g. 170" },
             { label: "Weight (kg)", type: "number", name: "weight_kg", placeholder: "e.g. 65" },
             { label: "Mobile Number", type: "tel", name: "mobile_number", placeholder: "Enter mobile number" },
@@ -223,7 +223,6 @@ const UserProfileForm = () => {
             </div>
           ))}
 
-          {/* Gender */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">Gender</label>
             <Select
@@ -238,7 +237,6 @@ const UserProfileForm = () => {
             />
           </div>
 
-          {/* Activity Level */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">Activity Level</label>
             <Select
@@ -253,7 +251,6 @@ const UserProfileForm = () => {
             />
           </div>
 
-          {/* Goal */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">Goal</label>
             <Select
@@ -268,7 +265,6 @@ const UserProfileForm = () => {
             />
           </div>
 
-          {/* Health Conditions */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">Health Conditions</label>
             <Select
@@ -290,7 +286,6 @@ const UserProfileForm = () => {
             />
           </div>
 
-          {/* Country */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">Country</label>
             <Select
@@ -303,7 +298,6 @@ const UserProfileForm = () => {
             />
           </div>
 
-          {/* Diet Type */}
           <div className="col-span-1 sm:col-span-2">
             <label className="block text-gray-700 font-medium mb-1">Diet Type</label>
             <Select

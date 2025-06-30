@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getMeals, createMeal, deleteMeal } from "../../../api/mealLog"; // ❌ Removed getDailySummary
+import { getMeals, createMeal, deleteMeal, getMealsByDate } from "../../../api/mealLog"; // consolidated import
 import { toast } from "react-hot-toast";
 
 const useMealLogger = () => {
@@ -32,6 +32,8 @@ const useMealLogger = () => {
     waterTarget: 8,
   });
 
+  const [searchDate, setSearchDate] = useState("");
+
   const baseApiUrl =
     import.meta.env.VITE_API_URL || "https://trackeats.onrender.com/api/logmeals/";
 
@@ -57,7 +59,6 @@ const useMealLogger = () => {
       const pageNum = extractPageNumber(url || `${baseApiUrl}?page=1`);
       setCurrentPage(pageNum);
 
-      // ✅ Calculate daily summary from meals
       const summary = meals.reduce(
         (acc, meal) => {
           acc.calories += meal.calories || 0;
@@ -73,6 +74,43 @@ const useMealLogger = () => {
     } catch (error) {
       toast.error("Failed to fetch meals.");
       console.error("❌ Error fetching meals:", error.response?.data || error.message);
+    }
+  };
+
+  const searchByDate = async (date) => {
+    if (!date) {
+      // Reset to show all logged meals
+      fetchMeals();
+      return;
+    }
+
+    try {
+      const data = await getMealsByDate(token, date);
+      const meals = data.results || [];
+
+      setLoggedMeals(meals);
+      setPagination({
+        next: null,
+        previous: null,
+        count: meals.length,
+        currentPageUrl: null,
+      });
+
+      const summary = meals.reduce(
+        (acc, meal) => {
+          acc.calories += meal.calories || 0;
+          acc.carbs += meal.carbs || 0;
+          acc.protein += meal.protein || 0;
+          acc.fat += meal.fats || 0;
+          return acc;
+        },
+        { calories: 0, carbs: 0, protein: 0, fat: 0 }
+      );
+
+      setDailySummary(summary);
+    } catch (error) {
+      toast.error("Failed to search meals by date.");
+      console.error("❌ Error searching meals by date:", error.response?.data || error.message);
     }
   };
 
@@ -171,6 +209,9 @@ const useMealLogger = () => {
     handleDeleteMeal,
     dailySummary,
     goals,
+    searchDate,
+    setSearchDate,
+    searchByDate,
   };
 };
 

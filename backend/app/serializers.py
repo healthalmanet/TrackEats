@@ -68,21 +68,45 @@ class NutritionistProfileSerializer(serializers.ModelSerializer):
 
 # User Meal Logging
 class UserMealSerializer(serializers.ModelSerializer):
-    food_name = serializers.CharField()
-    meal_type = serializers.ChoiceField(choices=["breakfast", "lunch", "dinner", "snack"])
+    food_item_id = serializers.PrimaryKeyRelatedField(
+        source="food_item", queryset=FoodItem.objects.all(), required=False
+    )
+    food_name = serializers.CharField(required=False)
+    quantity = serializers.FloatField()
+    unit = serializers.CharField()
+    meal_type = serializers.ChoiceField(choices=UserMeal.MEAL_CHOICES)
+    remarks = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = UserMeal
         fields = [
-            "id", "food_name", "meal_type", "unit", "quantity", "calories",
-            "protein", "carbs", "fats", "sugar", "fiber",
-            "consumed_at", "remarks", "date"
+            "id",
+            "user",               # optional if you're setting `user=request.user` in the view
+            "food_item_id",
+            "food_name",
+            "quantity",
+            "unit",
+            "meal_type",
+            "remarks",
+            "consumed_at",
+            "date",
+
+            # read-only nutrition snapshot
+            "calories",
+            "protein",
+            "carbs",
+            "fats",
+            "sugar",
+            "fiber",
+            "estimated_gi",
+            "glycemic_load",
+            "food_type",
         ]
         read_only_fields = [
-            "calories", "protein", "carbs", "fats", "sugar", "fiber"
+            "id", "user", "calories", "protein", "carbs", "fats", "sugar",
+            "fiber", "estimated_gi", "glycemic_load", "food_type",
+            "consumed_at", "date"
         ]
-
-
 # Patient Reminders
 class PatientReminderSerializer(serializers.ModelSerializer):
     class Meta:

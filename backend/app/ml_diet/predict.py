@@ -300,10 +300,33 @@ def recommend_meals(user_profile, start_date=None, days_count=15):
         bf = breakfast_meals.sample(1, random_state=random.randint(1, 10000)).iloc[0] if not breakfast_meals.empty else None
         ln = lunch_dinner_meals.sample(1, random_state=random.randint(1, 10000)).iloc[0] if not lunch_dinner_meals.empty else None
         dn = lunch_dinner_meals.sample(1, random_state=random.randint(1, 10000)).iloc[0] if not lunch_dinner_meals.empty else None
+        
+        if bf is not None:
+            day_meals["breakfast"] = {
+                "name": bf["food_name"],
+                "calories": bf["calories"],
+                "protein": bf["protein"],
+                "carbs": bf["carbs"],
+                "fats": bf["fats"]
+            }
 
-        if bf is not None: day_meals["breakfast"] = bf["food_name"]
-        if ln is not None: day_meals["lunch"] = ln["food_name"]
-        if dn is not None: day_meals["dinner"] = dn["food_name"]
+        if ln is not None:
+            day_meals["lunch"] = {
+                "name": ln["food_name"],
+                "calories": ln["calories"],
+                "protein": ln["protein"],
+                "carbs": ln["carbs"],
+                "fats": ln["fats"]
+            }
+
+        if dn is not None:
+            day_meals["dinner"] = {
+                "name": dn["food_name"],
+                "calories": dn["calories"],
+                "protein": dn["protein"],
+                "carbs": dn["carbs"],
+                "fats": dn["fats"]
+            }
 
         total_calories = 0
         total_protein = 0

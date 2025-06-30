@@ -2,7 +2,7 @@ import React from 'react';
 import { FaUtensils, FaTrash } from 'react-icons/fa';
 import useMealLogger from './UseMealLogger';
 
-const QuickMealLogger = () => {
+const QuickMealLogger = ({ onMealLogged }) => {
   const {
     foodInputs,
     handleFoodChange,
@@ -43,7 +43,14 @@ const QuickMealLogger = () => {
 
       <div className="mx-auto w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Form Section */}
-        <form onSubmit={handleSubmit} className="bg-gray-50 rounded-2xl p-6 border border-gray-200 shadow">
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await handleSubmit(e);
+            if (onMealLogged) onMealLogged(); // ✅ Trigger parent update
+          }}
+          className="bg-gray-50 rounded-2xl p-6 border border-gray-200 shadow"
+        >
           <div className="flex items-center gap-2 mb-6">
             <FaUtensils className="text-green-500" />
             <h3 className="text-xl font-semibold text-gray-700">Add a Meal</h3>

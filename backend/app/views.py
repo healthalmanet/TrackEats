@@ -419,6 +419,114 @@ class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
 #         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+# FUZZY_MATCH_THRESHOLD = 90
+
+# class UserMealViewSet(viewsets.ModelViewSet):
+#     serializer_class = UserMealSerializer
+#     permission_classes = [IsAuthenticated]
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+#     ordering_fields = ['consumed_at']
+#     ordering = ['-consumed_at']
+#     filterset_fields = ['consumed_at', 'user', 'date', 'meal_type']
+
+#     def create(self, request, *args, **kwargs):
+#         from dateutil import parser
+#         from fuzzywuzzy import process
+
+#         def process_meal(item):
+#             food_name = item.get("food_name", "").strip().lower()
+#             quantity = float(item.get("quantity", 1))
+#             unit = item.get("unit", "g")
+#             meal_type = item.get("meal_type", "breakfast")
+#             remarks = item.get("remarks", "")
+#             consumed_at = item.get("consumed_at")
+#             date = item.get("date")
+
+#             try:
+#                 if consumed_at:
+#                     consumed_at = parser.parse(consumed_at)
+#                 else:
+#                     consumed_at = timezone.now()
+
+#                 if date:
+#                     date = parser.parse(date).date()
+#                 else:
+#                     date = consumed_at.date()
+#             except Exception as e:
+#                 raise ValueError(f"Invalid date/consumed_at format: {e}")
+
+#             # Exact match
+#             food = FoodItem.objects.filter(name__iexact=food_name).first()
+
+#             # Fuzzy match
+#             if not food:
+#                 all_names = list(FoodItem.objects.values_list("name", flat=True))
+#                 if all_names:
+#                     fuzzy_result = process.extractOne(food_name, all_names)
+#                     if fuzzy_result and len(fuzzy_result) == 2:
+#                         match, score = fuzzy_result
+#                         if score >= FUZZY_MATCH_THRESHOLD:
+#                             food = FoodItem.objects.filter(name=match).first()
+
+#             # Gemini fallback
+#             if not food:
+#                 data = fetch_nutrition_from_gemini(food_name, quantity, unit)
+#                 food = FoodItem.objects.create(
+#                     name=data["food_name"].strip().lower(),
+#                     default_quantity=data["quantity"],
+#                     default_unit=data["unit"],
+#                     calories=data["calories"],
+#                     protein=data["protein"],
+#                     carbs=data["carbohydrates"],
+#                     fats=data["fat"],
+#                     sugar=data.get("sugar", 0),
+#                     fiber=data.get("fiber", 0),
+#                     estimated_gi=data.get("glycemic_index"),
+#                     glycemic_load=data.get("glycemic_load"),
+#                     gram_equivalent=data.get("gram_equivalent"),
+#                     remarks=data.get("remarks", ""),
+#                     food_type=data.get("food_type", "other").lower(),
+#                     meal_type=[data.get("meal_type", "unknown").lower()],
+#                 )
+
+#             return UserMeal.objects.create(
+#                 user=request.user,
+#                 food_item=food,
+#                 food_name=food.name,
+#                 quantity=quantity,
+#                 unit=unit,
+#                 meal_type=meal_type,
+#                 remarks=remarks,
+#                 calories=food.calories,
+#                 protein=food.protein,
+#                 carbs=food.carbs,
+#                 fats=food.fats,
+#                 sugar=food.sugar,
+#                 fiber=food.fiber,
+#                 estimated_gi=food.estimated_gi,
+#                 glycemic_load=food.glycemic_load,
+#                 food_type=food.food_type,
+#                 consumed_at=consumed_at,
+#                 date=date
+#             )
+
+#         try:
+#             payload = request.data
+#             if isinstance(payload, list):
+#                 meals = [process_meal(item) for item in payload]
+#             else:
+#                 meals = [process_meal(payload)]
+
+#             serializer = self.get_serializer(meals, many=True)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#         except ValueError as e:
+#             return Response({"error": str(e)}, status=400)
+
+#         except Exception as e:
+#             return Response({"error": "Failed to log meals", "details": str(e)}, status=500)
+
 FUZZY_MATCH_THRESHOLD = 90
 
 class UserMealViewSet(viewsets.ModelViewSet):
@@ -429,6 +537,9 @@ class UserMealViewSet(viewsets.ModelViewSet):
     ordering_fields = ['consumed_at']
     ordering = ['-consumed_at']
     filterset_fields = ['consumed_at', 'user', 'date', 'meal_type']
+
+    def get_queryset(self):
+        return UserMeal.objects.filter(user=self.request.user).order_by('-consumed_at')
 
     def create(self, request, *args, **kwargs):
         from dateutil import parser
@@ -469,7 +580,7 @@ class UserMealViewSet(viewsets.ModelViewSet):
                         if score >= FUZZY_MATCH_THRESHOLD:
                             food = FoodItem.objects.filter(name=match).first()
 
-            # Gemini fallback
+            # Gemini AI fallback
             if not food:
                 data = fetch_nutrition_from_gemini(food_name, quantity, unit)
                 food = FoodItem.objects.create(

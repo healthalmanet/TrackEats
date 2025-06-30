@@ -5,7 +5,7 @@ from django.db.models import Sum
 from django.db.models import Count  
 from django.contrib.auth.models import Group
 from rest_framework.exceptions import ValidationError   
-from utils.utils import UNIT_TO_GRAMS,role_required,generate_diet_recommendation
+from utils.utils import UNIT_TO_GRAMS,role_required
 from .ml_diet.predict import recommend_meals
 from rest_framework.filters import SearchFilter
 from datetime import datetime, time
@@ -42,7 +42,7 @@ from datetime import timedelta
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.facebook.views import FacebookOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
-
+from utils.gemini import fetch_nutrition_from_gemini
 from django.utils.timezone import now
 from django.core.mail import send_mail
 from rest_framework import status
@@ -237,7 +237,189 @@ class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-FUZZY_MATCH_THRESHOLD = 80  # Adjustable threshold for fuzzy matching confidence
+# FUZZY_MATCH_THRESHOLD = 90  # Adjustable threshold for fuzzy matching confidence
+
+# class UserMealViewSet(viewsets.ModelViewSet):
+#     serializer_class = UserMealSerializer
+#     permission_classes = [IsAuthenticated]
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+#     ordering_fields = ['consumed_at']
+#     ordering = ['-consumed_at']
+#     filterset_fields = ['consumed_at', 'user', 'date', 'meal_type']
+
+#     def get_queryset(self):
+#         queryset = UserMeal.objects.filter(user=self.request.user)
+#         date_str = self.request.query_params.get('date')
+#         if date_str:
+#             date_obj = parse_date(date_str)
+#             if date_obj:
+#                 queryset = queryset.filter(consumed_at__date=date_obj)
+#         return queryset
+
+#     def create(self, request, *args, **kwargs):
+#         user = request.user
+#         data = request.data
+#         if isinstance(data, dict):
+#             data = [data]
+
+#         response_data = []
+
+#         for item in data:
+#             serializer = self.get_serializer(data=item)
+#             serializer.is_valid(raise_exception=True)
+
+#             food_name = serializer.validated_data.get("food_name")
+#             quantity = serializer.validated_data.get("quantity")
+#             unit = serializer.validated_data.get("unit").lower()
+#             meal_type = serializer.validated_data.get("meal_type")
+
+#             food_item = self._get_best_matching_food_item(food_name)
+
+#             grams_per_unit = UNIT_TO_GRAMS.get(unit, 100)
+#             weight_in_grams = quantity * grams_per_unit
+
+#             instance = serializer.save(
+#                  user=user,
+#                  food_item=food_item,
+#                  food_name=food_item.name,
+#                  meal_type=meal_type,
+#                  calories=round((weight_in_grams / 100) * food_item.calories, 2),
+#                  protein=round((weight_in_grams / 100) * food_item.protein, 2),
+#                  carbs=round((weight_in_grams / 100) * food_item.carbs, 2),
+#                  fats=round((weight_in_grams / 100) * food_item.fats, 2),
+#                 #  sugar=round((weight_in_grams / 100) * food_item.sugar, 2) if food_item.sugar is not None else None,
+#                 #  fiber=round((weight_in_grams / 100) * food_item.fiber, 2) if food_item.fiber is not None else None,
+#                  estimated_gi=food_item.estimated_gi,  # usually not scaled — it’s per food, not weight-based
+#                  glycemic_load=round((weight_in_grams / 100) * food_item.glycemic_load, 2) if food_item.glycemic_load else None,
+#                  food_type=food_item.food_type,
+#             )
+
+#             response_data.append(self.get_serializer(instance).data)
+
+#         return Response(response_data, status=status.HTTP_201_CREATED)
+
+#     def _get_best_matching_food_item(self, food_name):
+#         try:
+#             # Exact match first (fast lookup)
+#             return FoodItem.objects.get(name__iexact=food_name)
+#         except FoodItem.DoesNotExist:
+#             # Fuzzy match fallback
+#             food_names = list(FoodItem.objects.values_list('name', flat=True))
+#             best_match, score, _ = process.extractOne(food_name, food_names, scorer=fuzz.WRatio)
+
+#             if score >= FUZZY_MATCH_THRESHOLD:
+#                 return FoodItem.objects.get(name=best_match)
+
+#             raise ValidationError(f"Food item '{food_name}' not found (closest match '{best_match}' with confidence {score}%). Please check spelling.")
+
+
+
+# FUZZY_MATCH_THRESHOLD = 90
+
+# class UserMealViewSet(viewsets.ModelViewSet):
+#     serializer_class = UserMealSerializer
+#     permission_classes = [IsAuthenticated]
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+#     ordering_fields = ['consumed_at']
+#     ordering = ['-consumed_at']
+#     filterset_fields = ['consumed_at', 'user', 'date', 'meal_type']
+
+#     def create(self, request, *args, **kwargs):
+#         user = request.user
+#         food_name = request.data.get("food_name", "").strip().lower()
+#         quantity = float(request.data.get("quantity", 1))
+#         unit = request.data.get("unit", "g")
+#         meal_type = request.data.get("meal_type", "breakfast")
+#         remarks = request.data.get("remarks", "")
+
+#         consumed_at = request.data.get("consumed_at")
+#         date = request.data.get("date")
+
+#         try:
+#             from dateutil import parser
+#             if consumed_at:
+#                 consumed_at = parser.parse(consumed_at)
+#             else:
+#                 consumed_at = timezone.now()
+
+#             if date:
+#                 date = parser.parse(date).date()
+#             else:
+#                 date = consumed_at.date()
+#         except Exception as e:
+#             return Response(
+#                 {"error": "Invalid date or consumed_at format", "details": str(e)},
+#                 status=400
+#             )
+
+#         # Exact match
+#         food = FoodItem.objects.filter(name__iexact=food_name).first()
+
+#         # Fuzzy match
+#         if not food:
+#             all_names = list(FoodItem.objects.values_list("name", flat=True))
+#             if all_names:
+#                 fuzzy_result = process.extractOne(food_name, all_names)
+#                 if fuzzy_result and isinstance(fuzzy_result, (list, tuple)) and len(fuzzy_result) == 2:
+#                     match, score = fuzzy_result
+#                     if score >= FUZZY_MATCH_THRESHOLD:
+#                         food = FoodItem.objects.filter(name=match).first()
+
+#         # AI fallback
+#         if not food:
+#             try:
+#                 data = fetch_nutrition_from_gemini(food_name, quantity, unit)
+#                 food = FoodItem.objects.create(
+#                     name=data["food_name"].strip().lower(),
+#                     default_quantity=data["quantity"],
+#                     default_unit=data["unit"],
+#                     calories=data["calories"],
+#                     protein=data["protein"],
+#                     carbs=data["carbohydrates"],
+#                     fats=data["fat"],
+#                     sugar=data.get("sugar", 0),
+#                     fiber=data.get("fiber", 0),
+#                     estimated_gi=data.get("glycemic_index"),
+#                     glycemic_load=data.get("glycemic_load"),
+#                     remarks=data.get("remarks", ""),
+#                     food_type=data.get("food_type", "other").lower(),
+#                     meal_type=data.get("meal_type", "unknown").lower()
+#                 )
+#             except Exception as e:
+#                 return Response(
+#                     {"error": "AI nutrition lookup failed", "details": str(e)},
+#                     status=400
+#                 )
+
+#         # Create meal log
+#         meal = UserMeal.objects.create(
+#             user=user,
+#             food_item=food,
+#             food_name=food.name,
+#             quantity=quantity,
+#             unit=unit,
+#             meal_type=meal_type,
+#             remarks=remarks,
+#             calories=food.calories,
+#             protein=food.protein,
+#             carbs=food.carbs,
+#             fats=food.fats,
+#             sugar=food.sugar,
+#             fiber=food.fiber,
+#             estimated_gi=food.estimated_gi,
+#             glycemic_load=food.glycemic_load,
+#             food_type=food.food_type,
+#             consumed_at=consumed_at,
+#             date=date
+#         )
+
+#         serializer = self.get_serializer(meal)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+FUZZY_MATCH_THRESHOLD = 90
 
 class UserMealViewSet(viewsets.ModelViewSet):
     serializer_class = UserMealSerializer
@@ -248,74 +430,105 @@ class UserMealViewSet(viewsets.ModelViewSet):
     ordering = ['-consumed_at']
     filterset_fields = ['consumed_at', 'user', 'date', 'meal_type']
 
-    def get_queryset(self):
-        queryset = UserMeal.objects.filter(user=self.request.user)
-        date_str = self.request.query_params.get('date')
-        if date_str:
-            date_obj = parse_date(date_str)
-            if date_obj:
-                queryset = queryset.filter(consumed_at__date=date_obj)
-        return queryset
-
     def create(self, request, *args, **kwargs):
-        user = request.user
-        data = request.data
-        if isinstance(data, dict):
-            data = [data]
+        from dateutil import parser
+        from fuzzywuzzy import process
 
-        response_data = []
+        def process_meal(item):
+            food_name = item.get("food_name", "").strip().lower()
+            quantity = float(item.get("quantity", 1))
+            unit = item.get("unit", "g")
+            meal_type = item.get("meal_type", "breakfast")
+            remarks = item.get("remarks", "")
+            consumed_at = item.get("consumed_at")
+            date = item.get("date")
 
-        for item in data:
-            serializer = self.get_serializer(data=item)
-            serializer.is_valid(raise_exception=True)
+            try:
+                if consumed_at:
+                    consumed_at = parser.parse(consumed_at)
+                else:
+                    consumed_at = timezone.now()
 
-            food_name = serializer.validated_data.get("food_name")
-            quantity = serializer.validated_data.get("quantity")
-            unit = serializer.validated_data.get("unit").lower()
-            meal_type = serializer.validated_data.get("meal_type")
+                if date:
+                    date = parser.parse(date).date()
+                else:
+                    date = consumed_at.date()
+            except Exception as e:
+                raise ValueError(f"Invalid date/consumed_at format: {e}")
 
-            food_item = self._get_best_matching_food_item(food_name)
+            # Exact match
+            food = FoodItem.objects.filter(name__iexact=food_name).first()
 
-            grams_per_unit = UNIT_TO_GRAMS.get(unit, 100)
-            weight_in_grams = quantity * grams_per_unit
+            # Fuzzy match
+            if not food:
+                all_names = list(FoodItem.objects.values_list("name", flat=True))
+                if all_names:
+                    fuzzy_result = process.extractOne(food_name, all_names)
+                    if fuzzy_result and len(fuzzy_result) == 2:
+                        match, score = fuzzy_result
+                        if score >= FUZZY_MATCH_THRESHOLD:
+                            food = FoodItem.objects.filter(name=match).first()
 
-            instance = serializer.save(
-                 user=user,
-                 food_item=food_item,
-                 food_name=food_item.name,
-                 meal_type=meal_type,
-                 calories=round((weight_in_grams / 100) * food_item.calories, 2),
-                 protein=round((weight_in_grams / 100) * food_item.protein, 2),
-                 carbs=round((weight_in_grams / 100) * food_item.carbs, 2),
-                 fats=round((weight_in_grams / 100) * food_item.fats, 2),
-                #  sugar=round((weight_in_grams / 100) * food_item.sugar, 2) if food_item.sugar is not None else None,
-                #  fiber=round((weight_in_grams / 100) * food_item.fiber, 2) if food_item.fiber is not None else None,
-                 estimated_gi=food_item.estimated_gi,  # usually not scaled — it’s per food, not weight-based
-                 glycemic_load=round((weight_in_grams / 100) * food_item.glycemic_load, 2) if food_item.glycemic_load else None,
-                 food_type=food_item.food_type,
+            # Gemini fallback
+            if not food:
+                data = fetch_nutrition_from_gemini(food_name, quantity, unit)
+                food = FoodItem.objects.create(
+                    name=data["food_name"].strip().lower(),
+                    default_quantity=data["quantity"],
+                    default_unit=data["unit"],
+                    calories=data["calories"],
+                    protein=data["protein"],
+                    carbs=data["carbohydrates"],
+                    fats=data["fat"],
+                    sugar=data.get("sugar", 0),
+                    fiber=data.get("fiber", 0),
+                    estimated_gi=data.get("glycemic_index"),
+                    glycemic_load=data.get("glycemic_load"),
+                    gram_equivalent=data.get("gram_equivalent"),
+                    remarks=data.get("remarks", ""),
+                    food_type=data.get("food_type", "other").lower(),
+                    meal_type=[data.get("meal_type", "unknown").lower()],
+                )
+
+            return UserMeal.objects.create(
+                user=request.user,
+                food_item=food,
+                food_name=food.name,
+                quantity=quantity,
+                unit=unit,
+                meal_type=meal_type,
+                remarks=remarks,
+                calories=food.calories,
+                protein=food.protein,
+                carbs=food.carbs,
+                fats=food.fats,
+                sugar=food.sugar,
+                fiber=food.fiber,
+                estimated_gi=food.estimated_gi,
+                glycemic_load=food.glycemic_load,
+                food_type=food.food_type,
+                consumed_at=consumed_at,
+                date=date
             )
 
-            response_data.append(self.get_serializer(instance).data)
-
-        return Response(response_data, status=status.HTTP_201_CREATED)
-
-    def _get_best_matching_food_item(self, food_name):
         try:
-            # Exact match first (fast lookup)
-            return FoodItem.objects.get(name__iexact=food_name)
-        except FoodItem.DoesNotExist:
-            # Fuzzy match fallback
-            food_names = list(FoodItem.objects.values_list('name', flat=True))
-            best_match, score, _ = process.extractOne(food_name, food_names, scorer=fuzz.WRatio)
+            payload = request.data
+            if isinstance(payload, list):
+                meals = [process_meal(item) for item in payload]
+            else:
+                meals = [process_meal(payload)]
 
-            if score >= FUZZY_MATCH_THRESHOLD:
-                return FoodItem.objects.get(name=best_match)
+            serializer = self.get_serializer(meals, many=True)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            raise ValidationError(f"Food item '{food_name}' not found (closest match '{best_match}' with confidence {score}%). Please check spelling.")
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
+
+        except Exception as e:
+            return Response({"error": "Failed to log meals", "details": str(e)}, status=500)
 
 
-
-#------------------CALORIE RECOMMEND API ENDPOINTS---------------- to get calorie,carbs,protein,fats etc
+#--- ---------------CALORIE RECOMMEND API ENDPOINTS---------------- to get calorie,carbs,protein,fats etc
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def recommend_calories(request):

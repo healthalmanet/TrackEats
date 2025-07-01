@@ -7,7 +7,7 @@ const DashboardLayout = () => {
   return (
     <div className="flex">
       {/* Sidebar */}
-      <div className="pt-16"> {/* Push sidebar below topbar visually */}
+      <div className="w-[160px] pt-16 flex-shrink-0">
         <Sidebar />
       </div>
 

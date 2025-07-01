@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   createUserProfile,
   getUserProfile,
@@ -28,10 +28,10 @@ const healthConditionOptions = [
 ];
 
 const activityLevelMap = {
-  "Sedentary": "sedentary",
+  Sedentary: "sedentary",
   "Light Activity": "light",
   "Moderate Activity": "moderate",
-  "Active": "active",
+  Active: "active",
   "Very Active": "very_active",
 };
 
@@ -46,12 +46,12 @@ const genderOptions = [
   { value: "Female", label: "Female" },
 ];
 
-const activityLevelOptions = Object.keys(activityLevelMap).map(level => ({
+const activityLevelOptions = Object.keys(activityLevelMap).map((level) => ({
   value: level,
   label: level,
 }));
 
-const goalOptions = Object.keys(goalMap).map(goal => ({
+const goalOptions = Object.keys(goalMap).map((goal) => ({
   value: goal,
   label: goal,
 }));
@@ -67,7 +67,7 @@ const dietTypeOptions = [
 const UserProfileForm = () => {
   const [formData, setFormData] = useState({
     name: "",
-    dob: "",
+    age: "",
     gender: "",
     height_cm: "",
     weight_kg: "",
@@ -77,12 +77,54 @@ const UserProfileForm = () => {
     health_conditions: [],
     country: "",
     diet_type: "",
-    occupation: "", // ✅ added
   });
 
   const [originalData, setOriginalData] = useState(null);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getUserProfile();
+
+        if (data && Object.keys(data).length > 0) {
+          const normalizedData = {
+            ...data,
+            age: data.age || "",
+            gender: data.gender?.charAt(0).toUpperCase() + data.gender.slice(1),
+            diet_type: data.diet_type?.charAt(0).toUpperCase() + data.diet_type.slice(1),
+            activity_level:
+              Object.keys(activityLevelMap).find(
+                (key) => activityLevelMap[key] === data.activity_level
+              ) || data.activity_level,
+            goal:
+              Object.keys(goalMap).find((key) => goalMap[key] === data.goal) ||
+              data.goal,
+            health_conditions: Array.isArray(data.health_conditions)
+              ? data.health_conditions.map(
+                  (h) => h.charAt(0).toUpperCase() + h.slice(1)
+                )
+              : [],
+          };
+
+          setFormData(normalizedData);
+          setOriginalData(normalizedData);
+          setIsEditing(true);
+        } else {
+          setIsEditing(false);
+        }
+      } catch (error) {
+        if (error.response?.status === 404) {
+          setIsEditing(false);
+        } else {
+          console.error("Failed to load profile:", error);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -91,18 +133,21 @@ const UserProfileForm = () => {
   const formatDataForBackend = (data) => {
     const result = {};
     if (data.name) result.name = data.name;
-    if (data.dob) result.dob = data.dob;
+    if (data.age) result.age = parseInt(data.age);
     if (data.gender) result.gender = data.gender.toLowerCase();
     if (data.height_cm) result.height_cm = parseFloat(data.height_cm);
     if (data.weight_kg) result.weight_kg = parseFloat(data.weight_kg);
     if (data.mobile_number) result.mobile_number = data.mobile_number;
-    if (data.activity_level) result.activity_level = activityLevelMap[data.activity_level] || data.activity_level;
+    if (data.activity_level)
+      result.activity_level =
+        activityLevelMap[data.activity_level] || data.activity_level;
     if (data.goal) result.goal = goalMap[data.goal] || data.goal;
     if (data.country) result.country = data.country;
     if (data.diet_type) result.diet_type = data.diet_type.toLowerCase();
-    if (data.occupation) result.occupation = data.occupation; // ✅ added
     if (Array.isArray(data.health_conditions)) {
-      result.health_conditions = data.health_conditions.map((h) => h.toLowerCase());
+      result.health_conditions = data.health_conditions.map((h) =>
+        h.toLowerCase()
+      );
     }
     return result;
   };
@@ -110,10 +155,7 @@ const UserProfileForm = () => {
   const getChangedFields = (original, current) => {
     const changed = {};
     for (let key in current) {
-      if (
-        typeof current[key] === "object" &&
-        Array.isArray(current[key])
-      ) {
+      if (Array.isArray(current[key])) {
         const sortedOriginal = (original?.[key] || []).slice().sort().join(",");
         const sortedCurrent = current[key].slice().sort().join(",");
         if (sortedOriginal !== sortedCurrent) changed[key] = current[key];
@@ -143,44 +185,12 @@ const UserProfileForm = () => {
       } else {
         await createUserProfile(formatted);
         toast.success("🎉 Profile created!");
+        setIsEditing(true);
+        setOriginalData(formData);
       }
     } catch (err) {
       console.error("Submission error:", err);
       toast.error("❌ Something went wrong.");
-    }
-  };
-
-  const handleEditProfile = async () => {
-    try {
-      const data = await getUserProfile();
-      if (data) {
-        const normalizedData = {
-          ...data,
-          dob: data.dob || "",
-          gender: data.gender.charAt(0).toUpperCase() + data.gender.slice(1),
-          diet_type: data.diet_type.charAt(0).toUpperCase() + data.diet_type.slice(1),
-          activity_level: Object.keys(activityLevelMap).find(
-            key => activityLevelMap[key] === data.activity_level
-          ) || data.activity_level,
-          goal: Object.keys(goalMap).find(
-            key => goalMap[key] === data.goal
-          ) || data.goal,
-          health_conditions: Array.isArray(data.health_conditions)
-            ? data.health_conditions.map(h =>
-              h.charAt(0).toUpperCase() + h.slice(1)
-            )
-            : [],
-          occupation: data.occupation || "", // ✅ added
-        };
-
-        setFormData(normalizedData);
-        setOriginalData(normalizedData);
-        setIsEditing(true);
-        toast.success("✏️ Profile loaded for editing!");
-      }
-    } catch (e) {
-      console.error("Fetching profile error:", e);
-      toast.error("No profile found to edit.");
     }
   };
 
@@ -207,15 +217,41 @@ const UserProfileForm = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-8 md:p-10">
           {[
-            { label: "Name", type: "text", name: "name", placeholder: "Enter your name" },
-            { label: "Date of Birth", type: "date", name: "dob", placeholder: "Select your date of birth" },
-            { label: "Height (cm)", type: "number", name: "height_cm", placeholder: "e.g. 170" },
-            { label: "Weight (kg)", type: "number", name: "weight_kg", placeholder: "e.g. 65" },
-            { label: "Mobile Number", type: "tel", name: "mobile_number", placeholder: "Enter mobile number" },
-            { label: "Occupation", type: "text", name: "occupation", placeholder: "Enter your occupation" }, // ✅ added
+            {
+              label: "Name",
+              type: "text",
+              name: "name",
+              placeholder: "Enter your name",
+            },
+            {
+              label: "Age",
+              type: "number",
+              name: "age",
+              placeholder: "Enter your age",
+            },
+            {
+              label: "Height (cm)",
+              type: "number",
+              name: "height_cm",
+              placeholder: "e.g. 170",
+            },
+            {
+              label: "Weight (kg)",
+              type: "number",
+              name: "weight_kg",
+              placeholder: "e.g. 65",
+            },
+            {
+              label: "Mobile Number",
+              type: "tel",
+              name: "mobile_number",
+              placeholder: "Enter mobile number",
+            },
           ].map((field, index) => (
             <div key={index}>
-              <label className="block text-gray-700 font-medium mb-1">{field.label}</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                {field.label}
+              </label>
               <input
                 type={field.type}
                 name={field.name}
@@ -231,27 +267,32 @@ const UserProfileForm = () => {
             <label className="block text-gray-700 font-medium mb-1">Gender</label>
             <Select
               options={genderOptions}
-              value={genderOptions.find(opt => opt.value === formData.gender)}
+              value={genderOptions.find(
+                (opt) => opt.value === formData.gender
+              )}
               onChange={(selectedOption) =>
                 setFormData({ ...formData, gender: selectedOption?.value || "" })
               }
               placeholder="Select gender"
-              className="react-select-container"
-              classNamePrefix="react-select"
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Activity Level</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Activity Level
+            </label>
             <Select
               options={activityLevelOptions}
-              value={activityLevelOptions.find(opt => opt.value === formData.activity_level)}
+              value={activityLevelOptions.find(
+                (opt) => opt.value === formData.activity_level
+              )}
               onChange={(selectedOption) =>
-                setFormData({ ...formData, activity_level: selectedOption?.value || "" })
+                setFormData({
+                  ...formData,
+                  activity_level: selectedOption?.value || "",
+                })
               }
               placeholder="Select activity level"
-              className="react-select-container"
-              classNamePrefix="react-select"
             />
           </div>
 
@@ -259,23 +300,25 @@ const UserProfileForm = () => {
             <label className="block text-gray-700 font-medium mb-1">Goal</label>
             <Select
               options={goalOptions}
-              value={goalOptions.find(opt => opt.value === formData.goal)}
+              value={goalOptions.find(
+                (opt) => opt.value === formData.goal
+              )}
               onChange={(selectedOption) =>
                 setFormData({ ...formData, goal: selectedOption?.value || "" })
               }
               placeholder="Select goal"
-              className="react-select-container"
-              classNamePrefix="react-select"
             />
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Health Conditions</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Health Conditions
+            </label>
             <Select
               isMulti
               name="health_conditions"
               options={healthConditionOptions}
-              value={healthConditionOptions.filter(opt =>
+              value={healthConditionOptions.filter((opt) =>
                 formData.health_conditions.includes(opt.value)
               )}
               onChange={(selectedOptions) =>
@@ -285,8 +328,6 @@ const UserProfileForm = () => {
                 })
               }
               placeholder="Select health conditions"
-              className="react-select-container"
-              classNamePrefix="react-select"
             />
           </div>
 
@@ -294,7 +335,9 @@ const UserProfileForm = () => {
             <label className="block text-gray-700 font-medium mb-1">Country</label>
             <Select
               options={countryOptions}
-              value={countryOptions.find((c) => c.value === formData.country)}
+              value={countryOptions.find(
+                (c) => c.value === formData.country
+              )}
               onChange={(selectedOption) =>
                 setFormData({ ...formData, country: selectedOption?.value || "" })
               }
@@ -302,37 +345,27 @@ const UserProfileForm = () => {
             />
           </div>
 
-          <div >
+          <div>
             <label className="block text-gray-700 font-medium mb-1">Diet Type</label>
             <Select
               options={dietTypeOptions}
-              value={dietTypeOptions.find(opt => opt.value === formData.diet_type)}
+              value={dietTypeOptions.find(
+                (opt) => opt.value === formData.diet_type
+              )}
               onChange={(selectedOption) =>
                 setFormData({ ...formData, diet_type: selectedOption?.value || "" })
               }
               placeholder="Select diet type"
-              className="react-select-container"
-              classNamePrefix="react-select"
             />
           </div>
         </div>
 
-        <div className="px-8 pb-8 md:px-10 flex flex-col gap-4">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleEditProfile}
-              className="text-sm text-red-600 border border-gray-300 rounded-md px-4 py-2 hover:bg-gray-100"
-            >
-              Edit Existing Profile
-            </button>
-          </div>
-
+        <div className="px-8 pb-8 md:px-10">
           <button
             type="submit"
             className="w-full py-3 px-6 rounded-lg text-white font-semibold bg-gradient-to-r from-green-400 to-yellow-300 hover:scale-[1.02] active:scale-95"
           >
-            {isEditing ? "Update Profile" : "Save Profile"}
+            {isEditing ? "Save Changes" : "Create Profile"}
           </button>
 
           {error && <p className="text-red-500 text-sm mt-4">{error}</p>}

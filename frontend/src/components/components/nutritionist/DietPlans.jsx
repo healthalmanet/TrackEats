@@ -19,40 +19,42 @@ const DietPlans = () => {
   const [editedMeals, setEditedMeals] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
 
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const patientRes = await getAssignedPatients();
+      const patientData = patientRes?.data;
+      const finalPatients = Array.isArray(patientData?.results)
+        ? patientData.results
+        : patientData;
+      setPatients(finalPatients);
 
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const response = await getAssignedPatients();
-        const data = response?.data;
-        if (Array.isArray(data)) {
-          setPatients(data);
-        } else if (Array.isArray(data?.results)) {
-          setPatients(data.results);
-        }
-      } catch (error) {
-        console.error("Error fetching assigned patients:", error);
+      const dietRes = await getDietRecommendationUsers();
+      const dietData = dietRes?.data;
+
+      if (Array.isArray(dietData?.results)) {
+        const enrichedPlans = dietData.results
+          .filter((plan) => plan.status?.toLowerCase() !== "approved")
+          .map((plan) => {
+            const matchedPatient = finalPatients.find(
+              (p) => p.email === plan.email
+            );
+            return {
+              ...plan,
+              patient_id: matchedPatient?.id || null,
+            };
+          });
+
+        setDietPlans(enrichedPlans);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
 
-    const fetchDietPlans = async () => {
-      try {
-        const response = await getDietRecommendationUsers();
-        const data = response?.data;
-        if (Array.isArray(data?.results)) {
-          const filteredPlans = data.results.filter(
-            (plan) => plan.status?.toLowerCase() !== "approved"
-          );
-          setDietPlans(filteredPlans);
-        }
-      } catch (error) {
-        console.error("Error fetching diet recommendations:", error);
-      }
-    };
+  fetchData();
+}, []);
 
-    fetchPatients();
-    fetchDietPlans();
-  }, []);
 
   const getPatientInfo = (id) => {
     const user = patients.find((p) => p.id === id || p.user_id === id);

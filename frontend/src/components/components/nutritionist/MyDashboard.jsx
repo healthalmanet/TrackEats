@@ -72,7 +72,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="pl-70 pt-23 relative min-h-screen">
+    <div className="pl-20 pt-23 relative min-h-screen">
       <div>
         <h2 className=" mt-8 text-3xl font-bold text-gray-800 mb-1">Dashboard Overview</h2>
         <p className="text-sm text-gray-500 mb-9">

@@ -2,6 +2,8 @@ import React from 'react';
 import useMealLogger from '../../../components/components/MealLogger/UseMealLogger';
 import { Plus, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getWater } from '../../../api/WaterTracker';
 
 
 const MealLogger = () => {
@@ -28,6 +30,30 @@ const MealLogger = () => {
     setSearchDate,
     searchByDate,
   } = useMealLogger();
+
+  const [waterGlasses, setWaterGlasses] = useState(0);
+
+useEffect(() => {
+  const fetchWater = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await getWater(today); // response is an object with `results`
+
+      const waterLogs = response.results || [];
+
+      const totalMl = waterLogs.reduce((acc, log) => acc + (log.amount_ml || 0), 0);
+      const glasses = Math.floor(totalMl / 250);
+      setWaterGlasses(glasses);
+    } catch (err) {
+      console.error("Failed to fetch water data:", err);
+    }
+  };
+
+  fetchWater();
+  const interval = setInterval(fetchWater, 5000); // updates every 5 seconds
+  return () => clearInterval(interval);
+}, []);
+
 
   const mealColors = {
     breakfast: 'border-l-4 border-green-400',
@@ -317,7 +343,8 @@ const MealLogger = () => {
   <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-md w-full">
     <h4 className="font-semibold text-sm text-gray-700 mb-3">Today's Goals</h4>
     <div className="text-sm space-y-2">
-      <p>💧 Water: {goals?.waterLogged ?? 0}/{goals?.waterTarget ?? 0} glasses</p>
+      <p>💧 Water: {waterGlasses}/{goals?.waterTarget ?? 0} glasses</p>
+
       <p>🔥 Calories: {dailySummary?.calories ?? 0}/{goals?.caloriesTarget ?? 0}</p>
     </div>
   </div>

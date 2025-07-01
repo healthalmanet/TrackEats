@@ -90,7 +90,7 @@ const PatientList = () => {
   };
 
   return (
-    <div className="pt-23 pl-70 min-h-screen">
+    <div className="pt-23 pl-30 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>

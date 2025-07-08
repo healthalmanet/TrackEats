@@ -3,10 +3,13 @@ from django import forms
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from .models import (
-    User, UserProfile, DiabeticProfile, UserMeal,
+    User, UserProfile,
+    # DiabeticProfile,
+    UserMeal,
+    LabReport,
     FoodItem, Feedback, PatientReminder,
     NutritionistProfile, DietRecommendation,
-    PatientAssignment, AppReport, DietRecommendationFeedback, DietFeedback,
+    PatientAssignment, AppReport, DietFeedback,
     Blog,
 )
 
@@ -77,7 +80,8 @@ class CustomUserAdmin(BaseUserAdmin):
 # ------------------------------
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(UserProfile)
-admin.site.register(DiabeticProfile)
+# admin.site.register(DiabeticProfile)
+admin.site.register(LabReport)
 admin.site.register(UserMeal)
 admin.site.register(FoodItem)
 admin.site.register(Feedback)
@@ -86,6 +90,5 @@ admin.site.register(NutritionistProfile)
 admin.site.register(DietRecommendation)
 admin.site.register(PatientAssignment)
 admin.site.register(AppReport)
-admin.site.register(DietRecommendationFeedback)
 admin.site.register(DietFeedback)
 admin.site.register(Blog)

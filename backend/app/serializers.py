@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from .models import (
-    User, UserProfile, DiabeticProfile,UserMeal,
+    User, UserProfile, LabReport,
+    #   DiabeticProfile,
+    UserMeal,
     PatientReminder, FoodItem, NutritionistProfile,
     DietRecommendation, DietFeedback,
-    PatientAssignment, UserMeal, DietRecommendationFeedback,
+    PatientAssignment, UserMeal,
     Feedback,
     WeightLog,WaterIntakeLog,CustomReminder, Message, Blog
     
@@ -42,20 +44,50 @@ class RegisterSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 # User Profile Serializer
+# class UserProfileSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = UserProfile
+#         exclude = ['user']
+
 class UserProfileSerializer(serializers.ModelSerializer):
+    age = serializers.IntegerField(read_only=True)
+    bmi = serializers.FloatField(read_only=True)
+
     class Meta:
         model = UserProfile
-        exclude = ['user']
+        fields = [
+            'date_of_birth', 'age', 'country', 'mobile_number', 'gender', 
+            'height_cm', 'weight_kg', 'bmi',
+            
+            # --- ✅ ADD 'occupation' TO THIS LIST ---
+            'occupation', 'activity_level', 'goal', 'diet_type', 'allergies',
+            # --- END ADD ---
+            
+            'is_diabetic', 'is_hypertensive', 'has_heart_condition', 
+            'has_thyroid_disorder', 'has_arthritis', 'has_gastric_issues',
+            'other_chronic_condition', 'family_history'
+        ]
+
+class LabReportSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating, listing, and updating Lab Reports.
+    """
+    user = serializers.StringRelatedField(read_only=True) # Show user's name, but don't allow changing it
+    
+    class Meta:
+        model = LabReport
+        fields = '__all__' # Include all fields from the model
+        read_only_fields = ('user',) # The user is set automatically in the view
 
 
 # Diabetic Profile Serializer
-class DiabeticProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DiabeticProfile
-        fields = '__all__'
-        extra_kwargs = {
-            'user_profile': {'read_only': True}  # ✅ prevent user from needing to provide it
-        }
+# class DiabeticProfileSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = DiabeticProfile
+#         fields = '__all__'
+#         extra_kwargs = {
+#             'user_profile': {'read_only': True}  # ✅ prevent user from needing to provide it
+#         }
 
 # Nutritionist Profile Serializer
 class NutritionistProfileSerializer(serializers.ModelSerializer):
@@ -118,10 +150,12 @@ class PatientReminderSerializer(serializers.ModelSerializer):
 
 # Food Items
 class FoodItemSerializer(serializers.ModelSerializer):
+    """
+    Complete serializer for the detailed FoodItem model.
+    """
     class Meta:
         model = FoodItem
-        fields = ['id', 'name', 'calories']
-
+        fields = '__all__'
 
 # Diet Recommendation (For users and nutritionists)
 class DietRecommendationSerializer(serializers.ModelSerializer):
@@ -139,10 +173,6 @@ class DietFeedbackSerializer(serializers.ModelSerializer):
 
 
 # Diet Recommendation Feedback (from nutritionists for retraining)
-class DietRecommendationFeedbackSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DietRecommendationFeedback
-        fields = '__all__'
 
 class DietRecommendationWithPatientSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()

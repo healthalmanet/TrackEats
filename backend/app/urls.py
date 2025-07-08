@@ -2,8 +2,10 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from django.urls import include
 from .views import (
-    DailyUserMealSummaryView, FoodItemListView, RegisterView, UserProfileDetailView, UserProfileCreateView,home,
-    DiabeticProfileCreateView,DiabeticProfileDetailView,DiabeticProfileListView,
+    DailyUserMealSummaryView, FoodItemListView, LabReportViewSet, RegisterView, UserProfileView,
+    # UserProfileDetailView, UserProfileCreateView,
+    home,
+    # DiabeticProfileCreateView,DiabeticProfileDetailView,DiabeticProfileListView,
     UserMealViewSet,
     OwnerDashboardView,
     recommend_calories, DailyCalorieSummaryView,
@@ -29,7 +31,7 @@ from .views import (
     WaterIntakeLogViewSet,WeightLogViewSet,CustomReminderViewSet, ForgotPasswordView,
     ResetPasswordView, GoogleLogin, FacebookLogin,
     SendMessageView,MessageListView,
-    BlogDetailView,BlogListCreateView,
+    BlogDetailView,BlogListCreateView, DietPlanView,
     
 )
 from rest_framework_simplejwt.views import (
@@ -41,6 +43,7 @@ from rest_framework_simplejwt.views import (
 router = DefaultRouter()
 
 #LogMeals API endpoint
+router.register(r'lab-reports', LabReportViewSet, basename='labreport')
 router.register(r'logmeals', UserMealViewSet, basename='user-meals')
 
 router.register(r'weight', WeightLogViewSet, basename='weight-log')
@@ -72,15 +75,15 @@ urlpatterns = [
     path('logout/', TokenBlacklistView.as_view(), name='logout'),
 
     # Retrieve, update, or delete the logged-in user's profile details
-    path('profile/', UserProfileDetailView.as_view(), name='user-profile'),
+    path('profile/', UserProfileView.as_view(), name='user-profile'),
 
     # Create user profile endpoint (for logged-in users)
-    path('profile/create/', UserProfileCreateView.as_view(), name='create-user-profile'),
+    # path('profile/create/', UserProfileCreateView.as_view(), name='create-user-profile'),
 
      # Create diabetic profile
-    path('diabetic-reports/', DiabeticProfileListView.as_view(), name='diabetic-reports-list'),
-    path('diabetic-reports/create/', DiabeticProfileCreateView.as_view(), name='diabetic-reports-create'),
-    path('diabetic-reports/<int:pk>/', DiabeticProfileDetailView.as_view(), name='diabetic-reports-detail'),
+    # path('diabetic-reports/', DiabeticProfileListView.as_view(), name='diabetic-reports-list'),
+    # path('diabetic-reports/create/', DiabeticProfileCreateView.as_view(), name='diabetic-reports-create'),
+    # path('diabetic-reports/<int:pk>/', DiabeticProfileDetailView.as_view(), name='diabetic-reports-detail'),
 
 
     # #Calorie recommendation endpoint also fat,protein,carbs
@@ -169,6 +172,8 @@ urlpatterns = [
     path('blogs/<int:pk>/', BlogDetailView.as_view(), name='blog-detail'),
 
     path('nutrition7day/', DailyUserMealSummaryView.as_view()),
+
+    path('diet/', DietPlanView.as_view(), name='generate-diet-plan'),
 ]
 
 

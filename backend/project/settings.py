@@ -7,6 +7,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = "/static/"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -41,6 +43,8 @@ DEFAULT_FROM_EMAIL = 'health.almanet@gmail.com'
 
 INSTALLED_APPS = [
     'corsheaders', # Cross-Origin Resource Sharing headers for Django
+    "admin_interface",
+    "colorfield",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -51,6 +55,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_filters',
     'app',
+    
 
     # Third-party   
     'rest_framework.authtoken',  # ✅ REQUIRED for dj_rest_auth tokens

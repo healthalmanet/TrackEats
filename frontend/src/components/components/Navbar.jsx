@@ -1,21 +1,37 @@
-import React, { useState } from "react";
-import { NavLink, Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { NavLink } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
   const toggleMenu = () => setIsOpen(!isOpen);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const baseStyle =
+    "relative font-medium text-[#4A4A4A] hover:text-[#FF7043] transition duration-200 " +
+    "after:absolute after:-bottom-1 after:left-0 after:w-0 hover:after:w-full after:h-[2px] " +
+    "after:bg-[#FF7043] after:transition-all after:duration-300 focus:outline-none focus:ring-0";
+
+  const activeStyle =
+    "relative font-semibold text-[#FF7043] transition duration-200 " +
+    "after:absolute after:-bottom-1 after:left-0 after:w-full after:h-[2px] " +
+    "after:bg-[#FF7043] after:transition-all after:duration-300";
 
   const renderNavLink = ({ to, label }) => {
     const isHashLink = to.startsWith("#");
 
     if (isHashLink) {
       return (
-        <a
-          key={to}
-          href={to}
-          className="text-gray-600 hover:text-green-500 font-semibold transition-colors duration-200"
-        >
+        <a key={to} href={to} className={baseStyle}>
           {label}
         </a>
       );
@@ -25,13 +41,8 @@ const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
       <NavLink
         key={to}
         to={to}
-        end={to === "/dashboard"}
         onClick={() => setIsOpen(false)}
-        className={({ isActive }) =>
-          isActive
-            ? "text-green-500 font-semibold"
-            : "text-gray-500 hover:text-green-500 font-semibold transition-colors duration-200"
-        }
+        className={({ isActive }) => (isActive ? activeStyle : baseStyle)}
       >
         {label}
       </NavLink>
@@ -44,41 +55,40 @@ const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
   };
 
   return (
-    <nav className="bg-white h-16 px-6 flex items-center justify-between relative shadow-sm z-50">
+    <nav
+      className={`sticky top-0 z-50 bg-white h-16 px-6 flex items-center justify-between font-['Poppins'] text-sm md:text-base backdrop-blur-lg transition-shadow duration-300 ${
+        isScrolled ? "shadow-md" : ""
+      }`}
+    >
       {/* Logo */}
-      <Link to="/">
-        {logo}
-      </Link>
+      <div className="flex items-center space-x-3">
+        
+          <span className="pl-5 text-[#FF7043] font-extrabold text-2xl tracking-wide">
+            TrackEats
+          </span>
+        
+      </div>
 
-      {/* Desktop nav list (center or right aligned) */}
-      <div
-        className={`hidden md:flex gap-8 text-base ${alignmentClasses[align] || ""}`}
-      >
+      {/* Desktop Nav Links */}
+      <div className={`hidden md:flex gap-8 ${alignmentClasses[align] || ""}`}>
         {links.map(renderNavLink)}
       </div>
 
-      {/* Right side: Desktop right content + Mobile toggle */}
+      {/* Right Content */}
       <div className="flex items-center gap-4">
-        {/* Right content (Sign In / Logout) - only visible on desktop */}
-        <div className="hidden md:block">
-          {rightContent}
-        </div>
-
-        {/* Hamburger for mobile */}
-        <div className="md:hidden">
+        <div className="hidden md:block">{rightContent}</div>
+        <div className="md:hidden text-[#FF7043]">
           <button onClick={toggleMenu}>
-            {isOpen ? <X size={28} /> : <Menu size={28} />}
+            {isOpen ? <X size={26} /> : <Menu size={26} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Dropdown */}
       {isOpen && (
-        <div className="absolute top-16 left-0 w-full bg-white flex flex-col items-center py-4 z-40 gap-3 shadow-md border-t">
+        <div className="absolute top-16 left-0 w-full bg-[#FAF3EB] border-t border-[#ECEFF1] flex flex-col items-center py-4 z-40 gap-4 shadow-md">
           {links.map(renderNavLink)}
-          <div className="block md:hidden">
-            {rightContent}
-          </div>
+          <div className="block md:hidden">{rightContent}</div>
         </div>
       )}
     </nav>

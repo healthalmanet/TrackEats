@@ -6,7 +6,6 @@ from django.db.models import Count
 from django.contrib.auth.models import Group
 from rest_framework.exceptions import ValidationError   
 from utils.utils import UNIT_TO_GRAMS,role_required
-from .ml_diet.predict import recommend_meals
 from rest_framework.filters import SearchFilter
 from datetime import datetime, time
 from rest_framework.views import APIView
@@ -14,6 +13,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework import views
 from rest_framework.permissions import IsAuthenticated
 import copy
+from .ml_model.src.generator import create_diet_plan_for_user
 from django.db.models import Q
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.models import User
@@ -48,15 +48,18 @@ from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework import generics, permissions
 from .models import (
-    Blog, User, UserProfile, DiabeticProfile,UserMeal,
+    Blog, LabReport, User, UserProfile,
+    #   DiabeticProfile,
+    UserMeal,
     FoodItem,PatientReminder, NutritionistProfile,
     DietRecommendation,DietFeedback,
-    PatientAssignment, UserMeal, DietRecommendationFeedback,
+    PatientAssignment, UserMeal, DietFeedback,
     Feedback,
     WeightLog,WaterIntakeLog,CustomReminder, Message
     )
 from .serializers import (
-        FoodItemSerializer2, RegisterSerializer, UserProfileSerializer,DiabeticProfileSerializer,
+        FoodItemSerializer2, LabReportSerializer, RegisterSerializer, UserProfileSerializer,
+        # DiabeticProfileSerializer,
         UserMealSerializer,PatientReminderSerializer,
         DietRecommendationSerializer,
         DietFeedbackSerializer,
@@ -162,79 +165,130 @@ class ResetPasswordView(generics.GenericAPIView):
             return Response({'error': 'Invalid or expired link.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    API view to retrieve, update, or delete the authenticated user's profile.
-    - GET: Retrieve the current user's profile data.
-    - PUT/PATCH: Update the current user's profile.
-    - DELETE: Delete the current user's profile.
-    Requires the user to be authenticated.
-    """
-    serializer_class = UserProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     API view to retrieve, update, or delete the authenticated user's profile.
+#     - GET: Retrieve the current user's profile data.
+#     - PUT/PATCH: Update the current user's profile.
+#     - DELETE: Delete the current user's profile.
+#     Requires the user to be authenticated.
+#     """
+#     serializer_class = UserProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
+#     def get_object(self):
+#         try:
+#             return UserProfile.objects.get(user=self.request.user)
+#         except UserProfile.DoesNotExist:
+#             raise NotFound("User profile not found.")
+
+
+# class UserProfileCreateView(generics.CreateAPIView):
+#     """
+#     API view to create or update a UserProfile for the authenticated user.
+#     Accepts profile data in POST request.
+#     Links the created/updated profile with the current logged-in user automatically.
+#     Requires the user to be authenticated.
+#     """
+#     serializer_class = UserProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def perform_create(self, serializer):
+#         UserProfile.objects.update_or_create(
+#             user=self.request.user,
+#             defaults=serializer.validated_data
+#         )
+
+
+# class DiabeticProfileCreateView(generics.CreateAPIView):
+#     """
+#     API view to create a DiabeticProfile for the authenticated user.
+#     Requires authentication.
+#     """
+#     serializer_class = DiabeticProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def perform_create(self, serializer):
+#         user_profile = self.request.user.userprofile
+#         serializer.save(user_profile=user_profile)
+
+
+# class DiabeticProfileListView(generics.ListAPIView):
+#     """
+#     API view to list all diabetic reports of the authenticated user.
+#     """
+#     serializer_class = DiabeticProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get_queryset(self):
+#         return DiabeticProfile.objects.filter(user_profile__user=self.request.user)
+
+
+# class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+#     """
+#     API view to retrieve, update, or delete a specific DiabeticProfile report of the authenticated user.
+#     Requires authentication.
+#     """
+#     serializer_class = DiabeticProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+#     lookup_field = 'pk'
+
+#     def get_queryset(self):
+#         return DiabeticProfile.objects.filter(user_profile__user=self.request.user)
+
+class UserProfileView(APIView):
+    """
+    A single endpoint to handle the user's profile.
+    - GET: Retrieves the current user's profile.
+    - POST: Creates a profile for the user if it doesn't exist.
+    - PUT/PATCH: Updates the existing profile.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    def get(self, request, *args, **kwargs):
+        """Handles GET requests to fetch the profile."""
         try:
-            return UserProfile.objects.get(user=self.request.user)
+            profile = UserProfile.objects.get(user=request.user)
+            serializer = self.serializer_class(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except UserProfile.DoesNotExist:
-            raise NotFound("User profile not found.")
+            return Response({"error": "Profile not found. Please create one by sending a POST request to this endpoint."}, status=status.HTTP_404_NOT_FOUND)
 
+    def post(self, request, *args, **kwargs):
+        """Handles POST requests to create a new profile."""
+        if UserProfile.objects.filter(user=request.user).exists():
+            return Response({"error": "Profile already exists. To update, please use PUT or PATCH."}, status=status.HTTP_409_CONFLICT)
+        
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class UserProfileCreateView(generics.CreateAPIView):
-    """
-    API view to create or update a UserProfile for the authenticated user.
-    Accepts profile data in POST request.
-    Links the created/updated profile with the current logged-in user automatically.
-    Requires the user to be authenticated.
-    """
-    serializer_class = UserProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def put(self, request, *args, **kwargs):
+        """Handles PUT requests to update an existing profile completely."""
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+            serializer = self.serializer_class(profile, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "Profile not found. Please create one first using POST."}, status=status.HTTP_404_NOT_FOUND)
 
-    def perform_create(self, serializer):
-        UserProfile.objects.update_or_create(
-            user=self.request.user,
-            defaults=serializer.validated_data
-        )
-
-
-class DiabeticProfileCreateView(generics.CreateAPIView):
-    """
-    API view to create a DiabeticProfile for the authenticated user.
-    Requires authentication.
-    """
-    serializer_class = DiabeticProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        user_profile = self.request.user.userprofile
-        serializer.save(user_profile=user_profile)
-
-
-class DiabeticProfileListView(generics.ListAPIView):
-    """
-    API view to list all diabetic reports of the authenticated user.
-    """
-    serializer_class = DiabeticProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        return DiabeticProfile.objects.filter(user_profile__user=self.request.user)
-
-
-class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    API view to retrieve, update, or delete a specific DiabeticProfile report of the authenticated user.
-    Requires authentication.
-    """
-    serializer_class = DiabeticProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    lookup_field = 'pk'
-
-    def get_queryset(self):
-        return DiabeticProfile.objects.filter(user_profile__user=self.request.user)
-
-
-
+    def patch(self, request, *args, **kwargs):
+        """Handles PATCH requests for partial updates."""
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+            serializer = self.serializer_class(profile, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except UserProfile.DoesNotExist:
+            return Response({"error": "Profile not found. Please create one first using POST."}, status=status.HTTP_404_NOT_FOUND)
 
 
 # FUZZY_MATCH_THRESHOLD = 90  # Adjustable threshold for fuzzy matching confidence
@@ -527,6 +581,119 @@ class DiabeticProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
 #         except Exception as e:
 #             return Response({"error": "Failed to log meals", "details": str(e)}, status=500)
 
+# FUZZY_MATCH_THRESHOLD = 90
+
+# class UserMealViewSet(viewsets.ModelViewSet):
+#     serializer_class = UserMealSerializer
+#     permission_classes = [IsAuthenticated]
+#     pagination_class = StandardResultsSetPagination
+#     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+#     ordering_fields = ['consumed_at']
+#     ordering = ['-consumed_at']
+#     filterset_fields = ['consumed_at', 'user', 'date', 'meal_type']
+
+#     def get_queryset(self):
+#         return UserMeal.objects.filter(user=self.request.user).order_by('-consumed_at')
+
+#     def create(self, request, *args, **kwargs):
+#         from dateutil import parser
+#         from fuzzywuzzy import process
+
+#         def process_meal(item):
+#             food_name = item.get("food_name", "").strip().lower()
+#             quantity = float(item.get("quantity", 1))
+#             unit = item.get("unit", "g")
+#             meal_type = item.get("meal_type", "breakfast")
+#             remarks = item.get("remarks", "")
+#             consumed_at = item.get("consumed_at")
+#             date = item.get("date")
+
+#             try:
+#                 if consumed_at:
+#                     consumed_at = parser.parse(consumed_at)
+#                 else:
+#                     consumed_at = timezone.now()
+
+#                 if date:
+#                     date = parser.parse(date).date()
+#                 else:
+#                     date = consumed_at.date()
+#             except Exception as e:
+#                 raise ValueError(f"Invalid date/consumed_at format: {e}")
+
+#             # Exact match
+#             food = FoodItem.objects.filter(name__iexact=food_name).first()
+
+#             # Fuzzy match
+#             if not food:
+#                 all_names = list(FoodItem.objects.values_list("name", flat=True))
+#                 if all_names:
+#                     fuzzy_result = process.extractOne(food_name, all_names)
+#                     if fuzzy_result and len(fuzzy_result) == 2:
+#                         match, score = fuzzy_result
+#                         if score >= FUZZY_MATCH_THRESHOLD:
+#                             food = FoodItem.objects.filter(name=match).first()
+
+#             # Gemini AI fallback
+#             if not food:
+#                 data = fetch_nutrition_from_gemini(food_name, quantity, unit)
+#                 food = FoodItem.objects.create(
+#                     name=data["food_name"].strip().lower(),
+#                     default_quantity=data["quantity"],
+#                     default_unit=data["unit"],
+#                     calories=data["calories"],
+#                     protein=data["protein"],
+#                     carbs=data["carbohydrates"],
+#                     fats=data["fat"],
+#                     sugar=data.get("sugar", 0),
+#                     fiber=data.get("fiber", 0),
+#                     estimated_gi=data.get("glycemic_index"),
+#                     glycemic_load=data.get("glycemic_load"),
+#                     gram_equivalent=data.get("gram_equivalent"),
+#                     remarks=data.get("remarks", ""),
+#                     food_type=data.get("food_type", "other").lower(),
+#                     meal_type=[data.get("meal_type", "unknown").lower()],
+#                 )
+
+#             return UserMeal.objects.create(
+#                 user=request.user,
+#                 food_item=food,
+#                 food_name=food.name,
+#                 quantity=quantity,
+#                 unit=unit,
+#                 meal_type=meal_type,
+#                 remarks=remarks,
+#                 calories=food.calories,
+#                 protein=food.protein,
+#                 carbs=food.carbs,
+#                 fats=food.fats,
+#                 sugar=food.sugar,
+#                 fiber=food.fiber,
+#                 estimated_gi=food.estimated_gi,
+#                 glycemic_load=food.glycemic_load,
+#                 food_type=food.food_type,
+#                 consumed_at=consumed_at,
+#                 date=date
+#             )
+
+#         try:
+#             payload = request.data
+#             if isinstance(payload, list):
+#                 meals = [process_meal(item) for item in payload]
+#             else:
+#                 meals = [process_meal(payload)]
+
+#             serializer = self.get_serializer(meals, many=True)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#         except ValueError as e:
+#             return Response({"error": str(e)}, status=400)
+
+#         except Exception as e:
+#             return Response({"error": "Failed to log meals", "details": str(e)}, status=500)
+
+
+
 FUZZY_MATCH_THRESHOLD = 90
 
 class UserMealViewSet(viewsets.ModelViewSet):
@@ -536,71 +703,70 @@ class UserMealViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering_fields = ['consumed_at']
     ordering = ['-consumed_at']
-    filterset_fields = ['consumed_at', 'user', 'date', 'meal_type']
+    filterset_fields = ['date', 'meal_type'] # Removed 'user' as it's auto-filtered
 
     def get_queryset(self):
+        """
+        Always filter UserMeal objects for the currently authenticated user.
+        """
         return UserMeal.objects.filter(user=self.request.user).order_by('-consumed_at')
 
     def create(self, request, *args, **kwargs):
         from dateutil import parser
         from fuzzywuzzy import process
 
-        def process_meal(item):
-            food_name = item.get("food_name", "").strip().lower()
-            quantity = float(item.get("quantity", 1))
-            unit = item.get("unit", "g")
-            meal_type = item.get("meal_type", "breakfast")
-            remarks = item.get("remarks", "")
-            consumed_at = item.get("consumed_at")
-            date = item.get("date")
+        def process_meal(item_data):
+            """
+            Processes a single meal item from the request payload.
+            """
+            food_name = item_data.get("food_name", "").strip().lower()
+            if not food_name:
+                raise ValueError("`food_name` cannot be empty.")
+                
+            quantity = float(item_data.get("quantity", 1))
+            unit = item_data.get("unit", "g")
+            meal_type = item_data.get("meal_type", "breakfast")
+            remarks = item_data.get("remarks", "")
+            consumed_at_str = item_data.get("consumed_at")
+            date_str = item_data.get("date")
 
             try:
-                if consumed_at:
-                    consumed_at = parser.parse(consumed_at)
-                else:
-                    consumed_at = timezone.now()
-
-                if date:
-                    date = parser.parse(date).date()
-                else:
-                    date = consumed_at.date()
+                consumed_at = parser.parse(consumed_at_str) if consumed_at_str else timezone.now()
+                date = parser.parse(date_str).date() if date_str else consumed_at.date()
             except Exception as e:
-                raise ValueError(f"Invalid date/consumed_at format: {e}")
+                raise ValueError(f"Invalid date/time format: {e}")
 
-            # Exact match
+            # 1. Exact Match (case-insensitive)
             food = FoodItem.objects.filter(name__iexact=food_name).first()
 
-            # Fuzzy match
+            # 2. Fuzzy Match
             if not food:
                 all_names = list(FoodItem.objects.values_list("name", flat=True))
                 if all_names:
-                    fuzzy_result = process.extractOne(food_name, all_names)
-                    if fuzzy_result and len(fuzzy_result) == 2:
-                        match, score = fuzzy_result
-                        if score >= FUZZY_MATCH_THRESHOLD:
-                            food = FoodItem.objects.filter(name=match).first()
+                    match_result = process.extractOne(food_name, all_names)
+                    if match_result and match_result[1] >= FUZZY_MATCH_THRESHOLD:
+                        food = FoodItem.objects.get(name=match_result[0])
 
-            # Gemini AI fallback
+            # 3. Gemini AI Fallback
             if not food:
-                data = fetch_nutrition_from_gemini(food_name, quantity, unit)
-                food = FoodItem.objects.create(
-                    name=data["food_name"].strip().lower(),
-                    default_quantity=data["quantity"],
-                    default_unit=data["unit"],
-                    calories=data["calories"],
-                    protein=data["protein"],
-                    carbs=data["carbohydrates"],
-                    fats=data["fat"],
-                    sugar=data.get("sugar", 0),
-                    fiber=data.get("fiber", 0),
-                    estimated_gi=data.get("glycemic_index"),
-                    glycemic_load=data.get("glycemic_load"),
-                    gram_equivalent=data.get("gram_equivalent"),
-                    remarks=data.get("remarks", ""),
-                    food_type=data.get("food_type", "other").lower(),
-                    meal_type=[data.get("meal_type", "unknown").lower()],
-                )
+                try:
+                    print(f"Food '{food_name}' not found. Querying Gemini...")
+                    # --- ✅ THIS IS THE CORRECTED PART ---
+                    # The Gemini function now returns a dictionary ready for the model
+                    gemini_data = fetch_nutrition_from_gemini(food_name, quantity, unit)
+                    
+                    # Unpack the dictionary to create the FoodItem
+                    food = FoodItem.objects.create(**gemini_data) 
+                    print(f"Successfully created new food item '{food.name}' via Gemini.")
+                    # --- END CORRECTION ---
 
+                except Exception as e:
+                    # Catch errors from the Gemini call and return a clear message
+                    raise ValueError(f"AI nutrition lookup failed for '{food_name}': {e}")
+
+            # 4. Create the UserMeal log entry
+            # The nutritional values are now taken directly from the definitive `food` object
+            # This ensures consistency whether the food was found in the DB or created by AI
             return UserMeal.objects.create(
                 user=request.user,
                 food_item=food,
@@ -624,19 +790,20 @@ class UserMealViewSet(viewsets.ModelViewSet):
 
         try:
             payload = request.data
-            if isinstance(payload, list):
-                meals = [process_meal(item) for item in payload]
-            else:
-                meals = [process_meal(payload)]
-
+            # Handles both a single meal object and a list of meal objects
+            meals = [process_meal(item) for item in payload] if isinstance(payload, list) else [process_meal(payload)]
+            
             serializer = self.get_serializer(meals, many=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except ValueError as e:
-            return Response({"error": str(e)}, status=400)
-
+            # Catches custom errors raised within process_meal
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"error": "Failed to log meals", "details": str(e)}, status=500)
+            # Catches unexpected errors
+            import traceback
+            traceback.print_exc()
+            return Response({"error": "An unexpected error occurred while logging meals.", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 #--- ---------------CALORIE RECOMMEND API ENDPOINTS---------------- to get calorie,carbs,protein,fats etc
@@ -1637,3 +1804,152 @@ class DailyUserMealSummaryView(APIView):
         )
 
         return Response(summary)
+    
+
+class DietPlanView(APIView):
+    """
+    A unified endpoint for handling a user's 15-day diet plan.
+    - GET: Fetches the current active/pending plan status or data.
+    - POST: Forcefully generates a new plan for the user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Handles fetching the user's current valid diet plan or its status.
+        This is the primary method for a user to check their plan daily.
+        """
+        user = request.user
+        today = now().date()
+
+        try:
+            # Priority 1: Check for a plan that is pending review
+            pending_plan = DietRecommendation.objects.filter(
+                user=user,
+                status='pending'
+            ).order_by('-created_at').first()
+
+            if pending_plan:
+                return Response({
+                    'status_code': 'PENDING_REVIEW',
+                    'message': 'Your diet plan is currently under review by our nutritionists.',
+                    'plan_id': pending_plan.id
+                }, status=status.HTTP_202_ACCEPTED)
+
+            # Priority 2: Check for a current, active, and approved plan
+            active_plan = DietRecommendation.objects.filter(
+                user=user,
+                status='approved',
+                for_week_starting__lte=today,
+                for_week_starting__gte=today - timedelta(days=14) # Plan is valid for 15 days total
+            ).order_by('-for_week_starting').first()
+            
+            if active_plan:
+                serializer = DietRecommendationSerializer(active_plan)
+                return Response({
+                    'status_code': 'ACTIVE_PLAN_FOUND',
+                    'message': 'Displaying your active diet plan.',
+                    'plan_data': serializer.data
+                }, status=status.HTTP_200_OK)
+
+            # If no pending or active plan is found, the user needs to generate one
+            return Response({
+                'status_code': 'NO_PLAN_FOUND',
+                'message': 'No active diet plan found. Please generate a new one.',
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            # General error catch
+            print(f"Error in GET /diet-plan/ for user {user.email}: {e}")
+            return Response({'error': f'An unexpected error occurred while fetching your plan.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles a request to generate a NEW diet plan.
+        This should be triggered by a specific user action, e.g., a "Generate Plan" button.
+        """
+        user = request.user
+        
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            latest_lab_report = LabReport.objects.filter(user=user).order_by('-report_date').first()
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found. Please create or complete your profile first.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # --- Anti-Spam Check: Prevent generating if a plan is already pending ---
+        if DietRecommendation.objects.filter(user=user, status='pending').exists():
+             return Response({
+                'status_code': 'PENDING_REVIEW',
+                'message': 'You already have a plan under review. Please wait for it to be processed.',
+            }, status=status.HTTP_409_CONFLICT) # 409 Conflict is appropriate here
+
+        # --- Create the User Profile Snapshot vector for the AI ---
+        NUMERICAL_COLS = [ 'Age', 'Weight (kg)', 'Height (cm)', 'BMI (auto-calculated)', 'Waist Circumference (cm)', 'Fasting Blood Sugar (mg/dL)', 'HbA1c (%)', 'Postprandial Sugar (mg/dL)', 'LDL (mg/dL)', 'HDL (mg/dL)', 'Triglycerides (mg/dL)', 'CRP (mg/L)', 'ESR (mm/hr)', 'Uric Acid (mg/dL)', 'Creatinine (mg/dL)', 'Urea (mg/dL)', 'ALT (U/L)', 'AST (U/L)', 'Vitamin D3 (ng/mL)', 'Vitamin B12 (pg/mL)', 'TSH (uIU/mL)' ]
+        user_data_dict = {
+            'Age': user_profile.age, 'Weight (kg)': user_profile.weight_kg, 'Height (cm)': user_profile.height_cm, 'BMI (auto-calculated)': user_profile.bmi,
+            'Waist Circumference (cm)': getattr(latest_lab_report, 'waist_circumference_cm', 0),
+            'Fasting Blood Sugar (mg/dL)': getattr(latest_lab_report, 'fasting_blood_sugar', 0), 'HbA1c (%)': getattr(latest_lab_report, 'hba1c', 0),
+            'Postprandial Sugar (mg/dL)': getattr(latest_lab_report, 'postprandial_sugar', 0), 'LDL (mg/dL)': getattr(latest_lab_report, 'ldl_cholesterol', 0),
+            'HDL (mg/dL)': getattr(latest_lab_report, 'hdl_cholesterol', 0), 'Triglycerides (mg/dL)': getattr(latest_lab_report, 'triglycerides', 0),
+            'CRP (mg/L)': getattr(latest_lab_report, 'crp', 0), 'ESR (mm/hr)': getattr(latest_lab_report, 'esr', 0), 'Uric Acid (mg/dL)': getattr(latest_lab_report, 'uric_acid', 0),
+            'Creatinine (mg/dL)': getattr(latest_lab_report, 'creatinine', 0), 'Urea (mg/dL)': getattr(latest_lab_report, 'urea', 0), 'ALT (U/L)': getattr(latest_lab_report, 'alt', 0),
+            'AST (U/L)': getattr(latest_lab_report, 'ast', 0), 'Vitamin D3 (ng/mL)': getattr(latest_lab_report, 'vitamin_d3', 0),
+            'Vitamin B12 (pg/mL)': getattr(latest_lab_report, 'vitamin_b12', 0), 'TSH (uIU/mL)': getattr(latest_lab_report, 'tsh', 0),
+        }
+        user_vector_list = [float(user_data_dict.get(col, 0) or 0) for col in NUMERICAL_COLS]
+
+        try:
+            # --- Call the AI Service ---
+            print(f"Calling AI generator for user: {user.email}")
+            generated_meals_json = create_diet_plan_for_user(user_profile, latest_lab_report)
+            
+            # --- Save the New Plan to the Database ---
+            new_recommendation = DietRecommendation.objects.create(
+                user=user, for_week_starting=now().date(), meals=generated_meals_json,
+                original_ai_plan=generated_meals_json, user_profile_snapshot=user_vector_list, status='pending'
+            )
+            
+            return Response({
+                'status_code': 'NEW_PLAN_GENERATED',
+                'message': 'New diet plan has been successfully generated and is now pending review.',
+                'plan_id': new_recommendation.id,
+            }, status=status.HTTP_201_CREATED)
+            
+        except ValueError as e:
+            # Catches rule engine errors like "too many restrictions"
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Catches all other errors, e.g., AI model not loaded
+            import traceback; traceback.print_exc()
+            return Response({'error': 'An internal error occurred while generating the diet plan.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LabReportViewSet(viewsets.ModelViewSet):
+    """
+    A ViewSet for viewing and editing lab reports.
+    Provides `list`, `create`, `retrieve`, `update`, `partial_update`, and `destroy` actions.
+    
+    Endpoints will be:
+    - GET /api/lab-reports/ -> List all reports for the user
+    - POST /api/lab-reports/ -> Create a new report
+    - GET /api/lab-reports/{id}/ -> Retrieve a specific report
+    - PUT /api/lab-reports/{id}/ -> Update a specific report
+    - DELETE /api/lab-reports/{id}/ -> Delete a specific report
+    """
+    serializer_class = LabReportSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        This view should only return lab reports for the currently
+        authenticated user.
+        """
+        return LabReport.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        """
+        Automatically associate the lab report with the logged-in user
+        upon creation.
+        """
+        serializer.save(user=self.request.user)

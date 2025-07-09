@@ -9,15 +9,18 @@ from rest_framework import filters
 from utils.pagination import StandardResultsSetPagination
 
 
-from .models import DietRecommendation, PatientAssignment
+from .models import PatientAssignment
+from diet.models import DietRecommendation
 from user.models import User
 from userProfile.models import LabReport, UserProfile
 from userFood.models import UserMeal
 from .serializers import (
-    UserSerializer1, PatientProfileSerializer1,
+    CreatePatientSerializer, UserSerializer1, PatientProfileSerializer1,
     UserMealSerializer1, DietRecommendationWithPatientSerializer1,
     ) 
 from userProfile.serializers import LabReportSerializer, UserProfileSerializer
+from django.db import transaction
+
 
 
 
@@ -260,3 +263,24 @@ class AllAssignedDietPlansListView(generics.ListAPIView):
         queryset = DietRecommendation.objects.filter(user_id__in=assigned_patient_ids)
 
         return queryset
+    
+
+#Create Patient
+class NutritionistCreatePatientView(generics.GenericAPIView):
+    serializer_class = CreatePatientSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        if request.user.role != "nutritionist":
+            return Response({"detail": "Only nutritionists can create patients."}, status=403)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            with transaction.atomic():
+                user = serializer.save()
+                PatientAssignment.objects.create(nutritionist=request.user, patient=user)
+                return Response({"detail": "Patient created and assigned successfully."}, status=201)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=400)

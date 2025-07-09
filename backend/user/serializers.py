@@ -1,7 +1,7 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 
-from nutritionist.models import DietFeedback
+from diet.models import DietFeedback
 from .models import User, Feedback
 
 

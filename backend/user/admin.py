@@ -8,7 +8,8 @@ from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from .models import  User, Feedback
 from features.models import Blog
 from owner.models import AppReport
-from nutritionist.models import DietFeedback,DietRecommendation,NutritionistProfile,PatientAssignment
+from nutritionist.models import NutritionistProfile,PatientAssignment
+from diet.models import DietRecommendation, DietFeedback
 from  userFood.models import UserMeal,FoodItem
 from userProfile.models import LabReport,UserProfile
 

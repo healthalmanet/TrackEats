@@ -7,6 +7,7 @@ import json
 import os
 import random
 from collections import defaultdict
+import numpy as np
 
 # ================================
 # 🔹 Import Custom Modules
@@ -17,11 +18,8 @@ from .rule_engine import get_allowed_foods
 # ================================
 # 🔹 Import Django ORM Models
 # ================================
-# CORRECTED: Import the base Django User model and get it dynamically
 from user.models import User
 from userProfile.models import UserProfile, LabReport
-
-# This is the standard Django way to get the active User model
 
 # ================================
 # 🔸 Initialization Logs
@@ -36,7 +34,7 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(SRC_DIR)
 
 VOCAB_FILE = os.path.join(BASE_DIR, 'saved_models', 'food_vocab.json')
-MODEL_PATH = os.path.join(BASE_DIR, 'saved_models', f'diet_model_{MODEL_VERSION}_epoch_38.pth')
+MODEL_PATH = os.path.join(BASE_DIR, 'saved_models', f'diet_model_{MODEL_VERSION}_epoch_79.pth')
 FOOD_DATA_FILE = os.path.join(BASE_DIR, 'data', 'food_items.xlsx')
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -79,7 +77,7 @@ if os.path.exists(MODEL_PATH) and OUTPUT_DIM > 0:
         decoder = Decoder(OUTPUT_DIM, 256, 512)
         _model = Seq2Seq(encoder, decoder, DEVICE).to(DEVICE)
         checkpoint = torch.load(MODEL_PATH, map_location=DEVICE)
-        _model.load_state_dict(checkpoint if 'model_state_dict' not in checkpoint else checkpoint['model_state_dict'])
+        _model.load_state_dict(checkpoint.get('model_state_dict', checkpoint))
         _model.eval()
         model = _model
         print(f"✅ Model {MODEL_VERSION} loaded.")
@@ -89,11 +87,12 @@ else:
     print(f"❌ Model or vocab file missing.")
 
 # ================================
-# 🔸 Load Food Items from Excel File
+# 🔸 Load Food Items
 # ================================
 food_df = pd.DataFrame()
 try:
     raw_food_df = pd.read_excel(FOOD_DATA_FILE)
+    raw_food_df['Food_Item'] = raw_food_df['Food_Item'].str.strip()
     raw_food_df.rename(columns={'name': 'Food_Item', 'meal_type': 'Meal_Type'}, inplace=True)
     agg_funcs = {col: 'first' for col in raw_food_df.columns if col not in ['Food_Item', 'Meal_Type', 'Allergens']}
     agg_funcs['Meal_Type'] = lambda x: ', '.join(x.dropna().unique())
@@ -104,84 +103,73 @@ except Exception as e:
     print(f"❌ Failed to load food file {FOOD_DATA_FILE}: {e}")
 
 # ================================
-# 🔸 Generate Diet Plan Function (Corrected)
+# 🔸 Generate Diet Plan Function
 # ================================
 def generate_diet_plan(user_id):
-    """
-    Generates a diet plan for a given user ID.
-    The user_id provided should be the ID of the main Django auth User.
-    """
     global model
     if model is None:
         return {"error": "Model not loaded."}
 
     try:
-        # === THE FIX: TWO-STEP LOOKUP ===
-        # 1. First, fetch the main authentication User object using the ID.
         auth_user = User.objects.get(id=user_id)
-        
-        # 2. Then, fetch the related UserProfile using the 'auth_user' object.
-        #    This is the correct and reliable way to get the profile.
         user_profile = UserProfile.objects.get(user=auth_user)
-        
-        # 3. Fetch the lab report using the 'auth_user' object as well.
         lab_report = LabReport.objects.filter(user=auth_user).last()
-
-        # Merge user profile and lab report fields into a single dictionary
         features = {**user_profile.__dict__, **(lab_report.__dict__ if lab_report else {})}
-        
-        # Ensure values are not None before converting to float
         user_vector = [float(features.get(col, 0) or 0) for col in NUMERICAL_COLS]
         input_tensor = torch.FloatTensor(user_vector).unsqueeze(0).to(DEVICE)
 
-        # Apply rule engine and filter vocabulary based on user rules
         allowed_df, _ = get_allowed_foods(pd.Series(features), food_df)
         allowed_foods = set(allowed_df.index) & set(food_vocab.keys())
 
         if not allowed_foods:
-            return {"error": "No suitable food items found in vocabulary after applying user preferences and health rules."}
-            
-        allowed_ids = [food_vocab[f] for f in allowed_foods]
+            return {"error": "No suitable food items found after applying rules."}
 
-        # Generate plan
+        allowed_ids = [food_vocab[f] for f in allowed_foods]
         meal_plan = defaultdict(dict)
         food_count = defaultdict(int)
 
         for day in range(1, PLAN_DAYS + 1):
             if not allowed_ids:
-                print(f"Warning: Ran out of unique food options for user {user_id} on Day {day}.")
+                print(f"Warning: Out of unique food options for user {user_id} on Day {day}.")
                 break
 
             outputs = model.generate(input_tensor, MEAL_NAMES, top_k=TOP_K, allowed_ids=allowed_ids)
-            
+
             for meal, food_id in zip(MEAL_NAMES, outputs):
                 food_name = inv_food_vocab.get(food_id, "Unknown")
-                
-                if food_count[food_name] < MAX_FOOD_REPETITION_IN_PLAN:
-                    meal_plan[f"Day {day}"][meal] = food_name
-                    food_count[food_name] += 1
-                else:
-                    # Find a different food that hasn't been used too much
-                    alternatives = [alt_id for alt_id in allowed_ids if food_count[inv_food_vocab.get(alt_id)] < MAX_FOOD_REPETITION_IN_PLAN]
+
+                if food_count[food_name] >= MAX_FOOD_REPETITION_IN_PLAN:
+                    alternatives = [alt_id for alt_id in allowed_ids if food_count[inv_food_vocab[alt_id]] < MAX_FOOD_REPETITION_IN_PLAN]
                     if alternatives:
                         random.shuffle(alternatives)
-                        alt_id = alternatives[0]
-                        alt_name = inv_food_vocab.get(alt_id)
-                        meal_plan[f"Day {day}"][meal] = alt_name
-                        food_count[alt_name] += 1
+                        food_id = alternatives[0]
+                        food_name = inv_food_vocab[food_id]
                     else:
-                        # If no alternatives are left, assign a placeholder and log it
-                        meal_plan[f"Day {day}"][meal] = "No suitable alternative available"
-                        print(f"Warning: No alternative food found for {meal} on Day {day} for user {user_id}")
+                        meal_plan[f"Day {day}"][meal] = {"food_name": "No suitable alternative"}
+                        continue
+
+                food_count[food_name] += 1
+
+                # ✅ Nutrition details extraction
+                food_row = food_df.loc[food_name] if food_name in food_df.index else {}
+                meal_plan[f"Day {day}"][meal] = {
+                    "food_name": food_name,
+                    "Gram_Equivalent": float(food_row.get("Gram_Equivalent", 0) or 0),
+                    "Calories": float(food_row.get("Calories", 0) or 0),
+                    "Protein": float(food_row.get("Protein", 0) or 0),
+                    "Carbs": float(food_row.get("Carbs", 0) or 0),
+                    "Fats": float(food_row.get("Fats", 0) or 0),
+                    "Sugar": float(food_row.get("Sugar", 0) or 0),
+                    "Fiber": float(food_row.get("Fiber", 0) or 0),
+                }
 
         return meal_plan
 
-    # More specific exceptions for better debugging
     except User.DoesNotExist:
-        return {"error": f"Authentication error: User with ID {user_id} not found in the system."}
+        return {"error": "User not found."}
     except UserProfile.DoesNotExist:
-        return {"error": f"User profile for user ID {user_id} does not exist. Please complete your profile before generating a plan."}
+        return {"error": "User profile missing."}
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"error": f"An unexpected error occurred during diet plan generation: {e}"}
+        return {"error": f"Error during plan generation: {e}"}

@@ -17,14 +17,13 @@ UNIT_TO_GRAMS = {
 def role_required(allowed_roles):
     def decorator(view_func):
         @wraps(view_func)
-        def _wrapped_view(self, request, *args, **kwargs):
+        def _wrapped_view(request, *args, **kwargs):
             user = request.user
             if not user.is_authenticated or user.role not in allowed_roles:
                 return HttpResponseForbidden("Access Denied")
-            return view_func(self, request, *args, **kwargs)
+            return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
-
 
 
 

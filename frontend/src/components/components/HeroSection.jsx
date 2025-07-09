@@ -17,14 +17,15 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
   const glassSizeML = 250;
   const today = new Date().toISOString().split("T")[0];
 
-  const waterIntakeGlasses = useMemo(() => {
-    const glasses = Math.floor(waterIntakeML / glassSizeML);
-    return isNaN(glasses) ? 0 : glasses;
-  }, [waterIntakeML]);
+  const waterIntakeGlasses = useMemo(
+    () => Math.floor(waterIntakeML / glassSizeML) || 0,
+    [waterIntakeML]
+  );
 
-  const waterGoalGlasses = useMemo(() => {
-    return Math.round(waterGoalML / glassSizeML);
-  }, [waterGoalML]);
+  const waterGoalGlasses = useMemo(
+    () => Math.round(waterGoalML / glassSizeML),
+    [waterGoalML]
+  );
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,7 +33,6 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
         const data = await getUserProfile();
         setWeight(data.weight_kg);
       } catch (error) {
-        console.error("❌ Error fetching profile:", error);
         toast.error("Failed to load user profile");
       }
     };
@@ -46,7 +46,6 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
         setCalorieGoal(data.recommended_calories || 2000);
         setWaterGoalML(data.water?.recommended_ml || 3000);
       } catch (error) {
-        console.error("❌ Error fetching targets:", error);
         toast.error("Failed to load nutrition goals");
         setCalorieGoal(2000);
         setWaterGoalML(3000);
@@ -61,23 +60,18 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
         const token = localStorage.getItem("token");
         const allData = await getMeals(token, null);
         const meals = allData.results || [];
-
         const todayMeals = meals.filter(
           (meal) => meal.date === today && typeof meal.calories === "number"
         );
-
         const totalCalories = todayMeals.reduce(
           (acc, meal) => acc + meal.calories,
           0
         );
-
         setCaloriesToday(Number(totalCalories.toFixed(0)));
       } catch (error) {
-        console.error("❌ Error fetching calories:", error);
         toast.error("Failed to load calorie data");
       }
     };
-
     fetchTodayCalories();
   }, [today, mealUpdateTrigger]);
 
@@ -86,107 +80,107 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
       try {
         const data = await getWater(today);
         const entries = data.results || [];
-
         const totalML = entries.reduce(
           (sum, item) => sum + Number(item.amount_ml || 0),
           0
         );
-
         setWaterIntakeML(totalML);
       } catch (error) {
-        console.error("❌ Error fetching water intake:", error);
         toast.error("Failed to load water intake data");
       }
     };
-
     fetchWaterIntake();
   }, [today, waterUpdateTrigger]);
 
   return (
-    <div className="w-full min-h-[350px] bg-gradient-to-r from-green-50 to-orange-50 p-8 md:p-12 rounded-lg flex flex-col md:flex-row justify-between items-center">
-      {/* Left Section */}
-      <div className="flex-1 w-full">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-          Welcome back!
-        </h1>
-        <p className="text-gray-700 text-lg font-semibold mb-8">
-          Track your nutrition journey and achieve your health goals
-        </p>
+    <div className="w-full relative overflow-hidden bg-gradient-to-br from-[#FF7043] via-[#F4511E] to-[#FF8A65]
+text-[#263238] pt-16 pb-28 px-6 md:px-10 lg:px-12">
 
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* ✅ Calories Card (updated) */}
-          <div className="flex-1 bg-white rounded-lg shadow p-6 border border-gray-200 hover:scale-105 hover:shadow-lg transition-transform relative">
-            <div className="absolute top-3 right-3 text-red-500">
-              <Flame size={22} />
-            </div>
-            <p className="text-sm text-gray-600 font-medium mb-2">
-              Calories Today
+      <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
+        {/* Left Info */}
+        <div className="w-full md:w-2/3 space-y-6 font-poppins">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">
+              Fuel your journey with{" "}
+              <span className="text-[#5ED8D1]">smart nutrition</span>
+            </h1>
+            <p className="mt-2 text-lg font-roboto text-[#FFFDF9]">
+              Log, learn, and stay ahead of your health goals every day.
             </p>
-            <p className="text-2xl font-bold text-gray-800 mb-1">
-              {caloriesToday}
-            </p>
+          </div>
 
-            {calorieGoal !== null && (
-              <>
-                <p className="text-sm text-gray-500 font-semibold">
-                  Goal: {calorieGoal}
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Calories Card */}
+            <div className="bg-[#FFFDF9] p-5 rounded-2xl border border-[#F4511E] shadow-xl hover:shadow-orange-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
+              <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
+                <Flame size={18} />
+              </div>
+              <p className="text-sm font-medium mb-1 text-[#546E7A]">Calories Today</p>
+              <p className="text-2xl font-bold text-[#263238]">{caloriesToday}</p>
+              <p className="text-sm text-[#546E7A]">Goal: {calorieGoal ?? "Loading..."}</p>
+              {calorieGoal && caloriesToday >= calorieGoal && (
+                <p className="text-sm text-[#F4511E] mt-1 font-semibold">
+                  You've hit your calorie goal!
                 </p>
-                {caloriesToday >= calorieGoal && (
-                  <p className="text-sm text-green-600 font-semibold mt-1">
-                    You've hit your calorie goal!
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* ✅ Water Card (restored original logic & formatting) */}
-          <div className="flex-1 bg-white rounded-lg shadow p-6 border border-gray-200 hover:scale-105 hover:shadow-lg transition-transform relative">
-            <div className="absolute top-3 right-3 text-blue-500">
-              <Droplet size={22} />
+              )}
             </div>
-            <p className="text-sm text-gray-600 font-medium mb-2">
-              Water Intake
-            </p>
 
-            <p className="text-2xl font-bold text-gray-800 mb-1">
-              {waterIntakeGlasses} Glass{waterIntakeGlasses !== 1 ? "es" : ""}
-            </p>
-
-            {waterIntakeGlasses <= waterGoalGlasses ? (
-              <p className="text-sm text-gray-500 font-semibold">
-                Goal: {waterGoalGlasses} Glasses
+            {/* Water Card */}
+            <div className="bg-[#FFFDF9] p-5 rounded-2xl border border-[#F4511E] shadow-xl hover:shadow-orange-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
+              <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
+                <Droplet size={18} />
+              </div>
+              <p className="text-sm font-medium mb-1 text-[#546E7A]">Water Intake</p>
+              <p className="text-2xl font-bold text-[#263238]">
+                {waterIntakeGlasses} Glass{waterIntakeGlasses !== 1 ? "es" : ""}
               </p>
-            ) : (
-              <p className="text-sm text-green-600 font-semibold">
-                Goal surpassed by {waterIntakeGlasses - waterGoalGlasses} glass
-                {waterIntakeGlasses - waterGoalGlasses > 1 ? "es" : ""}!
-              </p>
-            )}
-
-            <p className="text-sm text-gray-400 mt-1">({waterIntakeML} ml)</p>
-          </div>
-
-          {/* ✅ Weight Card */}
-          <div className="flex-1 bg-white rounded-lg shadow p-6 border border-gray-200 hover:scale-105 hover:shadow-lg transition-transform relative">
-            <div className="absolute top-3 right-3 text-green-500">
-              <Weight size={22} />
+              <p className="text-sm text-[#546E7A]">Goal: {waterGoalGlasses} Glasses</p>
+              {waterIntakeGlasses > waterGoalGlasses && (
+                <p className="text-sm text-[#F4511E] mt-1 font-semibold">
+                  Surpassed by {waterIntakeGlasses - waterGoalGlasses} Glass
+                  {waterIntakeGlasses - waterGoalGlasses > 1 ? "es" : ""}
+                </p>
+              )}
+              <p className="text-sm text-gray-500 mt-1">({waterIntakeML} ml)</p>
             </div>
-            <p className="text-sm text-gray-600 font-medium mb-2">Weight</p>
-            <p className="text-2xl font-bold text-gray-800 mb-1">
-              {weight !== null ? `${weight} kg` : "Loading..."}
-            </p>
+
+            {/* Weight Card */}
+            <div className="bg-[#FFFDF9] p-5 rounded-2xl border border-[#F4511E] shadow-xl hover:shadow-orange-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
+              <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
+                <Weight size={18} />
+              </div>
+              <p className="text-sm font-medium mb-1 text-[#546E7A]">Weight</p>
+              <p className="text-2xl font-bold text-[#263238]">
+                {weight !== null ? `${weight} kg` : "Loading..."}
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Right Image */}
+        <div className="hidden md:block w-full md:w-1/3 z-10">
+          <img
+            src={heroImage}
+            alt="Hero"
+            className="max-h-[280px] mx-auto drop-shadow-[0_10px_25px_rgba(0,0,0,0.4)] hover:scale-110 transition-all duration-300 ease-in-out rounded-xl"
+          />
         </div>
       </div>
 
-      {/* Right Image Section */}
-      <div className="hidden md:block md:ml-10 flex-shrink-0">
-        <img
-          src={heroImage}
-          alt="Dashboard Illustration"
-          className="max-h-[300px] w-auto"
-        />
+      {/* Wavy Background */}
+      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-0">
+        <svg
+          className="relative block w-full h-[350px]"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 1440 320"
+          preserveAspectRatio="none"
+        >
+          <path
+            fill="#FFFDF9"
+            d="M0,200 C360,360 1080,80 1440,200 L1440,320 L0,320 Z"
+          />
+        </svg>
       </div>
     </div>
   );

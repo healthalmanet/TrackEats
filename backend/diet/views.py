@@ -1,0 +1,145 @@
+from datetime import timedelta, date
+from django.utils.timezone import now
+from rest_framework import status, permissions
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from ml_model.src.generator import generate_diet_plan
+from diet.serializers import DietRecommendationSerializer
+from userProfile.models import LabReport, UserProfile
+from nutritionist.models import DietRecommendation
+
+
+class DietPlanView(APIView):
+    """
+    A unified endpoint for handling a user's 15-day diet plan.
+    - GET: Fetch current active or pending plan.
+    - POST: Generate a new plan (only if none is pending).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        today = now().date()
+
+        try:
+            # 1️⃣ Check for pending plan
+            pending_plan = DietRecommendation.objects.filter(
+                user=user, status='pending'
+            ).order_by('-created_at').first()
+
+            if pending_plan:
+                return Response({
+                    'status_code': 'PENDING_REVIEW',
+                    'message': 'Your diet plan is currently under review.',
+                    'plan_id': pending_plan.id
+                }, status=status.HTTP_202_ACCEPTED)
+
+            # 2️⃣ Check for valid 15-day approved plan
+            active_plan = DietRecommendation.objects.filter(
+                user=user, status='approved',
+                for_week_starting__lte=today,
+                for_week_starting__gte=today - timedelta(days=14)
+            ).order_by('-for_week_starting').first()
+
+            if active_plan:
+                serializer = DietRecommendationSerializer(active_plan)
+                return Response({
+                    'status_code': 'ACTIVE_PLAN_FOUND',
+                    'message': 'Displaying your active diet plan.',
+                    'plan_data': serializer.data
+                }, status=status.HTTP_200_OK)
+
+            # 3️⃣ Nothing found
+            return Response({
+                'status_code': 'NO_PLAN_FOUND',
+                'message': 'No active diet plan found. Please generate a new one.',
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            print(f"GET /diet-plan/ error for {user.email}: {e}")
+            return Response({'error': 'An unexpected error occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        print(f"[DEBUG] request.user: {request.user} | ID: {request.user.id} | Authenticated: {request.user.is_authenticated}")
+        print(f"[DEBUG] UserProfile.exists: {UserProfile.objects.filter(user=request.user).exists()}")
+
+        
+
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            latest_lab_report = LabReport.objects.filter(user=user).order_by('-report_date').first()
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found. Please complete your profile.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # ⛔ Prevent spam: check if there's already a pending plan
+        if DietRecommendation.objects.filter(user=user, status='pending').exists():
+            return Response({
+                'status_code': 'PENDING_REVIEW',
+                'message': 'You already have a plan under review.',
+            }, status=status.HTTP_409_CONFLICT)
+
+        # 🔢 Build input vector snapshot (for audit/logging)
+        NUMERICAL_COLS = [
+            'Age', 'Weight (kg)', 'Height (cm)', 'BMI (auto-calculated)', 'Waist Circumference (cm)',
+            'Fasting Blood Sugar (mg/dL)', 'HbA1c (%)', 'Postprandial Sugar (mg/dL)', 'LDL (mg/dL)',
+            'HDL (mg/dL)', 'Triglycerides (mg/dL)', 'CRP (mg/L)', 'ESR (mm/hr)', 'Uric Acid (mg/dL)',
+            'Creatinine (mg/dL)', 'Urea (mg/dL)', 'ALT (U/L)', 'AST (U/L)', 'Vitamin D3 (ng/mL)',
+            'Vitamin B12 (pg/mL)', 'TSH (uIU/mL)'
+        ]
+
+        def calculate_age(dob):
+         today = date.today()
+         return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+        user_data_dict = {
+            'Age': calculate_age(user_profile.date_of_birth),
+            'Weight (kg)': user_profile.weight_kg,
+            'Height (cm)': user_profile.height_cm,
+            'BMI (auto-calculated)': user_profile.bmi,
+            'Waist Circumference (cm)': getattr(latest_lab_report, 'waist_circumference_cm', 0),
+            'Fasting Blood Sugar (mg/dL)': getattr(latest_lab_report, 'fasting_blood_sugar', 0),
+            'HbA1c (%)': getattr(latest_lab_report, 'hba1c', 0),
+            'Postprandial Sugar (mg/dL)': getattr(latest_lab_report, 'postprandial_sugar', 0),
+            'LDL (mg/dL)': getattr(latest_lab_report, 'ldl_cholesterol', 0),
+            'HDL (mg/dL)': getattr(latest_lab_report, 'hdl_cholesterol', 0),
+            'Triglycerides (mg/dL)': getattr(latest_lab_report, 'triglycerides', 0),
+            'CRP (mg/L)': getattr(latest_lab_report, 'crp', 0),
+            'ESR (mm/hr)': getattr(latest_lab_report, 'esr', 0),
+            'Uric Acid (mg/dL)': getattr(latest_lab_report, 'uric_acid', 0),
+            'Creatinine (mg/dL)': getattr(latest_lab_report, 'creatinine', 0),
+            'Urea (mg/dL)': getattr(latest_lab_report, 'urea', 0),
+            'ALT (U/L)': getattr(latest_lab_report, 'alt', 0),
+            'AST (U/L)': getattr(latest_lab_report, 'ast', 0),
+            'Vitamin D3 (ng/mL)': getattr(latest_lab_report, 'vitamin_d3', 0),
+            'Vitamin B12 (pg/mL)': getattr(latest_lab_report, 'vitamin_b12', 0),
+            'TSH (uIU/mL)': getattr(latest_lab_report, 'tsh', 0),
+        }
+        user_vector_list = [float(user_data_dict.get(col, 0) or 0) for col in NUMERICAL_COLS]
+
+        try:
+            print(f"Generating plan for user: {user.email}")
+            plan_json = generate_diet_plan(user.id)  # 🔹 AI model call
+
+            if isinstance(plan_json, dict) and "error" in plan_json:
+                return Response({'error': plan_json['error']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            new_recommendation = DietRecommendation.objects.create(
+                user=user,
+                for_week_starting=now().date(),
+                meals=plan_json,
+                original_ai_plan=plan_json,
+                user_profile_snapshot=user_vector_list,
+                status='pending'
+            )
+            return Response({
+                'status_code': 'NEW_PLAN_GENERATED',
+                'message': 'New diet plan generated successfully and is now under review.',
+                'plan_id': new_recommendation.id,
+            }, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            return Response({'error': 'Internal error during diet generation.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

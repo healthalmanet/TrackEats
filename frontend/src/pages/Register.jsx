@@ -51,7 +51,7 @@ setTimeout(() => {
             <input
               id="full_name"
               type="text"
-              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#00FF33] text-sm placeholder:text-xs"
+              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
               placeholder="Full name"
               value={full_name}
               onChange={(e) => setfull_name(e.target.value)}
@@ -70,7 +70,7 @@ setTimeout(() => {
             <input
               id="email"
               type="email"
-              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#00FF33] text-sm placeholder:text-xs"
+              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
               placeholder="email@domain"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -89,7 +89,7 @@ setTimeout(() => {
             <input
               id="password"
               type="password"
-              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#00FF33] text-sm placeholder:text-xs"
+              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
               placeholder="Min 8 chars + symbol"
               value={password}
               onFocus={() => setShowChecklist(true)}
@@ -108,7 +108,7 @@ setTimeout(() => {
           <input
             id="password2"
             type="password"
-            className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#00FF33] text-sm placeholder:text-xs"
+            className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
             placeholder="Re-enter"
             value={password2}
             onChange={(e) => setPassword2(e.target.value)}
@@ -118,7 +118,7 @@ setTimeout(() => {
 
         {/* Checklist */}
         {(showChecklist || password || password2) && (
-          <div className="mb-3 text-xs text-gray-700 bg-green-50 border border-green-200 p-2 rounded-md space-y-1">
+          <div className="mb-3 text-xs text-gray-700 bg-[#FFF8F0] border border-orange-200 p-2 rounded-md space-y-1">
             <div className="flex items-center gap-2">
               {isLengthValid ? (
                 <CircleCheck className="text-green-600 w-4 h-4" />
@@ -149,9 +149,7 @@ setTimeout(() => {
         {/* Submit */}
         <button
   type="submit"
-  className="w-full bg-[#00FF33] text-black py-1.5 rounded-md font-semibold text-sm 
-             hover:brightness-105 cursor-pointer transition-transform duration-150 
-             active:scale-95 shadow"
+  className="w-full bg-[#FF6B3D] hover:bg-[#e85c2a] hover:shadow-lg text-white px-5 py-2.5 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
 >
   Register
 </button>
@@ -180,7 +178,7 @@ setTimeout(() => {
         <span className="text-gray-700 font-medium">Already registered? </span>
         <button
           onClick={onSwitchToLogin}
-          className="text-[#00AA22] font-semibold underline hover:text-[#008c1c] transition"
+          className="text-[#FF6B3D] font-semibold underline hover:text-[#e85c2a] transition"
         >
           Login here
         </button>

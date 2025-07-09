@@ -1,4 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Poppins:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Poppins:wght@400;600&display=swap');
+
 @import "tailwindcss";
+
+
+
 @keyframes pop {
   0% {
     transform: scale(1);
@@ -14,3 +20,29 @@
 .animate-pop {
   animation: pop 0.5s ease-in-out;
 }
+
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 8px #39FF14);
+}
+
+.shadow-neon {
+  box-shadow: 0 0 8px #39FF14, 0 0 16px #39FF14;
+}
+
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out forwards;
+}
+
+

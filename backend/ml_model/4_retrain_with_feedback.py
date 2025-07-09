@@ -1,155 +1,159 @@
 # === Standard Library Imports ===
-import os                         # For file path checks and filesystem operations
-import json                       # To load vocabulary JSON
-import pandas as pd               # For loading CSV data
+import os
+import json
+import time
+import pandas as pd
 
 # === PyTorch Core Imports ===
-import torch                      # PyTorch core framework
-import torch.nn as nn             # Neural network modules
-import torch.optim as optim       # Optimizers like Adam
-from torch.utils.data import DataLoader  # For batch training
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torch.nn.utils.rnn import pad_sequence
 
 # === Custom Modules ===
-from src.dataset import DietDataset       # Custom dataset class for diet training
-from src.model import Encoder, Decoder, Seq2Seq  # Model components
-from torch.nn.utils.rnn import pad_sequence      # For batching variable-length sequences
+from src.dataset import DietDataset
+from src.model import Encoder, Decoder, Seq2Seq
 
 # === Dummy Data Creator ===
 def create_dummy_approved_plans():
-    """
-    Creates a dummy 'approved_plans.csv' using samples from bootstrap data.
-    Simulates real-world scenario where plans are approved by experts via the app.
-    """
-    print("Creating a dummy 'approved_plans.csv' for demonstration...")
+    print("🔧 Creating a dummy 'approved_plans.csv' for demonstration...")
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    bootstrap_path = os.path.join(SCRIPT_DIR, 'data', '1_bootstrap_training_data.csv')
+    approved_path = os.path.join(SCRIPT_DIR, 'data', 'approved_plans.csv')
 
-    # Ensure the bootstrap data exists
-    if not os.path.exists('data/bootstrap_training_data.csv'):
-        print("ERROR: 'bootstrap_training_data.csv' not found. Please run '1_prepare_bootstrap_data.py' first.")
+    if not os.path.exists(bootstrap_path):
+        print("❌ ERROR: '1_bootstrap_training_data.csv' not found.")
         return
 
-    # Load random sample from bootstrap training data
-    bootstrap_data = pd.read_csv('data/bootstrap_training_data.csv').sample(10)
+    bootstrap_data = pd.read_csv(bootstrap_path).sample(10)
+    bootstrap_data.to_csv(approved_path, index=False)
+    print("✅ Dummy approved data created.")
 
-    # Save as approved plan data (in real life, would be hand-edited)
-    bootstrap_data.to_csv('data/approved_plans.csv', index=False)
-    print("Dummy data created.")
-
-# === Model Hyperparameters ===
-
-INPUT_DIM = 21                      # Number of user features going into the encoder
-
-# Load vocab size from saved JSON
-VOCAB_PATH = 'saved_models/food_vocab.json'
-if not os.path.exists(VOCAB_PATH):
-    raise FileNotFoundError(f"Vocabulary file not found at {VOCAB_PATH}. Please run '1_prepare_bootstrap_data.py' first.")
-OUTPUT_DIM = len(json.load(open(VOCAB_PATH)))  # Output vocab size = number of food tokens
-
-# Model architecture settings (same as in initial training)
-ENC_EMB_DIM = 256     # Encoder embedding size
-DEC_EMB_DIM = 256     # Decoder embedding size
-HID_DIM = 512         # Hidden state size
-
-# Training hyperparameters
-N_EPOCHS = 15         # Fewer epochs needed during fine-tuning
-CLIP = 1              # Gradient clipping value
-BATCH_SIZE = 8        # Smaller batch size helps with overfitting
-LEARNING_RATE = 1e-4  # Lower learning rate for fine-tuning
-
-# Use GPU if available, otherwise CPU
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-# === Function: Collate padding for batches ===
+# === Collate Function ===
 def collate_fn(batch):
-    """
-    Pads each plan_sequence in the batch to the same length.
-    Used by DataLoader to handle variable-length sequences.
-    """
-    user_vectors, plan_sequences = zip(*batch)  # Unpack list of tuples
-    user_vectors = torch.stack(user_vectors)    # Convert user features to tensor batch
-    plan_sequences_padded = pad_sequence(plan_sequences, batch_first=False, padding_value=0)  # Pad target sequences
+    user_vectors, plan_sequences = zip(*batch)
+    user_vectors = torch.stack(user_vectors)
+    plan_sequences_padded = pad_sequence(plan_sequences, batch_first=False, padding_value=0)
     return user_vectors, plan_sequences_padded
 
+# === Hyperparameters & Paths ===
+INPUT_DIM = 21
+ENC_EMB_DIM = 256
+DEC_EMB_DIM = 256
+HID_DIM = 512
+N_EPOCHS = 15
+CLIP = 1
+BATCH_SIZE = 8
+LEARNING_RATE = 1e-4
+VAL_SPLIT = 0.2
 
-# === Fine-Tuning Function ===
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+VOCAB_PATH = os.path.join(SCRIPT_DIR, 'saved_models', 'food_vocab.json')
+MODEL_SAVE_PATH = os.path.join(SCRIPT_DIR, 'saved_models', 'diet_model_v2.pth')
+CHECKPOINT_PATH = os.path.join(SCRIPT_DIR, 'saved_models', 'diet_model_v2_checkpoint.pth')
+V1_MODEL_PATH = os.path.join(SCRIPT_DIR, 'saved_models', 'diet_model_v1_epoch_79.pth')
+APPROVED_PLANS_PATH = os.path.join(SCRIPT_DIR, 'data', 'approved_plans.csv')
+
+# === Validation Function ===
+@torch.no_grad()
+def validate(model, val_loader, criterion):
+    model.eval()
+    val_loss = 0
+    for user_vectors, plan_sequences in val_loader:
+        src = user_vectors.to(DEVICE)
+        trg = plan_sequences.to(DEVICE)
+
+        output = model(src, trg, teacher_forcing_ratio=0.0)
+        output_dim = output.shape[-1]
+        output = output[1:].view(-1, output_dim)
+        trg = trg[1:].view(-1)
+
+        loss = criterion(output, trg)
+        val_loss += loss.item()
+    return val_loss / len(val_loader)
+
+# === Main Training Function ===
 def retrain():
-    """
-    Fine-tunes the initial diet planning model using expert-approved data.
-    Saves the updated model as 'diet_model_v2.pth'.
-    """
-    print(f"Retraining on {DEVICE} using expert-approved data...")
+    print(f"🚀 Starting retraining on {DEVICE}...")
+    start_time = time.time()
 
-    # --- Ensure approved plans file exists ---
-    approved_plans_path = 'data/approved_plans.csv'
-    if not os.path.exists(approved_plans_path):
+    if not os.path.exists(VOCAB_PATH):
+        raise FileNotFoundError(f"❌ Vocabulary file not found at {VOCAB_PATH}.")
+    OUTPUT_DIM = len(json.load(open(VOCAB_PATH)))
+
+    if not os.path.exists(APPROVED_PLANS_PATH):
         create_dummy_approved_plans()
+    if not os.path.exists(APPROVED_PLANS_PATH):
+        return
 
-    # --- Load dataset ---
-    dataset = DietDataset(approved_plans_path)
-    dataloader = DataLoader(
-        dataset,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        collate_fn=collate_fn  # Custom function to pad sequences
-    )
+    dataset = DietDataset(APPROVED_PLANS_PATH)
 
-    # --- Load pre-trained model (V1) ---
+    # === Split into Train/Val ===
+    val_size = int(len(dataset) * VAL_SPLIT)
+    train_size = len(dataset) - val_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+
     encoder = Encoder(INPUT_DIM, ENC_EMB_DIM, HID_DIM)
     decoder = Decoder(OUTPUT_DIM, DEC_EMB_DIM, HID_DIM)
     model = Seq2Seq(encoder, decoder, DEVICE).to(DEVICE)
 
-    # Ensure pre-trained model exists
-    v1_model_path = 'saved_models/diet_model_v1.pth'
-    if not os.path.exists(v1_model_path):
-        print(f"ERROR: Pre-trained model 'diet_model_v1.pth' not found. Please run '2_train_initial_model.py' first.")
+    if not os.path.exists(V1_MODEL_PATH):
+        print(f"❌ ERROR: Pre-trained model not found at {V1_MODEL_PATH}.")
         return
 
-    # Load model weights
-    model.load_state_dict(torch.load(v1_model_path, map_location=DEVICE))
+    checkpoint = torch.load(V1_MODEL_PATH, map_location=DEVICE)
+    model.load_state_dict(checkpoint['model_state_dict'])
     print("✅ Loaded pre-trained V1 model.")
 
-    # --- Define optimizer and loss ---
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    PAD_IDX = 0  # Padding token index
-    criterion = nn.CrossEntropyLoss(ignore_index=PAD_IDX)  # Ignore PAD during loss calculation
+    PAD_IDX = 0
+    criterion = nn.CrossEntropyLoss(ignore_index=PAD_IDX)
 
-    # --- Training Loop ---
-    model.train()  # Set model to training mode
-    for epoch in range(N_EPOCHS):
-        epoch_loss = 0  # Track total loss for this epoch
+    model.train()
+    for epoch in range(1, N_EPOCHS + 1):
+        epoch_start = time.time()
+        epoch_loss = 0
 
-        for i, (user_vectors, plan_sequences) in enumerate(dataloader):
-            src = user_vectors.to(DEVICE)        # Input: user health features
-            trg = plan_sequences.to(DEVICE)      # Target: food token sequences
+        for user_vectors, plan_sequences in train_loader:
+            src = user_vectors.to(DEVICE)
+            trg = plan_sequences.to(DEVICE)
 
-            optimizer.zero_grad()                # Reset gradients
-
-            # Forward pass with teacher forcing
+            optimizer.zero_grad()
             output = model(src, trg, teacher_forcing_ratio=0.7)
 
-            # Reshape outputs for loss: (seq_len * batch_size, vocab_size)
             output_dim = output.shape[-1]
-            output = output[1:].view(-1, output_dim)  # Remove <sos>, flatten
-            trg = trg[1:].view(-1)                    # Remove <sos>, flatten
+            output = output[1:].view(-1, output_dim)
+            trg = trg[1:].view(-1)
 
-            # Compute loss
             loss = criterion(output, trg)
             loss.backward()
-
-            # Clip gradients to prevent exploding gradients
             torch.nn.utils.clip_grad_norm_(model.parameters(), CLIP)
             optimizer.step()
-
             epoch_loss += loss.item()
 
-        avg_loss = epoch_loss / len(dataloader)
-        print(f'📚 Fine-Tuning Epoch: {epoch+1:02} | Loss: {avg_loss:.3f}')
+        avg_train_loss = epoch_loss / len(train_loader)
+        avg_val_loss = validate(model, val_loader, criterion)
+        print(f"📚 Epoch {epoch:02} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | Time: {time.time() - epoch_start:.2f}s")
 
-    # --- Save fine-tuned model ---
-    torch.save(model.state_dict(), 'saved_models/diet_model_v2.pth')
-    print("✅ Retraining complete. Model saved as 'diet_model_v2.pth'.")
+        # === Save checkpoint ===
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'train_loss': avg_train_loss,
+            'val_loss': avg_val_loss,
+        }, CHECKPOINT_PATH)
 
+    torch.save(model.state_dict(), MODEL_SAVE_PATH)
+    print(f"\n✅ Retraining complete. Final model saved as '{MODEL_SAVE_PATH}'.")
+    print(f"⏱️ Total training time: {time.time() - start_time:.2f} seconds")
 
-# === Run if script is executed directly ===
+# === Run if script is main ===
 if __name__ == '__main__':
     retrain()

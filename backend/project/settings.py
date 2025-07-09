@@ -53,9 +53,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'django_filters',
-    'app',
-    
+    'django_filters',               
+    'user.apps.UserConfig',          #NEw Structure
+    'userProfile.apps.UserProfileConfig',
+    'userFood.apps.UserFoodConfig',
+    'owner.apps.OwnerConfig',  # Owner Dashboard App
+    'nutritionist.apps.NutritionistConfig',  # Nutritionist Dashboard App
+    'features.apps.FeaturesConfig',  # Features App
+    'diet.apps.DietConfig',  # Diet App
 
     # Third-party   
     'rest_framework.authtoken',  # ✅ REQUIRED for dj_rest_auth tokens
@@ -141,7 +146,7 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-AUTH_USER_MODEL = 'app.User' 
+AUTH_USER_MODEL = 'user.User' 
 
 # DATABASES = {
 #     'default': {

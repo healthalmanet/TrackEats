@@ -1,0 +1,2 @@
+Epoch | Train Loss | Val Loss | Time (s)
+----------------------------------------

@@ -6,7 +6,10 @@ from rest_framework.response import Response
 from ml_model.src.generator import generate_diet_plan
 from diet.serializers import DietRecommendationSerializer
 from userProfile.models import LabReport, UserProfile
-from nutritionist.models import DietRecommendation
+from .models import DietRecommendation
+import numpy as np
+from django.core.paginator import Paginator
+from django.utils.dateparse import parse_date   
 
 
 class DietPlanView(APIView):
@@ -64,8 +67,6 @@ class DietPlanView(APIView):
         print(f"[DEBUG] request.user: {request.user} | ID: {request.user.id} | Authenticated: {request.user.is_authenticated}")
         print(f"[DEBUG] UserProfile.exists: {UserProfile.objects.filter(user=request.user).exists()}")
 
-        
-
         try:
             user_profile = UserProfile.objects.get(user=user)
             latest_lab_report = LabReport.objects.filter(user=user).order_by('-report_date').first()
@@ -89,8 +90,8 @@ class DietPlanView(APIView):
         ]
 
         def calculate_age(dob):
-         today = date.today()
-         return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            today = date.today()
+            return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
         user_data_dict = {
             'Age': calculate_age(user_profile.date_of_birth),
@@ -115,7 +116,11 @@ class DietPlanView(APIView):
             'Vitamin B12 (pg/mL)': getattr(latest_lab_report, 'vitamin_b12', 0),
             'TSH (uIU/mL)': getattr(latest_lab_report, 'tsh', 0),
         }
-        user_vector_list = [float(user_data_dict.get(col, 0) or 0) for col in NUMERICAL_COLS]
+
+        user_vector_list = [
+            float(user_data_dict.get(col, 0)) if user_data_dict.get(col, 0) is not None else 0.0
+            for col in NUMERICAL_COLS
+        ]
 
         try:
             print(f"Generating plan for user: {user.email}")
@@ -123,6 +128,16 @@ class DietPlanView(APIView):
 
             if isinstance(plan_json, dict) and "error" in plan_json:
                 return Response({'error': plan_json['error']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # ✅ Convert np.int64/float64 to native int/float for JSONField
+            def convert_to_builtin_type(obj):
+                if isinstance(obj, (np.integer, np.int64)): return int(obj)
+                if isinstance(obj, (np.floating, np.float64)): return float(obj)
+                if isinstance(obj, dict): return {k: convert_to_builtin_type(v) for k, v in obj.items()}
+                if isinstance(obj, list): return [convert_to_builtin_type(i) for i in obj]
+                return obj
+
+            plan_json = convert_to_builtin_type(plan_json)
 
             new_recommendation = DietRecommendation.objects.create(
                 user=user,
@@ -143,3 +158,62 @@ class DietPlanView(APIView):
         except Exception as e:
             import traceback; traceback.print_exc()
             return Response({'error': 'Internal error during diet generation.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+class PreviousDietPlansView(APIView):
+    """
+    GET /diet-plan/history/
+    🔹 Filters:
+        - status=approved|rejected
+        - start_date=YYYY-MM-DD
+        - end_date=YYYY-MM-DD
+        - limit=<int> (default: 10)
+        - offset=<int> (default: 0)
+    🔹 Shows all previous plans (except pending) for logged-in user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        status_filter = request.query_params.get('status')
+        start_date = parse_date(request.query_params.get('start_date', ''))
+        end_date = parse_date(request.query_params.get('end_date', ''))
+        limit = int(request.query_params.get('limit', 10))
+        offset = int(request.query_params.get('offset', 0))
+
+        try:
+            queryset = DietRecommendation.objects.filter(user=user)
+
+            if status_filter in ['approved', 'rejected']:
+                queryset = queryset.filter(status=status_filter)
+
+            if start_date:
+                queryset = queryset.filter(for_week_starting__gte=start_date)
+
+            if end_date:
+                queryset = queryset.filter(for_week_starting__lte=end_date)
+
+            queryset = queryset.exclude(status='pending').order_by('-for_week_starting')
+
+            total = queryset.count()
+            paginator = Paginator(queryset, limit)
+            page_number = offset // limit + 1
+            page = paginator.get_page(page_number)
+
+            serializer = DietRecommendationSerializer(page.object_list, many=True)
+
+            return Response({
+                'status_code': 'HISTORY_FOUND',
+                'total': total,
+                'limit': limit,
+                'offset': offset,
+                'plans_returned': len(page.object_list),
+                'plans': serializer.data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(f"[ERROR] GET /diet-plan/history/ for {user.email}: {e}")
+            return Response({'error': 'Error while fetching previous plans.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

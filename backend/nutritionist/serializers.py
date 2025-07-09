@@ -2,7 +2,8 @@ from rest_framework import serializers
 from user.models import User
 from userProfile.models import UserProfile,LabReport
 from userFood.models import UserMeal
-from nutritionist.models import DietRecommendation
+from diet.models import DietRecommendation
+
 
 #############------------------------------------------nutritonist serializer----------------------------######################
 class UserSerializer(serializers.ModelSerializer):
@@ -85,3 +86,80 @@ class DietRecommendationWithPatientSerializer1(serializers.ModelSerializer):
         ]
 ####################################################################----------------------------------------##########################
 
+
+
+####--------patient Create Serializer-----------------######
+
+class LabReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LabReport
+        exclude = ['user']
+
+
+class CreatePatientSerializer(serializers.Serializer):
+    # User fields
+    email = serializers.EmailField()
+    full_name = serializers.CharField()
+    password = serializers.CharField(write_only=True, required=False, default="Default@123")
+
+    # Profile fields
+    date_of_birth = serializers.DateField(required=False)
+    gender = serializers.ChoiceField(choices=[("male", "Male"), ("female", "Female"), ("other", "Other")], required=False)
+    mobile_number = serializers.CharField(required=False)
+    country = serializers.CharField(required=False)
+    occupation = serializers.CharField(required=False)
+    height_cm = serializers.FloatField(required=False)
+    weight_kg = serializers.FloatField(required=False)
+    activity_level = serializers.ChoiceField(choices=[
+        ("sedentary", "Sedentary (little or no exercise)"),
+        ("lightly_active", "Lightly Active (light exercise/sports 1-3 days/week)"),
+        ("moderately_active", "Moderately Active (moderate exercise/sports 3-5 days/week)"),
+        ("very_active", "Very Active (hard exercise/sports 6-7 days a week)"),
+        ("extra_active", "Extra Active (very hard exercise/physical job)"),
+    ], required=False)
+    goal = serializers.ChoiceField(choices=[
+        ("lose_weight", "Lose Weight"),
+        ("maintain", "Maintain Weight"),
+        ("gain_weight", "Gain Weight")
+    ], required=False)
+    diet_type = serializers.ChoiceField(choices=[
+        ("vegetarian", "Vegetarian"), ("non_vegetarian", "Non-Vegetarian"),
+        ("vegan", "Vegan"), ("eggetarian", "Eggetarian"),
+        ("keto", "Keto"), ("other", "Other"),
+    ], required=False, default="other")
+    allergies = serializers.CharField(required=False, allow_blank=True)
+    is_diabetic = serializers.BooleanField(required=False)
+    is_hypertensive = serializers.BooleanField(required=False)
+    has_heart_condition = serializers.BooleanField(required=False)
+    has_thyroid_disorder = serializers.BooleanField(required=False)
+    has_arthritis = serializers.BooleanField(required=False)
+    has_gastric_issues = serializers.BooleanField(required=False)
+    other_chronic_condition = serializers.CharField(required=False, allow_blank=True)
+    family_history = serializers.CharField(required=False, allow_blank=True)
+
+    # Optional nested LabReport
+    lab_report = LabReportSerializer(required=False)
+
+    def create(self, validated_data):
+        lab_data = validated_data.pop("lab_report", None)
+        password = validated_data.pop("password", "Default@123")
+
+        # Split user and profile fields
+        user_fields = {
+            "email": validated_data.pop("email"),
+            "full_name": validated_data.pop("full_name"), # Default active status
+        }
+
+        profile_fields = validated_data
+
+        # Create User
+        user = User.objects.create_user(**user_fields, password=password)
+
+        # Create Profile
+        UserProfile.objects.create(user=user, **profile_fields)
+
+        # Optional Lab Report
+        if lab_data:
+            LabReport.objects.create(user=user, **lab_data)
+
+        return user

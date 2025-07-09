@@ -14,7 +14,7 @@ from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.facebook.views import FacebookOAuth2Adapter
 from rest_framework.permissions import IsAuthenticated
-from nutritionist.models import DietFeedback
+from diet.models import DietRecommendation,DietFeedback
 from user.models import User
 from user.serializers import DietFeedbackSerializer, FeedbackSerializer, ForgotPasswordSerializer, MyTokenObtainPairSerializer, RegisterSerializer, ResetPasswordSerializer    
 # Create your views here.

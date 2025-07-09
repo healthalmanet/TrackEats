@@ -7,6 +7,7 @@ ApproveOrRejectDietView,
 AssignPatientAPIView,
 AssignedPatientsView,
 EditDietPlanView,
+NutritionistCreatePatientView,
 NutritionistPatientDietRecommendationsView,
 PatientMealLogView,
 PatientProfileDetailView,
@@ -48,6 +49,10 @@ urlpatterns = [
     path('nutritionist/diet/<int:patient_id>/', NutritionistPatientDietRecommendationsView.as_view()),
 
     path('nutritionist/all-diet-plans/', AllAssignedDietPlansListView.as_view(), name='nutritionist-all-diet-plans'),
+
+
+    #TO create a new patient profile by nutritionist
+    path("nutritionist/create-patient/", NutritionistCreatePatientView.as_view(), name="nutritionist-create-patient"),
     
   
 ]

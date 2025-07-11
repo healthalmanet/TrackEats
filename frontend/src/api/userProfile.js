@@ -17,7 +17,7 @@ const getAuthHeaders = () => {
 // 1. Create user profile
 export const createUserProfile = async (profileData) => {
   await delay(500);
-  const response = await axios.post(`${BASE_URL}/create/`, profileData, getAuthHeaders());
+  const response = await axios.post(`${BASE_URL}/`, profileData, getAuthHeaders());
   return response.data;
 };
 

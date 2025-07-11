@@ -1,7 +1,7 @@
 import React from "react";
-import { Droplet, Flame, HeartPulse, Syringe } from "lucide-react";
+import { Droplet, Flame, Zap } from "lucide-react";
 
-// Reusable Card component
+// Reusable Card
 const Card = ({ title, value, unit, icon, color, description }) => {
   return (
     <div className="bg-white rounded-xl shadow-md p-4 flex items-center gap-4">
@@ -20,52 +20,45 @@ const Card = ({ title, value, unit, icon, color, description }) => {
   );
 };
 
-// HealthSummary component using props
 const HealthSummary = ({ data = {} }) => {
   const {
     hba1c = null,
-    bloodSugar = null,
-    cholesterol = null,
-    diabetesType = "type2",
-    insulinDependent = false,
+    fasting_blood_sugar = null,
+    postprandial_sugar = null,
   } = data;
 
-  const isEmpty = hba1c === null && bloodSugar === null && cholesterol === null;
+  const isEmpty =
+    hba1c === null && fasting_blood_sugar === null && postprandial_sugar === null;
 
   if (isEmpty) {
     return <div className="text-gray-500">Loading health summary...</div>;
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       <Card
-        title="Latest HbA1c"
+        title="Fasting Blood Sugar"
+        value={fasting_blood_sugar}
+        unit="mg/dL"
+        icon={<Flame className="text-blue-500" size={18} />}
+        color="bg-blue-100"
+        description={fasting_blood_sugar > 126 ? "High" : ""}
+      />
+      <Card
+        title="Postprandial Sugar"
+        value={postprandial_sugar}
+        unit="mg/dL"
+        icon={<Zap className="text-green-500" size={18} />}
+        color="bg-green-100"
+        description={postprandial_sugar > 180 ? "High after meal" : ""}
+      />
+      <Card
+        title="HbA1c"
         value={hba1c}
         unit="%"
         icon={<Droplet className="text-red-500" size={18} />}
         color="bg-red-100"
         description={hba1c > 7 ? "Above target" : ""}
-      />
-      <Card
-        title="Fasting Sugar"
-        value={bloodSugar}
-        unit="mg/dL"
-        icon={<Flame className="text-blue-500" size={18} />}
-        color="bg-blue-100"
-      />
-      <Card
-        title="Total Cholesterol"
-        value={cholesterol}
-        unit="mg/dL"
-        icon={<HeartPulse className="text-purple-500" size={18} />}
-        color="bg-purple-100"
-      />
-      <Card
-        title="Type"
-        value={diabetesType}
-        icon={<Syringe className="text-orange-500" size={18} />}
-        color="bg-orange-100"
-        description={insulinDependent ? "Insulin dependent" : ""}
       />
     </div>
   );

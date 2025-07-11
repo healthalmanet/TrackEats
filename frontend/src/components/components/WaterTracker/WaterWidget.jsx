@@ -36,7 +36,7 @@ const WaterIntakeWidget = ({ onWaterLogged }) => {
 
   return (
     <div className="w-full bg-white pt-12 pb-20 font-['Poppins'] text-[#263238] px-4 sm:px-8">
-      <div className="max-w-5xl mx-auto px-6 sm:px-12 py-10 bg-[#FAF3EB] rounded-2xl shadow-md border border-[#ECEFF1] animate-fade-in-up">
+      <div className="max-w-5xl mx-auto px-6 sm:px-12 py-10 bg-gray-100 rounded-2xl shadow-md border border-[#ECEFF1] animate-fade-in-up">
         <h2 className="text-center text-2xl sm:text-3xl font-bold mb-6 text-[#FF7043] drop-shadow-sm">
           Water Intake Tracker 💧
         </h2>

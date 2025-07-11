@@ -115,7 +115,7 @@ const UserProfileForm = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 mb-30 bg-[#FAF3EB] py-10 px-6 sm:px-10 rounded-2xl shadow-xl border border-[#ECEFF1] font-['Poppins'] text-[#263238]">
+    <div className="max-w-4xl mx-auto mt-10 mb-30 bg-gray-100  py-10 px-6 sm:px-10 rounded-2xl shadow-xl border border-[#ECEFF1] font-['Poppins'] text-[#263238]">
       <Toaster />
       <div className="text-center mb-10">
         <h2 className="text-center text-2xl sm:text-3xl font-bold text-[#FF7043] drop-shadow-sm">

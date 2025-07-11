@@ -14,7 +14,7 @@ const DietRecommendations = () => {
         {sampleMeals.map((meal, index) => (
           <div
             key={index}
-            className="bg-[#FAF3EB] rounded-2xl border border-[#ECEFF1] p-5 shadow-md hover:shadow-xl transition duration-300 group relative overflow-hidden animate-fade-in-up"
+            className="bg-gray-100 rounded-2xl border border-[#ECEFF1] p-5 shadow-md hover:shadow-xl transition duration-300 group relative overflow-hidden animate-fade-in-up"
           >
             <div className="absolute inset-0 bg-gradient-to-t from-[#FFF3E0] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"></div>
 

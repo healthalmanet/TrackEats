@@ -23,6 +23,9 @@ import QuickMealLogger from "../components/components/MealLogger/QuickMealLogger
 import WaterIntakeWidget from "../components/components/WaterTracker/WaterWidget";
 import HealthTools from "../components/components/HealthSection";
 import DietRecommendations from "../components/components/RecommendationSection";
+import HealthDashboard from "../components/components/diabetic/HealthDashboard";
+import ThyroidPage from "../components/components/diabetic/ThyroidPage";
+import HeartPage from "../components/components/diabetic/HeartPage";
 
 function Dashboard() {
   const location = useLocation();
@@ -68,6 +71,9 @@ function Dashboard() {
         <Route path="health-section" element={<HealthSection />} />
         <Route path="meals" element={<Meals />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="/diabetes" element={<HealthDashboard />} />
+        <Route path="/thyroid" element={<ThyroidPage />} />
+        <Route path="/heart" element={<HeartPage />} />
       </Routes>
     </div>
   );

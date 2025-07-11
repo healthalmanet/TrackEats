@@ -1,6 +1,7 @@
 // src/components/HealthDashboard.jsx
 import React, { useEffect, useState } from "react";
 import { getDiabeticProfile } from "../../../api/diabeticApi";
+ import { Link } from "react-router-dom";
 
 import HealthSummary from "./HealthSummary";
 import HbA1CChart from "./HbA1CChart";
@@ -14,13 +15,11 @@ const HealthDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0); // 🔁 trigger for chart refresh
 
-  const [summaryData, setSummaryData] = useState({
-    hba1c: 0,
-    bloodSugar: 0,
-    cholesterol: 0,
-    diabetes_type: "type2",
-    insulin_dependent: false,
-  });
+ const [summaryData, setSummaryData] = useState({
+  hba1c: 0,
+  fasting_blood_sugar: 0,
+  postprandial_sugar: 0,
+});
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -32,24 +31,23 @@ const HealthDashboard = () => {
   };
 
   const fetchProfileData = async () => {
-    try {
-      const response = await getDiabeticProfile();
-      const results = response?.results || [];
-      const latest = results[results.length - 1];
+  try {
+    const response = await getDiabeticProfile();
+    const results = response?.results || [];
+    const latest = results[results.length - 1];
 
-      if (latest) {
-        setSummaryData({
-          hba1c: latest.hba1c || 0,
-          bloodSugar: latest.fasting_blood_sugar || 0,
-          cholesterol: latest.total_cholesterol || 0,
-          diabetes_type: latest.diabetes_type || "type2",
-          insulin_dependent: latest.insulin_dependent || false,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
+    if (latest) {
+      setSummaryData({
+        hba1c: latest.hba1c || 0,
+        fasting_blood_sugar: latest.fasting_blood_sugar || 0,
+        postprandial_sugar: latest.postprandial_sugar || 0,
+      });
     }
-  };
+  } catch (error) {
+    console.error("Failed to fetch profile:", error);
+  }
+};
+
 
   useEffect(() => {
     fetchProfileData();
@@ -58,37 +56,72 @@ const HealthDashboard = () => {
   return (
     <div className="bg-gray-50 min-h-screen px-6 py-10 sm:px-10 md:px-10 lg:px-32 xl:px-30">
       {/* Header */}
+        
+
+      {/* Header Tabs */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex gap-4">
-          <button className="px-4 py-2 bg-blue-900 text-white rounded-full text-sm font-semibold">
-            Diabetes
-          </button>
-          <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-full text-sm font-medium">
-            Thyroid
-          </button>
-          <button className="px-4 py-2 bg-gray-200 text-gray-600 rounded-full text-sm font-medium">
-            Heart
-          </button>
-        </div>
-      </div>
+  {/* Tabs on the left */}
+  <div className="flex gap-4">
+    <Link to="/dashboard/health-section">
+      <button
+        className={`px-4 py-2 rounded-full text-sm font-semibold transition duration-200 ${
+          location.pathname === "/diabetes"
+            ? "bg-[#FF7043] text-white shadow-md"
+            : "bg-[#FAF3EB] text-[#546E7A] hover:bg-[#FFE0B2]"
+        }`}
+      >
+        Diabetes
+      </button>
+    </Link>
+
+    <Link to="/thyroid">
+      <button
+        className={`px-4 py-2 rounded-full text-sm font-semibold transition duration-200 ${
+          location.pathname === "/thyroid"
+            ? "bg-[#FF7043] text-white shadow-md"
+            : "bg-[#FAF3EB] text-[#546E7A] hover:bg-[#FFE0B2]"
+        }`}
+      >
+        Thyroid
+      </button>
+    </Link>
+
+    <Link to="/heart">
+      <button
+        className={`px-4 py-2 rounded-full text-sm font-semibold transition duration-200 ${
+          location.pathname === "/heart"
+            ? "bg-[#FF7043] text-white shadow-md"
+            : "bg-[#FAF3EB] text-[#546E7A] hover:bg-[#FFE0B2]"
+        }`}
+      >
+        Heart
+      </button>
+    </Link>
+  </div>
+
+  {/* Add Button on the right */}
+  <div>
+    <AddInfoButton onClick={openModal} />
+  </div>
+</div>
+
+  
+ 
 
       {/* Health Summary Cards */}
       <HealthSummary
-        data={{
-          hba1c: summaryData.hba1c,
-          bloodSugar: summaryData.bloodSugar,
-          cholesterol: summaryData.cholesterol,
-          diabetesType: summaryData.diabetes_type,
-          insulinDependent: summaryData.insulin_dependent,
-        }}
-        type={summaryData.diabetes_type}
-        insulin={summaryData.insulin_dependent}
-      />
+  data={{
+    hba1c: summaryData.hba1c,
+    fasting_blood_sugar: summaryData.fasting_blood_sugar,
+    postprandial_sugar: summaryData.postprandial_sugar,
+  }}
+/>
+
 
       {/* Section Title & Add Info */}
       <div className="flex justify-between items-center mt-10 mb-4">
         <h2 className="text-xl font-semibold text-gray-700">Health Reports & Analytics</h2>
-        <AddInfoButton onClick={openModal} />
+        
       </div>
 
       {/* Charts */}

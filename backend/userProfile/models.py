@@ -19,23 +19,23 @@ class UserProfile(models.Model):
 
     # Lifestyle
     activity_level = models.CharField(max_length=50, choices=[
-        ("sedentary", "Sedentary (little or no exercise)"),
-        ("lightly_active", "Lightly Active (light exercise/sports 1-3 days/week)"),
-        ("moderately_active", "Moderately Active (moderate exercise/sports 3-5 days/week)"),
-        ("very_active", "Very Active (hard exercise/sports 6-7 days a week)"),
-        ("extra_active", "Extra Active (very hard exercise/physical job)"),
+        ("Sedentary", "Sedentary (little or no exercise)"),
+        ("Lightly Active", "Lightly Active (light exercise/sports 1-3 days/week)"),
+        ("Moderately Active", "Moderately Active (moderate exercise/sports 3-5 days/week)"),
+        ("Very Active", "Very Active (hard exercise/sports 6-7 days a week)"),
+        ("Extra Active", "Extra Active (very hard exercise/physical job)"),
     ], null=True, blank=True)
     goal = models.CharField(max_length=20, choices=[
-        ("lose_weight", "Lose Weight"),
-        ("maintain", "Maintain Weight"),
-        ("gain_weight", "Gain Weight")
+        ("Lose Weight", "Lose Weight"),
+        ("Maintain Weight", "Maintain Weight"),
+        ("Gain Weight", "Gain Weight")
     ], null=True, blank=True)
 
     # Dietary Preferences and Restrictions
     diet_type = models.CharField(max_length=20, choices=[
-        ("vegetarian", "Vegetarian"), ("non_vegetarian", "Non-Vegetarian"),
-        ("vegan", "Vegan"), ("eggetarian", "Eggetarian"),
-        ("keto", "Keto"), ("other", "Other"),
+        ("Vegetarian", "Vegetarian"), ("Non Vegetarian", "Non Vegetarian"),
+        ("Vegan", "Vegan"), ("Eggetarian", "Eggetarian"),
+        ("Keto", "Keto"), ("Other", "Other"),
     ], default="other")
     allergies = models.TextField(blank=True, help_text="List known food allergies, separated by commas.")
 

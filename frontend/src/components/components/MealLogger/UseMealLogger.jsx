@@ -118,29 +118,40 @@ const useMealLogger = () => {
     fetchMeals();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const input = foodInputs[0];
-    const data = {
-      food_name: input.name,
-      quantity: parseFloat(input.quantity),
-      unit: input.unit,
-      meal_type: mealType,
-      remarks: input.remark,
-    };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const input = foodInputs[0];
 
-    try {
-      await createMeal(data, token);
-      toast.success("Meal logged");
-      fetchMeals(pagination.currentPageUrl);
-      setFoodInputs([
-        { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
-      ]);
-    } catch (err) {
-      console.error("Create meal error:", err.response?.data || err.message);
-      toast.error("Failed to add meal");
-    }
+  // Check and combine date + time
+  let consumedAt = null;
+  if (input.date && input.time) {
+    const isoString = new Date(`${input.date}T${input.time}:00`).toISOString();
+    consumedAt = isoString;
+  }
+
+  const data = {
+    food_name: input.name,
+    quantity: parseFloat(input.quantity),
+    unit: input.unit,
+    meal_type: mealType,
+    remarks: input.remark,
+    date: input.date || null, // still include date if backend needs it
+    consumed_at: consumedAt,  // this is the important part
   };
+
+  try {
+    await createMeal(data, token);
+    toast.success("Meal logged");
+    fetchMeals(pagination.currentPageUrl);
+    setFoodInputs([
+      { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
+    ]);
+  } catch (err) {
+    console.error("Create meal error:", err.response?.data || err.message);
+    toast.error("Failed to add meal");
+  }
+};
+
 
   const handleFoodChange = (idx, field, value) => {
     setFoodInputs((prev) =>

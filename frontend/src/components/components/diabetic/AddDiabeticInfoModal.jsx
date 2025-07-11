@@ -7,13 +7,28 @@ import {
 import { toast } from "react-hot-toast";
 
 const defaultForm = {
-  hba1c: "",
+  date: "",
+  weight_kg: "",
+  height_cm: "",
+  waist_circumference_cm: "",
+  blood_pressure_systolic: "",
+  blood_pressure_diastolic: "",
   fasting_blood_sugar: "",
-  insulin_dependent: false,
-  medications: "",
-  diagnosis_date: "",
-  diabetes_type: "type2",
-  total_cholesterol: "",
+  postprandial_sugar: "",
+  hba1c: "",
+  ldl_cholesterol: "",
+  hdl_cholesterol: "",
+  triglycerides: "",
+  crp: "",
+  esr: "",
+  uric_acid: "",
+  creatinine: "",
+  urea: "",
+  alt: "",
+  ast: "",
+  vitamin_d3: "",
+  vitamin_b12: "",
+  tsh: "",
 };
 
 const AddDiabeticInfoModal = ({
@@ -27,7 +42,6 @@ const AddDiabeticInfoModal = ({
   const [mode, setMode] = useState(initialMode);
   const [loading, setLoading] = useState(false);
 
-  // Reset to fresh form on open if in create mode
   useEffect(() => {
     if (isOpen && initialMode === "create") {
       setMode("create");
@@ -36,7 +50,6 @@ const AddDiabeticInfoModal = ({
     }
   }, [isOpen, initialMode]);
 
-  // Fetch existing data if in edit mode
   useEffect(() => {
     if (mode === "edit" && isOpen) {
       fetchLatestProfileForEdit();
@@ -49,19 +62,8 @@ const AddDiabeticInfoModal = ({
       const latest = res?.results?.[res.results.length - 1];
       if (latest) {
         const id = latest.id || latest._id;
-        if (!id) {
-          toast.error("No ID found in profile.");
-          return;
-        }
-        setFormData({
-          hba1c: latest.hba1c || "",
-          fasting_blood_sugar: latest.fasting_blood_sugar || "",
-          insulin_dependent: latest.insulin_dependent || false,
-          medications: latest.medications || "",
-          diagnosis_date: latest.diagnosis_date || "",
-          diabetes_type: latest.diabetes_type || "type2",
-          total_cholesterol: latest.total_cholesterol || "",
-        });
+        if (!id) return toast.error("No ID found in profile.");
+        setFormData({ ...defaultForm, ...latest });
         setRecordId(id);
       } else {
         toast.error("No existing profile found.");
@@ -73,42 +75,42 @@ const AddDiabeticInfoModal = ({
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      if (mode === "edit") {
-        if (!recordId) {
-          toast.error("Profile ID missing.");
-          return;
-        }
-        await updateDiabeticProfile({ ...formData, id: recordId });
-        toast.success("Diabetic info updated.");
-      } else {
-        await createDiabeticProfile(formData);
-        toast.success("Diabetic info added.");
-      }
+  e.preventDefault();
+  setLoading(true);
 
-      if (onSubmit) onSubmit();
-      handleClose(); // use reset close
-    } catch (err) {
-      toast.error("Submission failed.");
-      console.error("Submission error:", err);
-    } finally {
-      setLoading(false);
+  try {
+    const payload = {
+      ...formData,
+      // ✅ Ensure only date part is sent
+      date: formData.date?.split("T")[0], // This strips time if any
+    };
+
+    if (mode === "edit") {
+      if (!recordId) return toast.error("Profile ID missing.");
+      await updateDiabeticProfile({ ...payload, id: recordId });
+      toast.success("Diabetic info updated.");
+    } else {
+      await createDiabeticProfile(payload);
+      toast.success("Diabetic info added.");
     }
-  };
 
-  const handleEditClick = () => {
-    setMode("edit");
-  };
+    if (onSubmit) onSubmit();
+    handleClose();
+  } catch (err) {
+    toast.error("Submission failed.");
+    console.error("Submission error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const handleEditClick = () => setMode("edit");
 
   const handleClose = () => {
     onClose();
@@ -116,111 +118,63 @@ const AddDiabeticInfoModal = ({
       setMode("create");
       setFormData(defaultForm);
       setRecordId(null);
-    }, 300);
+    }, 60000);
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
-      <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-xl mx-4 sm:mx-6">
-        <h2 className="text-lg font-semibold mb-4 text-gray-700">
-          {mode === "edit" ? "Edit Diabetic Information" : "Add Diabetic Information"}
+      <div className="bg-[#FFFDF9] p-6 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 sm:mx-6 my-10 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4 text-[#263238]">
+          {mode === "edit" ? "Edit Lab Report" : "Add Lab Report"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {Object.keys(defaultForm).map((field) => (
             <input
-              name="hba1c"
-              value={formData.hba1c}
+              key={field}
+              name={field}
+              value={formData[field]}
               onChange={handleChange}
-              placeholder="HbA1c (%)"
-              type="number"
-              step="0.1"
-              className="border border-gray-300 px-4 py-2 rounded-md w-full"
+              placeholder={
+                field === "date"
+                  ? undefined
+                  : field.replace(/_/g, " ").toUpperCase()
+              }
+              type={field === "date" ? "date" : "number"}
+              step={field === "date" ? undefined : "any"}
+              className="border border-gray-300 px-4 py-2 rounded-md w-full focus:ring-2 focus:ring-[#FF7043]"
               required
             />
-            <input
-              name="fasting_blood_sugar"
-              value={formData.fasting_blood_sugar}
-              onChange={handleChange}
-              placeholder="Fasting Blood Sugar (mg/dL)"
-              type="number"
-              className="border border-gray-300 px-4 py-2 rounded-md w-full"
-              required
-            />
-            <input
-              name="total_cholesterol"
-              value={formData.total_cholesterol}
-              onChange={handleChange}
-              placeholder="Total Cholesterol (mg/dL)"
-              type="number"
-              className="border border-gray-300 px-4 py-2 rounded-md w-full"
-            />
-            <input
-              name="diagnosis_date"
-              value={formData.diagnosis_date}
-              onChange={handleChange}
-              type="date"
-              className="border border-gray-300 px-4 py-2 rounded-md w-full"
-              required
-            />
-          </div>
+          ))}
 
-          <textarea
-            name="medications"
-            value={formData.medications}
-            onChange={handleChange}
-            placeholder="Medications (optional)"
-            className="border border-gray-300 px-4 py-2 rounded-md w-full resize-none"
-            rows={3}
-          />
-
-          <div className="flex items-center gap-2">
-            <input
-              id="insulin_dependent"
-              name="insulin_dependent"
-              type="checkbox"
-              checked={formData.insulin_dependent}
-              onChange={handleChange}
-              className="w-4 h-4"
-            />
-            <label htmlFor="insulin_dependent" className="text-sm text-gray-700">
-              Insulin Dependent
-            </label>
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Diabetes Type
-            </label>
-            <select
-              name="diabetes_type"
-              value={formData.diabetes_type}
-              onChange={handleChange}
-              className="border border-gray-300 px-4 py-2 rounded-md w-full"
-            >
-              <option value="type1">Type 1 Diabetes</option>
-              <option value="type2">Type 2 Diabetes</option>
-              <option value="prediabetes">Prediabetes</option>
-              <option value="gestational">Gestational Diabetes</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="col-span-full flex justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+              className="px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className={`px-5 py-2 text-white rounded-md font-medium shadow transition ${
-                loading ? "bg-blue-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              className={`px-5 py-2 rounded-full font-medium shadow-md text-white transition duration-300 ${
+                loading
+                  ? "bg-orange-300 cursor-not-allowed"
+                  : "bg-[#FF7043] hover:bg-[#F4511E]"
               }`}
             >
               {loading ? "Submitting..." : "Submit"}
@@ -232,7 +186,7 @@ const AddDiabeticInfoModal = ({
           <div className="mt-6 text-right">
             <button
               onClick={handleEditClick}
-              className="text-sm text-blue-600 hover:underline font-medium"
+              className="text-sm text-[#FF7043] hover:underline font-medium"
             >
               Edit Latest Info
             </button>

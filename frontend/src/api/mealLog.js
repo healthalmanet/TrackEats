@@ -6,7 +6,7 @@ const BASE_URL = 'https://trackeats.onrender.com/api/logmeals';
 const createAxiosInstance = (token) =>
   axios.create({
     baseURL: BASE_URL,
-    timeout: 15000, // ⏱️ 15 seconds timeout
+    timeout: 60000, // ⏱️ 15 seconds timeout
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,

@@ -50,7 +50,7 @@ const QuickMealLogger = ({ onMealLogged }) => {
               await handleSubmit(e);
               if (onMealLogged) onMealLogged();
             }}
-            className="bg-[#FAF3EB] rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border border-[#ECEFF1]"
+            className="bg-gray-100 rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border border-[#ECEFF1]"
           >
             <div className="flex items-center gap-2 mb-6 text-[#FF7043]">
               <FaUtensils size={20} />
@@ -169,9 +169,9 @@ const QuickMealLogger = ({ onMealLogged }) => {
           </form>
 
           {/* Logged Meals */}
-          <div className="bg-[#FAF3EB] rounded-2xl p-6 border border-[#ECEFF1] shadow-md hover:shadow-lg transition">
+          <div className="bg-gray-100 rounded-2xl p-6 border border-[#ECEFF1] shadow-md hover:shadow-lg transition">
             <h3 className="text-lg font-semibold mb-4 text-[#263238]">
-              Meals on {calendarDate}
+              Logged Meals
             </h3>
 
             {loggedMeals.length === 0 ? (

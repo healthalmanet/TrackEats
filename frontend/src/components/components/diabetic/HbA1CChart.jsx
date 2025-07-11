@@ -38,23 +38,16 @@ const HbA1CChart = ({ refreshTrigger = 0 }) => {
 
         // Filter valid entries and sort by date
         const sorted = [...results]
-          .filter((item) => item.diagnosis_date && item.hba1c != null)
-          .sort(
-            (a, b) =>
-              new Date(a.diagnosis_date).getTime() -
-              new Date(b.diagnosis_date).getTime()
-          );
+         .filter((item) => item.report_date && item.hba1c != null)
+.sort(
+  (a, b) =>
+    new Date(a.report_date).getTime() -
+    new Date(b.report_date).getTime()
+);
 
-        if (sorted.length === 0) {
-          toast.error("No valid HbA1c data found.");
-          setChartData(null);
-          setLoading(false);
-          return;
-        }
+const labels = sorted.map((item) =>
+  new Date(item.report_date).toLocaleDateString("en-IN", {
 
-        const labels = sorted.map((item) =>
-          new Date(item.diagnosis_date).toLocaleDateString("en-IN", {
-            month: "short",
             year: "2-digit",
           })
         );

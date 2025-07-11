@@ -38,10 +38,10 @@ const App = () => {
       <div className="fixed bottom-4 right-4 z-50">
         <div
           onClick={() => setShowModal(true)}
-          className="bg-[#00bd00] hover:bg-[#00e62a] rounded-full p-3 flex items-center gap-2 shadow-lg cursor-pointer transition-all duration-200 hover:scale-105"
+          className="bg-[#FF6B3D] hover:bg-[#e85c2a] flex hover:shadow-lg text-white px-5 py-2.5 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
         >
-          <FaRocketchat className="text-white" />
-          <span className="text-white font-medium">Let's Chat</span>
+          {/* <FaRocketchat className="text-white " /> */}
+          <span className="text-white text-3xl">?</span>
         </div>
       </div>
 

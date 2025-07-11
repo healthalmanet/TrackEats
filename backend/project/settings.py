@@ -7,6 +7,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = "/static/"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -41,6 +43,8 @@ DEFAULT_FROM_EMAIL = 'health.almanet@gmail.com'
 
 INSTALLED_APPS = [
     'corsheaders', # Cross-Origin Resource Sharing headers for Django
+    "admin_interface",
+    "colorfield",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -49,8 +53,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'django_filters',
-    'app',
+    'django_filters',               
+    'user.apps.UserConfig',          #NEw Structure
+    'userProfile.apps.UserProfileConfig',
+    'userFood.apps.UserFoodConfig',
+    'owner.apps.OwnerConfig',  # Owner Dashboard App
+    'nutritionist.apps.NutritionistConfig',  # Nutritionist Dashboard App
+    'features.apps.FeaturesConfig',  # Features App
+    'diet.apps.DietConfig',  # Diet App
 
     # Third-party   
     'rest_framework.authtoken',  # ✅ REQUIRED for dj_rest_auth tokens
@@ -136,7 +146,7 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-AUTH_USER_MODEL = 'app.User' 
+AUTH_USER_MODEL = 'user.User' 
 
 # DATABASES = {
 #     'default': {
@@ -152,6 +162,8 @@ AUTH_USER_MODEL = 'app.User'
 DATABASES = {
     'default': dj_database_url.parse(config('DATABASE_URL'))
 }
+
+GEMINI_API_KEY = config("GEMINI_API_KEY")
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=3650),  # Default is 5 minutes

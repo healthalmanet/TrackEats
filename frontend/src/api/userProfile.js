@@ -17,15 +17,22 @@ const getAuthHeaders = () => {
 // 1. Create user profile
 export const createUserProfile = async (profileData) => {
   await delay(500);
-  const response = await axios.post(`${BASE_URL}/create/`, profileData, getAuthHeaders());
+  const response = await axios.post(`${BASE_URL}/`, profileData, getAuthHeaders());
   return response.data;
 };
 
 // 2. Get user profile
 export const getUserProfile = async () => {
   await delay(500);
-  const response = await axios.get(`${BASE_URL}/`, getAuthHeaders());
-  return response.data;
+  try {
+    const response = await axios.get(`${BASE_URL}/`, getAuthHeaders());
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return null; // ✅ User has no profile yet (new user)
+    }
+    throw error; // ❌ rethrow other types of errors
+  }
 };
 
 // 3. Update user profile

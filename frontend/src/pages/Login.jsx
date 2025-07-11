@@ -63,7 +63,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
             <input
               id="email"
               type="email"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00FF33] placeholder:text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B3D] placeholder:text-sm"
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -82,7 +82,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
             <input
               id="password"
               type="password"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00FF33] placeholder:text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B3D] placeholder:text-sm"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -96,7 +96,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         <div className="mb-4 text-right">
           <a
             href="/forgot-password"
-            className="text-sm text-[#00AA22] hover:underline font-medium"
+            className="text-sm text-[#FF6B3D] hover:underline font-medium"
           >
             Forgot Password?
           </a>
@@ -105,9 +105,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-[#00FF33] text-black py-2 rounded-md font-semibold 
-                 hover:brightness-105 cursor-pointer transition-transform duration-150 
-                 active:scale-95 shadow"
+          className="w-full bg-[#FF6B3D] hover:bg-[#e85c2a] hover:shadow-lg text-white px-5 py-2.5 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
         >
           Login
         </button>
@@ -135,7 +133,7 @@ const Login = ({ onClose, onSwitchToRegister }) => {
         <span className="text-gray-700 font-medium">New here? </span>
         <button
           onClick={onSwitchToRegister}
-          className="text-[#00AA22] font-semibold underline hover:text-[#008c1c] transition"
+          className="text-[#FF6B3D] font-semibold underline hover:text-[#e85c2a] transition"
         >
           Register here
         </button>

@@ -16,7 +16,11 @@ function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="bg-[#00bd00] hover:bg-[#00e62a] text-white font-semibold px-6 py-2 rounded-full shadow-md transition-all duration-200 hover:scale-105"
+      className="relative inline-block px-6 py-2 font-['Orbitron'] font-bold text-[#39FF14] border border-[#39FF14] rounded-full transition duration-300 ease-in-out 
+                 bg-transparent hover:bg-[#00FF7F] hover:text-black 
+                 shadow-[0_0_5px_#39FF14,0_0_10px_#39FF14,0_0_20px_#00FFB3] 
+                 hover:shadow-[0_0_10px_#00FF7F,0_0_20px_#00FF7F,0_0_30px_#00FFB3] 
+                 hover:scale-105"
     >
       Logout
     </button>

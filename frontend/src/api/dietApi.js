@@ -23,6 +23,6 @@ const getAuthHeaders = () => {
 
 // ✅ GET /diet/week/
 export const getDietApi = async () => {
-  const response = await axios.get(`${BASE_URL}/diet/week/`, getAuthHeaders());
+  const response = await axios.get(`${BASE_URL}/diet/`, getAuthHeaders());
   return response.data;
 };

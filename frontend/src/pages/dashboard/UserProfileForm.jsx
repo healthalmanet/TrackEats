@@ -16,25 +16,29 @@ const countryOptions = [
   { value: "Australia", label: "Australia" },
 ];
 
-const activityLevelMap = {
-  Sedentary: "sedentary",
-  "Light Activity": "light",
-  "Moderate Activity": "moderately_active",
-  "Very Active": "very_active",
-};
+const activityLevels = [
+  { value: "sedentary", label: "Sedentary (little or no exercise)" },
+  { value: "lightly_active", label: "Lightly Active (light exercise/sports 1-3 days/week)" },
+  { value: "moderately_active", label: "Moderately Active (moderate exercise/sports 3-5 days/week)" },
+  { value: "very_active", label: "Very Active (hard exercise/sports 6-7 days a week)" },
+  { value: "extra_active", label: "Extra Active (very hard exercise/physical job)" }
+];
 
-const goalMap = {
-  "Lose Weight": "lose_weight",
-  "Maintain Weight": "maintain",
-  "Gain Weight": "gain_weight",
-};
+
+const goals = [
+  { value: "lose_weight", label: "Lose Weight" },
+  { value: "maintain", label: "Maintain Weight" },
+  { value: "gain_weight", label: "Gain Weight" }
+];
+
 
 const dietTypeOptions = [
-  { value: "Vegetarian", label: "Vegetarian" },
-  { value: "Non-Vegetarian", label: "Non-Vegetarian" },
-  { value: "Vegan", label: "Vegan" },
-  { value: "Eggetarian", label: "Eggetarian" },
-  { value: "Other", label: "Other" },
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "non_vegetarian", label: "Non-Vegetarian" },
+  { value: "vegan", label: "Vegan" },
+  { value: "eggetarian", label: "Eggetarian" },
+  { value: "keto", label: "Keto" },
+  { value: "other", label: "Other" }
 ];
 
 const genderOptions = [
@@ -43,15 +47,8 @@ const genderOptions = [
   { value: "other", label: "Other" },
 ];
 
-const activityLevelOptions = Object.keys(activityLevelMap).map((key) => ({
-  value: activityLevelMap[key],
-  label: key,
-}));
-
-const goalOptions = Object.keys(goalMap).map((key) => ({
-  value: goalMap[key],
-  label: key,
-}));
+const activityLevelOptions = activityLevels;
+const goalOptions = goals;
 
 const UserProfileForm = () => {
   const [formData, setFormData] = useState({

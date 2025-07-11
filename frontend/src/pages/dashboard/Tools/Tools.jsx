@@ -1,81 +1,80 @@
-// import { Card, CardContent } from "@/components/ui/card";
-// import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
 const Tools = () => {
   const navigate = useNavigate();
-  
+
   const tools = [
-  {
-    id: "meal-log",
-    title: "Meal Log",
-    description: "Track your daily meals and monitor nutritional intake with detailed logging.",
-    icon: "🍽️",
-    color: "bg-green-100 text-green-600",
-    route: "/dashboard/tools/meal-log"  // ✅ fixed
-  },
-  {
-    id: "bmi-calculator",
-    title: "BMI Calculator",
-    description: "Calculate your Body Mass Index and understand your health status.",
-    icon: "📊",
-    color: "bg-yellow-100 text-yellow-600",
-    route: "/dashboard/tools/bmi"  // ✅ fixed
-  },
-  {
-    id: "fat-calculator",
-    title: "Fat Calculator",
-    description: "Analyze your body fat percentage and composition metrics.",
-    icon: "🎯",
-    color: "bg-red-100 text-red-600",
-    route: "/dashboard/tools/fat-calculator"  // ✅ fixed
-  },
-  {
-    id: "nutrition-search",
-    title: "Nutrition Search",
-    description: "Search and explore nutritional information for thousands of foods.",
-    icon: "🔍",
-    color: "bg-green-100 text-green-600",
-    route: "/dashboard/tools/nutrition-search"  // ✅ fixed
-  },
-];
+    {
+      id: "meal-log",
+      title: "Meal Log",
+      description: "Track your daily meals and monitor nutritional intake with detailed logging.",
+      icon: "🍽️",
+      color: "bg-orange-100 text-orange-600",
+      route: "/dashboard/tools/meal-log"
+    },
+    {
+      id: "bmi-calculator",
+      title: "BMI Calculator",
+      description: "Calculate your Body Mass Index and understand your health status.",
+      icon: "📊",
+      color: "bg-orange-100 text-orange-600",
+      route: "/dashboard/tools/bmi"
+    },
+    {
+      id: "fat-calculator",
+      title: "Fat Calculator",
+      description: "Analyze your body fat percentage and composition metrics.",
+      icon: "🎯",
+      color: "bg-orange-100 text-orange-600",
+      route: "/dashboard/tools/fat-calculator"
+    },
+    {
+      id: "nutrition-search",
+      title: "Nutrition Search",
+      description: "Search and explore nutritional information for thousands of foods.",
+      icon: "🔍",
+      color: "bg-orange-100 text-orange-600",
+      route: "/dashboard/tools/nutrition-search"
+    },
+  ];
 
-const trackers = [
-  {
-    id: "weight-tracker",
-    title: "Weight Tracker",
-    description: "Monitor your weight progress with detailed charts and trends.",
-    icon: "⚖️",
-    color: "bg-blue-100 text-blue-600",
-    route: "/dashboard/tools/weight-tracker"  // ✅ fixed
-  },
-  {
-    id: "water-tracker",
-    title: "Water Tracker",
-    description: "Stay hydrated by tracking your daily water intake goals.",
-    icon: "💧",
-    color: "bg-cyan-100 text-cyan-600",
-    route: "/dashboard/tools/water-tracker"  // ✅ fixed
-  },
-];
+  const trackers = [
+    {
+      id: "weight-tracker",
+      title: "Weight Tracker",
+      description: "Monitor your weight progress with detailed charts and trends.",
+      icon: "⚖️",
+      color: "bg-orange-100 text-orange-600",
+      route: "/dashboard/tools/weight-tracker"
+    },
+    {
+      id: "water-tracker",
+      title: "Water Tracker",
+      description: "Stay hydrated by tracking your daily water intake goals.",
+      icon: "💧",
+      color: "bg-orange-100 text-orange-600",
+      route: "/dashboard/tools/water-tracker"
+    },
+  ];
 
-const reminders = [
-  {
-    id: "custom-reminder",
-    title: "Custom Reminder",
-    description: "Set personalized reminders for meals, water, medications, and more.",
-    icon: "🔔",
-    color: "bg-purple-100 text-purple-600",
-    route: "/dashboard/tools/custom-reminder"  // ✅ fixed
-  },
-];
+  const reminders = [
+    {
+      id: "custom-reminder",
+      title: "Custom Reminder",
+      description: "Set personalized reminders for meals, water, medications, and more.",
+      icon: "🔔",
+      color: "bg-orange-100 text-orange-600",
+      route: "/dashboard/tools/custom-reminder"
+    },
+  ];
+
   const handleToolClick = (route) => {
     navigate(route);
   };
 
   const ToolCard = ({ tool }) => (
-    <div 
-      className="hover:shadow-lg transition-shadow duration-300 cursor-pointer border border-gray-200 rounded-lg bg-white shadow-md"
+    <div
+      className="hover:shadow-lg hover:border-orange-400 transition-all duration-300 cursor-pointer border border-gray-200 rounded-lg bg-white shadow-md"
       onClick={() => handleToolClick(tool.route)}
     >
       <div className="p-6">
@@ -91,14 +90,14 @@ const reminders = [
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="text-center">
-            🌟 Smart Tools & Trackers
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              Powerful Tools for Your <span className="text-green-500">Health Journey</span>
+              🌟 Smart Tools for Your{" "}
+              <span className="text-orange-500">Health Journey</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Access comprehensive tracking tools, calculators, and personalized recommendations
@@ -111,10 +110,10 @@ const reminders = [
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Tools Section */}
-        <Section title="Tools" icon="🛠️" iconColor="bg-green-500" items={tools} />
+        <Section title="Tools" icon="🛠️" iconColor="bg-orange-500" items={tools} />
 
         {/* Tracker Section */}
-        <Section title="Tracker" icon="📊" iconColor="bg-yellow-500" items={trackers} />
+        <Section title="Tracker" icon="📊" iconColor="bg-orange-500" items={trackers} />
 
         {/* Reminder Section */}
         <Section

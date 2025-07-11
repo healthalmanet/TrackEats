@@ -15,19 +15,17 @@ const CustomReminder = () => {
   });
 
   const fetchReminders = async () => {
-  setLoading(true);
-  try {
-    const data = await getAllReminder();
-    console.log("Fetched reminders:", data);
-    setActiveReminders(Array.isArray(data.results) ? data.results : []);
-  } catch (error) {
-    console.error("Error fetching reminders:", error);
-    setActiveReminders([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+    setLoading(true);
+    try {
+      const data = await getAllReminder();
+      setActiveReminders(Array.isArray(data.results) ? data.results : []);
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+      setActiveReminders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchReminders();
@@ -47,7 +45,7 @@ const CustomReminder = () => {
           reminder_time: formData.time,
           frequency: formData.frequency.toLowerCase()
         };
-        await reminderCreate(payload); // commit 
+        await reminderCreate(payload);
         await fetchReminders();
         setShowForm(false);
         setFormData({ title: '', time: '', frequency: 'Daily', message: '' });
@@ -69,7 +67,7 @@ const CustomReminder = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 lg:p-8">
+    <div className="min-h-screen bg-white p-4 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
@@ -78,7 +76,7 @@ const CustomReminder = () => {
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="mt-4 sm:mt-0 bg-gradient-to-r from-green-400 to-green-500 text-white px-6 py-2 rounded-full font-medium hover:from-green-500 hover:to-green-600 transition-all duration-200 flex items-center gap-2"
+            className="mt-4 sm:mt-0 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full font-medium transition-all duration-200 flex items-center gap-2"
           >
             <Plus size={20} /> Add Reminder
           </button>
@@ -86,8 +84,8 @@ const CustomReminder = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {showForm && (
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-6">Create New Reminder</h2>
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-md border border-orange-100 p-6">
+              <h2 className="text-xl font-semibold mb-6 text-gray-900">Create New Reminder</h2>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Title</label>
                 <input
@@ -95,7 +93,7 @@ const CustomReminder = () => {
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder="e.g., Breakfast Time"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -105,7 +103,7 @@ const CustomReminder = () => {
                     type="time"
                     value={formData.time}
                     onChange={(e) => handleInputChange('time', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -113,7 +111,7 @@ const CustomReminder = () => {
                   <select
                     value={formData.frequency}
                     onChange={(e) => handleInputChange('frequency', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   >
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
@@ -128,14 +126,14 @@ const CustomReminder = () => {
                   onChange={(e) => handleInputChange('message', e.target.value)}
                   placeholder="Add a motivational message..."
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 />
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={handleSaveReminder}
                   disabled={saving}
-                  className="flex-1 bg-gradient-to-r from-green-400 to-green-500 text-white py-3 rounded-xl font-medium hover:from-green-500 hover:to-green-600 transition-all duration-200 disabled:opacity-50"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : 'Save Reminder'}
                 </button>
@@ -150,8 +148,8 @@ const CustomReminder = () => {
           )}
 
           <div className={showForm ? 'lg:col-span-1' : 'lg:col-span-2'}>
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold mb-6">Active Reminders</h2>
+            <div className="bg-white rounded-2xl shadow-md border border-orange-100 p-6">
+              <h2 className="text-xl font-semibold mb-6 text-gray-900">Active Reminders</h2>
               {loading ? (
                 <p className="text-gray-500">Loading reminders...</p>
               ) : activeReminders.length === 0 ? (
@@ -159,10 +157,13 @@ const CustomReminder = () => {
               ) : (
                 <div className="space-y-4">
                   {activeReminders.map((reminder) => (
-                    <div key={reminder.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div
+                      key={reminder.id}
+                      className="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-200"
+                    >
                       <div>
                         <h3 className="font-medium text-gray-900">{reminder.title}</h3>
-                        <p className="text-sm text-gray-600">{reminder.reminder_time} • {reminder.frequency}</p>
+                        <p className="text-sm text-orange-700">{reminder.reminder_time} • {reminder.frequency}</p>
                         <p className="text-xs text-gray-500">{reminder.description}</p>
                       </div>
                       <button
@@ -184,5 +185,3 @@ const CustomReminder = () => {
 };
 
 export default CustomReminder;
-
-

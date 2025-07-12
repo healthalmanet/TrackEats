@@ -1,190 +1,329 @@
 import React, { useState, useEffect } from 'react';
-import { getWater, postWater } from '../../../api/WaterTracker';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function WaterTracker() {
-  const [waterIntake, setWaterIntake] = useState(0);
+  const [waterIntake, setWaterIntake] = useState(1200);
   const [customAmount, setCustomAmount] = useState(400);
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState([
+    { amount: 500, time: '10:30 AM', color: 'bg-blue-500' },
+    { amount: 350, time: '9:15 AM', color: 'bg-cyan-500' },
+    { amount: 350, time: '8:00 AM', color: 'bg-blue-400' }
+  ]);
   const [loading, setLoading] = useState(false);
   const [streak, setStreak] = useState(7);
+  const [showCelebration, setShowCelebration] = useState(false);
   const dailyGoal = 2500;
 
   const progress = Math.min(Math.round((waterIntake / dailyGoal) * 100), 100);
   const remaining = Math.max(dailyGoal - waterIntake, 0);
 
   const getRandomColor = () => {
-    const colors = ['bg-orange-500', 'bg-orange-400', 'bg-orange-300', 'bg-orange-600'];
+    const colors = ['bg-orange-500', 'bg-orange-400', 'bg-orange-600', 'bg-orange-300'];
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  const fetchWaterData = async () => {
-    setLoading(true);
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const data = await getWater(today);
-
-      const waterEntries = Array.isArray(data) ? data : data?.results || [];
-      const total = waterEntries.reduce((sum, entry) => sum + (entry.amount || 0), 0);
-      setWaterIntake(total);
-
-      const sortedEntries = waterEntries
-        .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
-        .slice(0, 3)
-        .map(entry => ({
-          amount: entry.amount,
-          time: new Date(entry.created_at || entry.date).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          }),
-          color: getRandomColor(),
-        }));
-
-      setEntries(sortedEntries);
-    } catch (error) {
-      console.error('Error fetching water data:', error);
-      setWaterIntake(0);
-      setEntries([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchWaterData();
-  }, []);
-
   const addWater = async (amount) => {
     if (amount <= 0) return;
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      await postWater({ amount_ml: amount, date: today });
+    
+    setLoading(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const now = new Date();
+    const newEntry = {
+      amount,
+      time: now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      }),
+      color: getRandomColor(),
+    };
 
-      const now = new Date();
-      const newEntry = {
-        amount,
-        time: now.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        }),
-        color: getRandomColor(),
-      };
-
-      setWaterIntake(prev => prev + amount);
-      setEntries(prev => [newEntry, ...prev.slice(0, 2)]);
-    } catch (error) {
-      console.error('Error posting water data:', error.response?.data || error.message);
-      alert('Failed to add water entry. Please try again.');
+    const newTotal = waterIntake + amount;
+    setWaterIntake(newTotal);
+    setEntries(prev => [newEntry, ...prev.slice(0, 2)]);
+    
+    // Check if goal is reached
+    if (newTotal >= dailyGoal && waterIntake < dailyGoal) {
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
     }
+    
+    setLoading(false);
   };
 
   const formatAmount = (amt) => (amt >= 1000 ? `${(amt / 1000).toFixed(1)}L` : `${amt}ml`);
 
   const generateChartData = () => {
-    const chartTemplate = ['40%', '80%', '60%', '30%', '20%', '20%'];
-    return chartTemplate.map((height, index) => ({
-      height,
-      color: progress >= (index + 1) * 100 / 6 ? chartTemplateColor(index) : 'bg-slate-300',
+    const heights = [40, 80, 60, 30, 20, 20];
+    return heights.map((height, index) => ({
+      height: `${height}%`,
+      color: progress >= (index + 1) * 100 / 6 ? 'bg-gradient-to-t from-orange-600 to-orange-400' : 'bg-gray-200',
+      delay: index * 0.1,
     }));
   };
-
-  const chartTemplateColor = (index) =>
-    ['bg-orange-500', 'bg-orange-400', 'bg-orange-300', 'bg-orange-300', 'bg-slate-300', 'bg-slate-300'][index];
 
   const chartData = generateChartData();
 
   return (
-    <div className="bg-white min-h-screen p-6 md:p-12 font-sans">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-start md:justify-between gap-10">
-        <Header waterIntake={waterIntake} dailyGoal={dailyGoal} formatAmount={formatAmount} loading={loading} />
+    <div className="bg-gradient-to-br from-orange-50 via-white to-orange-50 min-h-screen p-6 md:p-12 font-sans relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-100 rounded-full opacity-20"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-100 rounded-full opacity-20"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-orange-50 rounded-full opacity-30"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto mt-10 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard label="Today's Intake" value={formatAmount(waterIntake)} sub={loading ? "Loading..." : `${entries.length} entries today`} />
-        <StatCard label="Goal Progress" value={`${progress}%`} sub={<ProgressBar progress={progress} />} />
-        <StatCard label="Remaining" value={formatAmount(remaining)} sub={remaining <= 0 ? "Goal achieved! 🎉" : "Keep going!"} />
-        <StatCard label="Daily Streak" value={`${streak} days`} sub="Great consistency!" />
-      </div>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="max-w-7xl mx-auto relative z-10"
+      >
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10">
+          <Header waterIntake={waterIntake} dailyGoal={dailyGoal} formatAmount={formatAmount} loading={loading} progress={progress} />
+        </div>
 
-      <div className="max-w-7xl mx-auto mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <QuickAdd customAmount={customAmount} setCustomAmount={setCustomAmount} loading={loading} addWater={addWater} />
-        <ProgressChart chartData={chartData} waterIntake={waterIntake} remaining={remaining} formatAmount={formatAmount} entries={entries} loading={loading} />
-      </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-4"
+        >
+          <StatCard label="Today's Intake" value={formatAmount(waterIntake)} sub={loading ? "Loading..." : `${entries.length} entries today`} icon="💧" delay={0} />
+          <StatCard label="Goal Progress" value={`${progress}%`} sub={<ProgressBar progress={progress} />} icon="🎯" delay={0.1} />
+          <StatCard label="Remaining" value={formatAmount(remaining)} sub={remaining <= 0 ? "Goal achieved! 🎉" : "Keep going!"} icon="⏰" delay={0.2} />
+          <StatCard label="Daily Streak" value={`${streak} days`} sub="Great consistency!" icon="🔥" delay={0.3} />
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          <QuickAdd customAmount={customAmount} setCustomAmount={setCustomAmount} loading={loading} addWater={addWater} />
+          <ProgressChart chartData={chartData} waterIntake={waterIntake} remaining={remaining} formatAmount={formatAmount} entries={entries} loading={loading} />
+        </motion.div>
+      </motion.div>
+
+      {/* Celebration Animation */}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+          >
+            <motion.div
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className="bg-white rounded-2xl p-8 text-center shadow-2xl max-w-sm mx-4"
+            >
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 0.5, repeat: 2 }}
+                className="text-6xl mb-4"
+              >
+                🎉
+              </motion.div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">Goal Achieved!</h3>
+              <p className="text-gray-600">You've reached your daily water intake goal!</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-const Header = ({ waterIntake, dailyGoal, formatAmount, loading }) => {
-  const progress = Math.min((waterIntake / dailyGoal) * 100, 100);
+const Header = ({ waterIntake, dailyGoal, formatAmount, loading, progress }) => {
   return (
     <>
       <div className="flex-1 max-w-xl">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight">
-          Stay <span className="text-orange-500">Hydrated</span>, Stay <br /> <span className="font-extrabold">Healthy</span>
-        </h1>
-        <p className="mt-2 text-sm text-slate-700 max-w-md">
-          Track your daily water intake with our smart hydration tracker. <br />
+        <motion.h1 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-3xl md:text-4xl font-black text-gray-900 leading-tight"
+        >
+          Stay <span className="bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">Hydrated</span>, <br />
+          Stay <span className="bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">Healthy</span>
+        </motion.h1>
+        <motion.p 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mt-4 text-gray-600 max-w-md leading-relaxed"
+        >
+          Track your daily water intake with our smart hydration tracker. 
           Set goals, get reminders, and build healthy habits.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button onClick={() => window.location.reload()} className="bg-orange-500 text-white text-xs md:text-sm font-semibold px-4 py-2 rounded-md shadow-md hover:bg-orange-600 transition">
+        </motion.p>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-6 flex flex-wrap gap-3"
+        >
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-gradient-to-r from-orange-600 to-orange-500 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+          >
             Add Water Now
-          </button>
-          <button onClick={() => window.location.reload()} className="border border-slate-300 text-slate-700 text-xs md:text-sm font-semibold px-4 py-2 rounded-md hover:bg-slate-100 transition">
-            Refresh Data
-          </button>
-        </div>
+          </motion.button>
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="border-2 border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-all duration-300"
+          >
+            View History
+          </motion.button>
+        </motion.div>
       </div>
 
-      <div className="relative w-36 h-48 rounded-xl overflow-hidden shadow-lg bg-gradient-to-t from-blue-400 via-blue-300 to-blue-100">
-        <div className="absolute inset-0 flex flex-col justify-center items-center text-white">
-          <div className="text-2xl font-bold">{formatAmount(waterIntake)}</div>
-          <div className="text-sm opacity-80">of {formatAmount(dailyGoal)}</div>
-          {loading && <div className="text-xs mt-1">Loading...</div>}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        className="relative"
+      >
+        <div className="w-40 h-56 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-t from-blue-600 via-blue-400 to-blue-200 relative">
+          <div className="absolute inset-0 flex flex-col justify-center items-center text-white z-10">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="text-2xl font-bold"
+            >
+              {formatAmount(waterIntake)}
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="text-sm opacity-90"
+            >
+              of {formatAmount(dailyGoal)}
+            </motion.div>
+            {loading && (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="text-xs mt-2"
+              >
+                ⏳
+              </motion.div>
+            )}
+          </div>
+          <motion.div 
+            initial={{ height: 0 }}
+            animate={{ height: `${progress}%` }}
+            transition={{ duration: 1, delay: 0.7, ease: "easeOut" }}
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-800 to-blue-600"
+          />
+          
+          {/* Water bubbles animation */}
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20, scale: 0 }}
+                animate={{ 
+                  opacity: [0, 1, 0], 
+                  y: [20, -20], 
+                  scale: [0, 1, 0],
+                  x: [0, Math.random() * 20 - 10]
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  delay: i * 0.4,
+                  ease: "easeInOut"
+                }}
+                className="absolute w-2 h-2 bg-white rounded-full opacity-30"
+                style={{ 
+                  left: `${20 + Math.random() * 60}%`,
+                  bottom: `${10 + Math.random() * 30}%`
+                }}
+              />
+            ))}
+          </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 bg-orange-500 transition-all duration-500" style={{ height: `${progress}%` }} />
-      </div>
+      </motion.div>
     </>
   );
 };
 
-const StatCard = ({ label, value, sub }) => (
-  <div className="flex flex-col border border-slate-200 rounded-lg p-4 text-slate-900 bg-white">
-    <div className="flex items-center gap-2 mb-2 text-lg font-semibold">{value}</div>
-    <p className="text-xs font-semibold">{label}</p>
-    {typeof sub === 'string' ? <p className="text-xs text-orange-600 font-semibold mt-1">{sub}</p> : sub}
-  </div>
+const StatCard = ({ label, value, sub, icon, delay }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, delay }}
+    whileHover={{ scale: 1.02, y: -5 }}
+    className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300"
+  >
+    <div className="flex items-center gap-3 mb-3">
+      <span className="text-2xl">{icon}</span>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
+    </div>
+    <p className="text-sm font-semibold text-gray-600 mb-2">{label}</p>
+    {typeof sub === 'string' ? (
+      <p className="text-xs text-orange-600 font-medium">{sub}</p>
+    ) : (
+      sub
+    )}
+  </motion.div>
 );
 
 const ProgressBar = ({ progress }) => (
-  <div className="w-full bg-slate-200 rounded-full h-1 mt-2">
-    <div className="bg-orange-500 h-1 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+  <div className="w-full bg-gray-200 rounded-full h-2 mt-2 overflow-hidden">
+    <motion.div 
+      initial={{ width: 0 }}
+      animate={{ width: `${progress}%` }}
+      transition={{ duration: 1, ease: "easeOut" }}
+      className="bg-gradient-to-r from-orange-600 to-orange-500 h-2 rounded-full"
+    />
   </div>
 );
 
 const QuickAdd = ({ customAmount, setCustomAmount, loading, addWater }) => (
-  <div className="border border-slate-200 rounded-lg p-4 bg-white max-w-xs md:max-w-none">
-    <h2 className="font-semibold text-slate-900 mb-3 text-sm">Quick Add</h2>
-    <div className="grid grid-cols-2 gap-3 mb-4">
+  <motion.div 
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ duration: 0.6, delay: 0.5 }}
+    className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg max-w-xs md:max-w-none"
+  >
+    <h2 className="font-bold text-gray-900 mb-4 text-lg flex items-center gap-2">
+      <span className="text-xl">💧</span>
+      Quick Add
+    </h2>
+    <div className="grid grid-cols-2 gap-3 mb-6">
       {[250, 350, 500, 1000].map((amt, idx) => (
-        <button
+        <motion.button
           key={idx}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => addWater(amt)}
           disabled={loading}
-          className={`flex items-center justify-center gap-2 text-white text-xs font-semibold py-2 rounded-md shadow-md transition disabled:opacity-50 ${
-            ['bg-orange-500', 'bg-orange-400', 'bg-orange-300', 'bg-orange-600'][idx]
-          } hover:brightness-110`}
+          className={`flex items-center justify-center gap-2 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 ${
+            ['bg-gradient-to-r from-orange-600 to-orange-500', 'bg-gradient-to-r from-orange-500 to-orange-400', 'bg-gradient-to-r from-orange-400 to-orange-300', 'bg-gradient-to-r from-orange-600 to-orange-400'][idx]
+          } hover:shadow-lg`}
         >
-          💧 {amt}ml
-        </button>
+          <span className="text-lg">💧</span>
+          {amt}ml
+        </motion.button>
       ))}
     </div>
 
-    <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="customAmount">
+    <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="customAmount">
       Custom Amount (ml)
     </label>
-    <div className="flex gap-2">
+    <div className="flex gap-3">
       <input
         id="customAmount"
         type="number"
@@ -192,34 +331,61 @@ const QuickAdd = ({ customAmount, setCustomAmount, loading, addWater }) => (
         max="2000"
         value={customAmount}
         onChange={(e) => setCustomAmount(Number(e.target.value))}
-        className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500"
+        className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-300"
         placeholder="Enter amount"
       />
-      <button
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => addWater(customAmount)}
         disabled={loading || customAmount <= 0}
-        className="bg-orange-500 text-white text-xs font-semibold px-4 py-2 rounded-md shadow-md hover:bg-orange-600 transition disabled:opacity-50"
+        className="bg-gradient-to-r from-orange-600 to-orange-500 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50"
       >
-        Add
-      </button>
+        {loading ? (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            ⏳
+          </motion.div>
+        ) : (
+          'Add'
+        )}
+      </motion.button>
     </div>
-  </div>
+  </motion.div>
 );
 
 const ProgressChart = ({ chartData, waterIntake, remaining, formatAmount, entries, loading }) => (
-  <div className="md:col-span-2 bg-white border border-slate-200 rounded-lg p-4">
-    <div className="flex justify-between items-center mb-3">
-      <h2 className="font-semibold text-slate-900 text-sm">Today's Progress</h2>
-      <span className="text-xs text-slate-400">Goal: {formatAmount(2500)}</span>
+  <motion.div 
+    initial={{ opacity: 0, x: 20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ duration: 0.6, delay: 0.6 }}
+    className="md:col-span-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-lg"
+  >
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+        <span className="text-xl">📊</span>
+        Today's Progress
+      </h2>
+      <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+        Goal: {formatAmount(2500)}
+      </span>
     </div>
 
-    <div className="flex items-end gap-3 mb-4 h-20">
+    <div className="flex items-end justify-between gap-2 mb-6 h-24">
       {chartData.map((bar, index) => (
-        <div key={index} className={`w-6 ${bar.color} rounded-t-md transition-all duration-300`} style={{ height: bar.height }} />
+        <motion.div
+          key={index}
+          initial={{ height: 0 }}
+          animate={{ height: bar.height }}
+          transition={{ duration: 0.8, delay: bar.delay, ease: "easeOut" }}
+          className={`flex-1 ${bar.color} rounded-t-lg min-w-0 shadow-sm`}
+        />
       ))}
     </div>
 
-    <div className="flex justify-between text-xs text-slate-400 mb-2">
+    <div className="flex justify-between text-xs text-gray-400 mb-4">
       <span>6AM</span>
       <span>9AM</span>
       <span>12PM</span>
@@ -230,28 +396,53 @@ const ProgressChart = ({ chartData, waterIntake, remaining, formatAmount, entrie
 
     <ProgressBar progress={Math.min((waterIntake / 2500) * 100, 100)} />
 
-    <div className="flex justify-between text-xs text-slate-400 mb-4">
-      <span>{formatAmount(waterIntake)} consumed</span>
-      <span>{formatAmount(remaining)} remaining</span>
+    <div className="flex justify-between text-sm text-gray-600 mb-6 mt-2">
+      <span className="font-medium">{formatAmount(waterIntake)} consumed</span>
+      <span className="font-medium">{formatAmount(remaining)} remaining</span>
     </div>
 
-    <h3 className="font-semibold text-slate-900 mb-2 text-xs">Recent Entries</h3>
+    <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+      <span className="text-lg">📝</span>
+      Recent Entries
+    </h3>
     {loading ? (
-      <div className="text-xs text-slate-500">Loading entries...</div>
+      <motion.div
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+        className="text-sm text-gray-500"
+      >
+        Loading entries...
+      </motion.div>
     ) : entries.length > 0 ? (
-      <ul className="space-y-2">
-        {entries.map((entry, index) => (
-          <li
-            key={index}
-            className={`flex items-center justify-between ${entry.color} bg-opacity-10 rounded-md px-3 py-1 text-xs font-semibold text-slate-800`}
-          >
-            <div className="flex items-center gap-2">💧 {formatAmount(entry.amount)}</div>
-            <span>{entry.time}</span>
-          </li>
-        ))}
-      </ul>
+      <motion.ul className="space-y-3">
+        <AnimatePresence>
+          {entries.map((entry, index) => (
+            <motion.li
+              key={index}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="flex items-center justify-between bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl px-4 py-3 border border-orange-100"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-lg">💧</span>
+                <span className="font-semibold text-gray-800">{formatAmount(entry.amount)}</span>
+              </div>
+              <span className="text-sm text-gray-600 bg-white px-2 py-1 rounded-lg">
+                {entry.time}
+              </span>
+            </motion.li>
+          ))}
+        </AnimatePresence>
+      </motion.ul>
     ) : (
-      <div className="text-xs text-slate-500">No entries yet today. Start logging your water intake!</div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-sm text-gray-500 bg-gray-50 rounded-xl p-4 text-center"
+      >
+        No entries yet today. Start logging your water intake! 🌟
+      </motion.div>
     )}
-  </div>
+  </motion.div>
 );

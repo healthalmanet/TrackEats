@@ -61,9 +61,10 @@ const MealLogger = () => {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen px-6 py-10 font-['Poppins'] text-sm">
+    // CHANGE 1: Updated background color to match the theme
+    <div className="bg-[#FFFDF9] min-h-screen px-6 py-10 font-['Poppins'] text-sm">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-left text-2xl sm:text-3xl font-bold text-[#FF7043] drop-shadow-sm">
+        <h2 className="text-4xl font-bold text-[#263238] font-['Poppins']">
           Meal Logger
         </h2>
         <p className="text-sm text-[#546E7A] mt-1 font-medium mb-15 ">Log your daily meals and track calories, nutrients, and water intake all in one place.
@@ -215,8 +216,6 @@ const MealLogger = () => {
                   <option value="Afternoon Snack ">Afternoon Snack</option>
                   <option value="Dinner">Dinner</option>
                   <option value="Bedtime ">Bedtime</option>
-                  
-
                 </select>
 
                 <button
@@ -240,16 +239,16 @@ const MealLogger = () => {
                 <div className="flex gap-2 w-full  sm:w-auto">
                   <div className="relative w-full  sm:w-64 ">
                     <input
-  type="date"
-  value={searchDate}
-  max={new Date().toISOString().split("T")[0]} // disables future dates
-  onChange={(e) => {
-    const newDate = e.target.value;
-    setSearchDate(newDate);
-    if (newDate === "") searchByDate("");
-  }}
-  className="border border-[#ECEFF1] px-3 py-2 rounded-lg w-full pr-10"
-/>
+                      type="date"
+                      value={searchDate}
+                      max={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => {
+                        const newDate = e.target.value;
+                        setSearchDate(newDate);
+                        if (newDate === "") searchByDate("");
+                      }}
+                      className="border border-[#ECEFF1] px-3 py-2 rounded-lg w-full pr-10"
+                    />
 
                     {searchDate && (
                       <button
@@ -282,7 +281,8 @@ const MealLogger = () => {
                     {loggedMeals.map((meal) => (
                       <li
                         key={meal.id}
-                        className={`p-4 rounded-md border border-[#ECEFF1] bg-white shadow-sm relative ${
+                        // CHANGE 2: Added transition and hover effects to the meal card
+                        className={`p-4 rounded-md border border-[#ECEFF1] bg-white shadow-sm relative transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
                           mealColors[meal.meal_type] || "border-l-4 border-[#FF7043]"
                         }`}
                       >

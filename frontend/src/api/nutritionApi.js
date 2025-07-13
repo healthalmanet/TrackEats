@@ -1,50 +1,36 @@
 // src/api/nutritionApi.js
-import axios from 'axios';
 
-// Replace with your actual Nutritionix credentials
-const APP_ID = 'your_app_id';
-const APP_KEY = 'your_app_key';
+import axios from "axios";
 
-const mockData = {
-  apple: { calories: 95, protein: 0.5, carbs: 25, fat: 0.3 },
-  banana: { calories: 105, protein: 1.3, carbs: 27, fat: 0.3 },
-  rice: { calories: 200, protein: 4, carbs: 45, fat: 0.4 },
+const BASE_URL = "https://trackeats.onrender.com/api/";
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return {
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+      "Content-Type": "application/json",
+    },
+  };
 };
 
-export const fetchNutritionData = async (foodName) => {
-  const lowerCaseName = foodName.toLowerCase();
-
-  if (mockData[lowerCaseName]) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ food_name: lowerCaseName, ...mockData[lowerCaseName] });
-      }, 500);
-    });
-  }
-
+export const searchFoodNutrition = async (foodName) => {
   try {
-    const response = await axios.post(
-      'https://trackapi.nutritionix.com/v2/natural/nutrients',
-      { query: foodName },
-      {
-        headers: {
-          'x-app-id': APP_ID,
-          'x-app-key': APP_KEY,
-          'Content-Type': 'application/json',
-        },
-      }
+    const response = await axios.get(
+      `${BASE_URL}foods/?search=${encodeURIComponent(foodName)}`,
+      getAuthHeaders()
     );
 
-    const food = response.data.foods[0];
-    return {
-      food_name: food.food_name,
-      calories: food.nf_calories,
-      protein: food.nf_protein,
-      carbs: food.nf_total_carbohydrate,
-      fat: food.nf_total_fat,
-    };
+    // ✅ THE CRITICAL CHANGE IS HERE: Return the first object from the 'results' array
+    if (response.data && response.data.results && response.data.results.length > 0) {
+      return response.data.results[0]; // This extracts the actual food object
+    } else {
+      return null; // No results found
+    }
   } catch (error) {
-    console.error('❌ Nutritionix API error:', error?.response?.data || error.message);
-    throw new Error('Failed to fetch nutrition data.');
+    console.error("Error fetching food nutrition:", error.response?.data || error.message);
+    throw new Error(
+      error.response?.data?.detail || "Failed to fetch food nutrition. Please try again."
+    );
   }
 };

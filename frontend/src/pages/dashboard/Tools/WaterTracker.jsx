@@ -152,7 +152,9 @@ export default function WaterTracker() {
   };
 
   return (
-    <div ref={scope} className="min-h-screen p-4 sm:p-6 lg:p-8 font-sans relative" style={{ backgroundColor: THEME.beigeTint }}>
+    // <div ref={scope} className="min-h-screen p-4 sm:p-6 lg:p-8 font-sans relative" style={{ backgroundColor: THEME.beigeTint }}>
+        <div ref={scope} className="min-h-screen p-4 sm:p-6 lg:p-8 font-sans relative bg-[#FFFDF9]">
+
       <AnimatePresence>{showCelebration && <Confetti />}</AnimatePresence>
       <motion.main
         initial="hidden" animate="visible"

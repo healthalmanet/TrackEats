@@ -152,7 +152,7 @@ const WeightTracker = () => {
 
   return (
     // --- MODIFIED: Unified background gradient ---
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 font-sans text-slate-800">
+    <div className="min-h-screen bg-gradient-to-r to-blue-50 font-sans text-slate-800">
       <div className="max-w-6xl mx-auto p-4 lg:p-6">
         <header className="mb-8"><h1 className="text-4xl font-extrabold text-orange-500">Weight Tracker</h1></header>
 

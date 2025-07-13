@@ -145,7 +145,7 @@ const NutritionSearch = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-gradient-to-br from-gray-50 to-orange-100/30 overflow-x-hidden">
+    <div className="relative min-h-screen w-full bg-gradient-to-r to-blue-50 overflow-x-hidden">
       <AnimationStyles />
       <div className="absolute top-0 -left-4 w-72 h-72 bg-orange-200/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob -z-10"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-amber-200/50 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob -z-10" style={{ animationDelay: '2s' }}></div>

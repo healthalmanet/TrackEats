@@ -82,7 +82,7 @@ export default function BMICalculator() {
   const bmiInfo = bmi ? getBMICategory(parseFloat(bmi)) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-r to-blue-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

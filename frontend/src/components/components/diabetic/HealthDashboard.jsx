@@ -46,8 +46,10 @@ const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-US', { 
 
 // --- UI SUB-COMPONENTS ---
 const KeyMetricsOverview = ({ latestReport }) => {
+    console.log("🧩 Props in KeyMetricsOverview:", latestReport);
+
   if (!latestReport) return null;
-  console.log("🔁 Rendering KeyMetricsOverview with:", latestReport);
+ 
 
   const metricKeys = [
     { key: 'blood_pressure', label: 'Blood Pressure', unit: 'mmHg', icon: <FaHeartbeat /> },
@@ -134,7 +136,11 @@ const HealthDashboard = () => {
             if (response && response.results && response.results.length > 0) {
                 // Sort to get the most recent report first
                 const sortedByNewest = response.results.slice().sort((a, b) => new Date(b.report_date) - new Date(a.report_date));
+                console.log("🔁 Refetched after update:", response.results);
+
                 setLatestReport(sortedByNewest[0]); // The newest is at the top
+                console.log("📌 New latestReport is:", sortedByNewest[0]);
+
                 // Sort chronologically for trend charts
                 const chronologicalReports = response.results.slice().sort((a, b) => new Date(a.report_date) - new Date(b.report_date));
                 setAllReports(chronologicalReports);
@@ -169,9 +175,12 @@ const HealthDashboard = () => {
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 onSubmit={async () => {
-  await fetchReportData();
-  setModalOpen(false);
+  setTimeout(async () => {
+    await fetchReportData();
+    setModalOpen(false);
+  }, 500); // wait 0.5s before fetching data
 }}
+
 
             />
         </div>
@@ -334,7 +343,10 @@ const HealthDashboard = () => {
                     <p className="text-[#546E7A] mt-2 text-lg">Your consolidated health report. Track your progress over time.</p>
                 </header>
                 <Navigation />
-               <KeyMetricsOverview latestReport={latestReport} key={latestReport?.id || latestReport?.report_date} />
+               <KeyMetricsOverview key={latestReport?.id || latestReport?.report_date} latestReport={{ ...latestReport }} />
+
+
+
 
                 <h2 className="text-2xl font-bold text-gray-700 font-['Poppins'] mb-5 mt-10">Historical Trends</h2>
                 <div className="mt-4 max-w-5xl mx-auto">{viewToChartMap[activeView]()}</div>

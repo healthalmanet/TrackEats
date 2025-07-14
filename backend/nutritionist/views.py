@@ -1,11 +1,19 @@
+from datetime import date
 from django.shortcuts import render
+import numpy as np
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from django.db import transaction
+from django.utils.timezone import now
+from datetime import date
+import numpy as np
 
+from diet.serializers import DietRecommendationSerializer
+from ml_model.src.generator import generate_diet_plan
 from utils.pagination import StandardResultsSetPagination
 
 
@@ -284,3 +292,119 @@ class NutritionistCreatePatientView(generics.GenericAPIView):
                 return Response({"detail": "Patient created and assigned successfully."}, status=201)
         except Exception as e:
             return Response({"detail": str(e)}, status=400)
+
+
+##generate diet
+# ==============================================================================
+# 🔹 NEW API VIEW: Generate AI Plan for a Patient by Nutritionist
+# ==============================================================================
+class GeneratePlanForPatientView(APIView):
+    """
+    Allows a nutritionist to generate a new AI diet plan for an assigned patient.
+    The generated plan is automatically marked as 'approved'.
+    
+    POST /api/nutritionist/patients/<patient_id>/generate-plan/
+    """
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+    
+    def _calculate_age(self, dob):
+        if not dob: return 0
+        today = date.today()
+        return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    
+    def _convert_numpy_types(self, obj):
+        if isinstance(obj, (np.integer, np.int64)): return int(obj)
+        if isinstance(obj, (np.floating, np.float64)): return float(obj)
+        if isinstance(obj, dict): return {k: self._convert_numpy_types(v) for k, v in obj.items()}
+        if isinstance(obj, list): return [self._convert_numpy_types(i) for i in obj]
+        return obj
+
+    def post(self, request, patient_id, *args, **kwargs):
+        # 1. Verify patient exists and is assigned to the nutritionist
+        try:
+            patient = User.objects.get(id=patient_id, role='user')
+            if not PatientAssignment.objects.filter(nutritionist=request.user, patient=patient).exists():
+                return Response({'error': 'You are not assigned to this patient.'}, status=status.HTTP_403_FORBIDDEN)
+        except User.DoesNotExist:
+            return Response({'error': 'Patient with the given ID not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 2. Prevent creating a new plan if one is already pending review
+        if DietRecommendation.objects.filter(user=patient, status='pending').exists():
+            return Response({
+                'error': 'This patient already has a plan pending review. Please review the existing plan first.'
+            }, status=status.HTTP_409_CONFLICT)
+            
+        # 3. Fetch patient profile and lab data
+        try:
+            user_profile = UserProfile.objects.get(user=patient)
+            latest_lab_report = LabReport.objects.filter(user=patient).order_by('-report_date').first()
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'Patient profile not found. The patient must complete their profile first.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 4. Build the input data vector
+        NUMERICAL_COLS = [
+            'Age', 'Weight (kg)', 'Height (cm)', 'BMI (auto-calculated)', 'Waist Circumference (cm)',
+            'Fasting Blood Sugar (mg/dL)', 'HbA1c (%)', 'Postprandial Sugar (mg/dL)', 'LDL (mg/dL)',
+            'HDL (mg/dL)', 'Triglycerides (mg/dL)', 'CRP (mg/L)', 'ESR (mm/hr)', 'Uric Acid (mg/dL)',
+            'Creatinine (mg/dL)', 'Urea (mg/dL)', 'ALT (U/L)', 'AST (U/L)', 'Vitamin D3 (ng/mL)',
+            'Vitamin B12 (pg/mL)', 'TSH (uIU/mL)'
+        ]
+        user_data_dict = {
+            'Age': self._calculate_age(user_profile.date_of_birth),
+            'Weight (kg)': user_profile.weight_kg,
+            'Height (cm)': user_profile.height_cm,
+            'BMI (auto-calculated)': user_profile.bmi,
+            'Waist Circumference (cm)': getattr(latest_lab_report, 'waist_circumference_cm', 0),
+            'Fasting Blood Sugar (mg/dL)': getattr(latest_lab_report, 'fasting_blood_sugar', 0),
+            'HbA1c (%)': getattr(latest_lab_report, 'hba1c', 0),
+            'Postprandial Sugar (mg/dL)': getattr(latest_lab_report, 'postprandial_sugar', 0),
+            'LDL (mg/dL)': getattr(latest_lab_report, 'ldl_cholesterol', 0),
+            'HDL (mg/dL)': getattr(latest_lab_report, 'hdl_cholesterol', 0),
+            'Triglycerides (mg/dL)': getattr(latest_lab_report, 'triglycerides', 0),
+            'CRP (mg/L)': getattr(latest_lab_report, 'crp', 0),
+            'ESR (mm/hr)': getattr(latest_lab_report, 'esr', 0),
+            'Uric Acid (mg/dL)': getattr(latest_lab_report, 'uric_acid', 0),
+            'Creatinine (mg/dL)': getattr(latest_lab_report, 'creatinine', 0),
+            'Urea (mg/dL)': getattr(latest_lab_report, 'urea', 0),
+            'ALT (U/L)': getattr(latest_lab_report, 'alt', 0),
+            'AST (U/L)': getattr(latest_lab_report, 'ast', 0),
+            'Vitamin D3 (ng/mL)': getattr(latest_lab_report, 'vitamin_d3', 0),
+            'Vitamin B12 (pg/mL)': getattr(latest_lab_report, 'vitamin_b12', 0),
+            'TSH (uIU/mL)': getattr(latest_lab_report, 'tsh', 0),
+        }
+        user_vector_list = [
+            float(user_data_dict.get(col, 0)) if user_data_dict.get(col, 0) is not None else 0.0
+            for col in NUMERICAL_COLS
+        ]
+
+        # 5. Call the AI model
+        try:
+            print(f"Nutritionist {request.user.email} generating plan for patient {patient.email}")
+            plan_json = generate_diet_plan(patient.id)
+
+            if isinstance(plan_json, dict) and "error" in plan_json:
+                return Response({'error': plan_json['error']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            plan_json = self._convert_numpy_types(plan_json)
+
+            # 6. Create the diet recommendation, auto-approving it
+            new_recommendation = DietRecommendation.objects.create(
+                user=patient,
+                for_week_starting=now().date(),
+                meals=plan_json,
+                original_ai_plan=plan_json,
+                user_profile_snapshot=user_vector_list,
+                status='pending',  # Automatically approved
+                reviewed_by=request.user, # The nutritionist who generated it
+                nutritionist_comment="Plan generated by nutritionist."
+            )
+            
+            serializer = DietRecommendationSerializer(new_recommendation)
+            return Response({
+                'message': 'New diet plan generated and approved for the patient successfully.',
+                'plan_data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            return Response({'error': f'An internal error occurred during diet generation: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -88,3 +88,11 @@ export const getDietRecommendationUsers = async (page = 1, pageSize = 10) => {
   await delay(500);
   return axiosInstance.get(`/diet/recommendations/?page=${page}&page_size=${pageSize}`);
 };
+
+export const createUserPatient = async (userData) => {
+  await delay(500);
+  const response = await axiosInstance.post('/create-patient/', userData);
+  return response; // or `return response.data;` if you want to simplify usage
+};
+
+

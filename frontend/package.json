@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "npm run dev"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -16,8 +17,10 @@
     "axios-retry": "^4.5.0",
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.3",
     "icons": "^1.0.0",
     "lucide-react": "^0.514.0",
+    "motion": "^12.23.3",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",
@@ -39,8 +42,8 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.7",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
     "vite": "^6.3.5"
   }
 }

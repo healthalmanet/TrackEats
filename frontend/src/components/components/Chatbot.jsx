@@ -40,8 +40,8 @@ const App = () => {
           onClick={() => setShowModal(true)}
           className="bg-[#FF6B3D] hover:bg-[#e85c2a] flex hover:shadow-lg text-white px-5 py-2.5 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
         >
-          <FaRocketchat className="text-white " />
-          <span className="text-white font-medium">Let's Chat</span>
+          {/* <FaRocketchat className="text-white " /> */}
+          <span className="text-white text-3xl">?</span>
         </div>
       </div>
 

@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { getMeals, createMeal, deleteMeal, getMealsByDate } from "../../../api/mealLog"; // consolidated import
+import { getMeals, createMeal, deleteMeal, getMealsByDate } from "../../../api/mealLog";
 import { toast } from "react-hot-toast";
 
 const useMealLogger = () => {
   const [foodInputs, setFoodInputs] = useState([
     { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
   ]);
-  const [mealType, setMealType] = useState("breakfast");
+  const [mealType, setMealType] = useState("Breakfast");
   const [loggedMeals, setLoggedMeals] = useState([]);
   const [pagination, setPagination] = useState({
     next: null,
@@ -16,8 +16,19 @@ const useMealLogger = () => {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const unitOptions = ["g", "ml", "piece", "cup", "bowl", "tbsp", "tsp"];
-  const token = localStorage.getItem("token");
+
+  // ✅ Match backend choices exactly
+  const unitOptions = [
+    "Gram", "Kilogram", "Milliliters", "Liters", "Cup", "Bowl",
+    "Piece", "Tbsp", "Tsp", "Plate", "Handful", "Pinch",
+    "Dash", "Sprinkle", "Other"
+  ];
+
+  // ✅ Expose backend meal type options
+  const mealTypeOptions = [
+    "Early-Morning", "Breakfast", "Mid-Morning Snack",
+    "Lunch", "Afternoon Snack", "Dinner", "Bedtime"
+  ];
 
   const [dailySummary, setDailySummary] = useState({
     calories: 0,
@@ -45,6 +56,7 @@ const useMealLogger = () => {
 
   const fetchMeals = async (url = null) => {
     try {
+      const token = localStorage.getItem("token");
       const data = await getMeals(token, url);
       const meals = data.results || [];
 
@@ -79,12 +91,12 @@ const useMealLogger = () => {
 
   const searchByDate = async (date) => {
     if (!date) {
-      // Reset to show all logged meals
       fetchMeals();
       return;
     }
 
     try {
+      const token = localStorage.getItem("token");
       const data = await getMealsByDate(token, date);
       const meals = data.results || [];
 
@@ -118,29 +130,54 @@ const useMealLogger = () => {
     fetchMeals();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const input = foodInputs[0];
-    const data = {
-      food_name: input.name,
-      quantity: parseFloat(input.quantity),
-      unit: input.unit,
-      meal_type: mealType,
-      remarks: input.remark,
-    };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem("token");
 
-    try {
-      await createMeal(data, token);
-      toast.success("Meal logged");
-      fetchMeals(pagination.currentPageUrl);
-      setFoodInputs([
-        { name: "", unit: "", quantity: "", remark: "", date: "", time: "" },
-      ]);
-    } catch (err) {
-      console.error("Create meal error:", err.response?.data || err.message);
-      toast.error("Failed to add meal");
-    }
+  const mealTypeMap = {
+    "Early Morning Snack": "Early-Morning",
+    "Breakfast": "Breakfast",
+    "Mid-Morning Snack": "Mid-Morning Snack",
+    "Lunch": "Lunch",
+    "Afternoon Snack": "Afternoon Snack",
+    "Dinner": "Dinner",
+    "Bedtime": "Bedtime",
   };
+
+  const allInputs = foodInputs.filter(input => input.name && input.quantity && input.unit);
+  if (allInputs.length === 0) {
+    toast.error("Please fill at least one food item.");
+    return;
+  }
+
+  try {
+    for (const input of allInputs) {
+      let date = input.date || new Date().toISOString().split("T")[0]; // Use today if not filled
+      let time = input.time || "12:00"; // Default to noon if time is empty
+      let consumedAt = new Date(`${date}T${time}:00`).toISOString();
+
+      const data = {
+        food_name: input.name,
+        quantity: parseFloat(input.quantity),
+        unit: input.unit.charAt(0).toUpperCase() + input.unit.slice(1),
+        meal_type: mealTypeMap[mealType.trim()] || mealType,
+        remarks: input.remark,
+        date: date,
+        consumed_at: consumedAt,
+      };
+
+      await createMeal(data, token);
+    }
+
+    toast.success("Meal(s) logged");
+    fetchMeals(pagination.currentPageUrl);
+    setFoodInputs([{ name: "", unit: "", quantity: "", remark: "", date: "", time: "" }]);
+  } catch (err) {
+    console.error("Create meal error:", err.response?.data || err.message);
+    toast.error("Failed to add meal(s)");
+  }
+};
+
 
   const handleFoodChange = (idx, field, value) => {
     setFoodInputs((prev) =>
@@ -166,6 +203,7 @@ const useMealLogger = () => {
     }
 
     try {
+      const token = localStorage.getItem("token");
       await deleteMeal(id, token);
       toast.success("Meal deleted");
       fetchMeals(pagination.currentPageUrl);
@@ -198,6 +236,7 @@ const useMealLogger = () => {
     removeFoodField,
     mealType,
     setMealType,
+    mealTypeOptions, // ✅ Added here
     handleSubmit,
     unitOptions,
     loggedMeals,

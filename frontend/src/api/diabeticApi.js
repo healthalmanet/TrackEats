@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "https://trackeats.onrender.com/api/diabetic-reports";
+const BASE_URL = "https://trackeats.onrender.com/api/lab-reports";
 
 // ✅ Auth Headers with Timeout
 const getAuthHeaders = () => {
@@ -10,14 +10,14 @@ const getAuthHeaders = () => {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    timeout: 30000, // ⏱️ 15 seconds timeout for slow responses
+    // timeout: 60000, // ⏱️ 15 seconds timeout for slow responses
   };
 };
 
 // ✅ 1. Create diabetic profile
 export const createDiabeticProfile = async (formData) => {
   const response = await axios.post(
-    `${BASE_URL}/create/`,
+    `${BASE_URL}/`,
     formData,
     getAuthHeaders()
   );

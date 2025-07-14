@@ -1,5 +1,53 @@
 import React, { useState } from 'react';
 import { Calculator, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+// Data for BMI categories
+const bmiCategories = [
+  {
+    name: 'Underweight',
+    range: '< 18.5',
+    colorClasses: {
+      bg: 'bg-blue-100',
+      border: 'border-blue-300',
+      text: 'text-blue-600',
+    },
+  },
+  {
+    name: 'Normal',
+    range: '18.5 - 24.9',
+    colorClasses: {
+      bg: 'bg-green-100',
+      border: 'border-green-300',
+      text: 'text-green-600',
+    },
+  },
+  {
+    name: 'Overweight',
+    range: '25 - 29.9',
+    colorClasses: {
+      bg: 'bg-orange-100',
+      border: 'border-orange-300',
+      text: 'text-orange-600',
+    },
+  },
+  {
+    name: 'Obese',
+    range: '> 30',
+    colorClasses: {
+      bg: 'bg-red-100',
+      border: 'border-red-300',
+      text: 'text-red-600',
+    },
+  },
+];
+
+const getBMICategory = (bmiValue) => {
+  if (bmiValue < 18.5) return bmiCategories[0];
+  if (bmiValue < 25) return bmiCategories[1];
+  if (bmiValue < 30) return bmiCategories[2];
+  return bmiCategories[3];
+};
 
 export default function BMICalculator() {
   const [gender, setGender] = useState('Male');
@@ -11,123 +59,120 @@ export default function BMICalculator() {
   const [bmi, setBmi] = useState(null);
 
   const calculateBMI = () => {
-    if (feet && inches && weight) {
-      const totalInches = parseInt(feet) * 12 + parseInt(inches);
+    const numFeet = parseInt(feet);
+    const numInches = parseInt(inches);
+    const numWeight = parseFloat(weight);
+
+    if (!isNaN(numFeet) && !isNaN(numInches) && !isNaN(numWeight) && numWeight > 0) {
+      const totalInches = numFeet * 12 + numInches;
       const heightInMeters = totalInches * 0.0254;
-      
-      const weightInKg = weightUnit === 'lbs' 
-        ? parseFloat(weight) * 0.453592 
-        : parseFloat(weight);
-      
+
+      if (heightInMeters === 0) return;
+
+      const weightInKg =
+        weightUnit === 'lbs'
+          ? numWeight * 0.453592
+          : numWeight;
+
       const bmiValue = weightInKg / (heightInMeters * heightInMeters);
       setBmi(bmiValue.toFixed(1));
     }
   };
 
-  const getBMICategory = (bmiValue) => {
-    if (bmiValue < 18.5) return { category: 'Underweight', color: 'text-blue-600', range: '< 18.5' };
-    if (bmiValue < 25) return { category: 'Normal', color: 'text-green-600', range: '18.5 - 24.9' };
-    if (bmiValue < 30) return { category: 'Overweight', color: 'text-orange-600', range: '25 - 29.9' };
-    return { category: 'Obese', color: 'text-red-600', range: '> 30' };
-  };
-
   const bmiInfo = bmi ? getBMICategory(parseFloat(bmi)) : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <Calculator className="w-8 h-8 text-green-600" />
+    <div className="min-h-screen bg-gradient-to-r to-blue-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-10"
+        >
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-orange-100 rounded-full shadow-lg mb-4">
+            {/* --- MODIFIED: Brighter icon color --- */}
+            <Calculator className="w-7 h-7 text-orange-500" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">BMI Calculator</h1>
-          <p className="text-gray-600">Calculate your Body Mass Index and track your health progress</p>
-        </div>
+          {/* --- MODIFIED: Brighter heading color --- */}
+          <h1 className="text-3xl font-bold text-orange-500 mb-2 tracking-tight">BMI Calculator</h1>
+          <p className="text-gray-600">Know your body mass index and stay fit</p>
+        </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">Enter Your Details</h2>
-            
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Gender</label>
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="bg-white border border-orange-100 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300"
+          >
+            {/* --- MODIFIED: Brighter heading color --- */}
+            <h2 className="text-xl font-semibold text-orange-500 mb-5">Enter Your Details</h2>
+
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-orange-600 mb-2">Gender</label>
               <div className="flex gap-4">
-                <button
-                  onClick={() => setGender('Male')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors ${
-                    gender === 'Male'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-3 h-3 rounded-full ${gender === 'Male' ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                  Male
-                </button>
-                <button
-                  onClick={() => setGender('Female')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors ${
-                    gender === 'Female'
-                      ? 'border-pink-500 bg-pink-50 text-pink-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-3 h-3 rounded-full ${gender === 'Female' ? 'bg-pink-500' : 'bg-gray-300'}`}></div>
-                  Female
-                </button>
+                {['Male', 'Female'].map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setGender(g)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all duration-200 ease-in-out ${
+                      gender === g ? 'border-orange-500 bg-orange-100 text-orange-700 scale-105' : 'border-gray-200 hover:border-orange-300 hover:scale-105'
+                    }`}
+                  >
+                    <div className={`w-2.5 h-2.5 rounded-full ${gender === g ? 'bg-orange-500' : 'bg-gray-300'}`}></div>
+                    {g}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-orange-600 mb-2">Age</label>
               <input
                 type="number"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 placeholder="Enter your age"
               />
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Height</label>
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-orange-600 mb-2">Height</label>
               <div className="flex gap-3">
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={feet}
-                    onChange={(e) => setFeet(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="ft"
-                  />
-                </div>
-                <div className="flex-1">
-                  <select
-                    value={inches}
-                    onChange={(e) => setInches(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">in</option>
-                    {[...Array(12)].map((_, i) => (
-                      <option key={i} value={i}>{i} in</option>
-                    ))}
-                  </select>
-                </div>
+                <input
+                  type="number"
+                  value={feet}
+                  onChange={(e) => setFeet(e.target.value)}
+                  className="w-1/2 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  placeholder="Feet"
+                />
+                <select
+                  value={inches}
+                  onChange={(e) => setInches(e.target.value)}
+                  className="w-1/2 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                >
+                  <option value="">Inches</option>
+                  {[...Array(12)].map((_, i) => (<option key={i} value={i}>{i} in</option>))}
+                </select>
               </div>
             </div>
 
-            <div className="mb-8">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Weight</label>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-orange-600 mb-2">Weight</label>
               <div className="flex gap-3">
                 <input
                   type="number"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-3/4 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   placeholder="Enter weight"
                 />
-                <select 
+                <select
                   value={weightUnit}
                   onChange={(e) => setWeightUnit(e.target.value)}
-                  className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-1/4 px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 >
                   <option value="lbs">lbs</option>
                   <option value="kg">kg</option>
@@ -135,88 +180,70 @@ export default function BMICalculator() {
               </div>
             </div>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={calculateBMI}
-              disabled={!feet || !inches || !weight}
-              className="w-full bg-gradient-to-r from-green-500 to-orange-500 text-white font-semibold py-4 rounded-lg hover:from-green-600 hover:to-orange-600 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              disabled={!feet || inches === '' || !weight}
+              className="w-full bg-orange-500 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Calculate BMI
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6">Your BMI Result</h2>
-            
-            <div className="text-center mb-8">
-              <div className="text-6xl font-bold text-green-600 mb-2">
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="bg-white border border-orange-100 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300"
+          >
+            {/* --- MODIFIED: Brighter heading color --- */}
+            <h2 className="text-xl font-semibold text-orange-500 mb-5">Your BMI Result</h2>
+
+            <div className="text-center mb-6">
+              {/* --- MODIFIED: Brighter result color --- */}
+              <div className="text-5xl font-bold text-orange-500 mb-1 tracking-tight">
                 {bmi || '--'}
               </div>
               <div className="text-sm text-gray-500">BMI</div>
-              {bmi && bmiInfo && (
-                <div className={`mt-2 text-lg font-semibold ${bmiInfo.color}`}>
-                  {bmiInfo.category}
-                </div>
+              {bmiInfo && (
+                <div className={`mt-2 text-lg font-semibold ${bmiInfo.colorClasses.text}`}>{bmiInfo.name}</div>
               )}
             </div>
 
-            <div className="space-y-3 mb-8">
-              <h3 className="font-semibold text-gray-700 mb-4">BMI Categories</h3>
-              
-              <div className={`flex justify-between items-center p-3 rounded-lg ${bmiInfo?.category === 'Underweight' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}`}>
-                <span className="text-blue-600">Underweight</span>
-                <span className="text-sm text-gray-500">&lt; 18.5</span>
-              </div>
-              
-              <div className={`flex justify-between items-center p-3 rounded-lg ${bmiInfo?.category === 'Normal' ? 'bg-green-50 border border-green-200' : 'bg-gray-50'}`}>
-                <span className="text-green-600">Normal</span>
-                <span className="text-sm text-gray-500">18.5 - 24.9</span>
-              </div>
-              
-              <div className={`flex justify-between items-center p-3 rounded-lg ${bmiInfo?.category === 'Overweight' ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50'}`}>
-                <span className="text-orange-600">Overweight</span>
-                <span className="text-sm text-gray-500">25 - 29.9</span>
-              </div>
-              
-              <div className={`flex justify-between items-center p-3 rounded-lg ${bmiInfo?.category === 'Obese' ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}>
-                <span className="text-red-600">Obese</span>
-                <span className="text-sm text-gray-500">&gt; 30</span>
-              </div>
+            <div className="space-y-3 mb-6">
+              {/* --- MODIFIED: Brighter heading color --- */}
+              <h3 className="font-semibold text-orange-500 mb-3">BMI Categories</h3>
+              {bmiCategories.map((item) => (
+                <div
+                  key={item.name}
+                  className={`flex justify-between items-center p-3 rounded-lg transition-all ${
+                    bmiInfo?.name === item.name ? `${item.colorClasses.bg} ${item.colorClasses.border} border` : 'bg-gray-50'
+                  }`}
+                >
+                  <span className={`${bmiInfo?.name === item.name ? bmiInfo.colorClasses.text : 'text-gray-700'} font-medium text-sm`}>{item.name}</span>
+                  <span className="text-sm text-gray-600">{item.range}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="bg-green-50 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-gray-700 mb-3">Health Tips</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Maintain a balanced diet with proper nutrition</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Regular physical activity is essential</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Stay hydrated throughout the day</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span>Consult healthcare professionals for guidance</span>
-                </div>
+            <div className="bg-orange-50 rounded-xl p-4 shadow-inner">
+              {/* --- MODIFIED: Brighter heading color --- */}
+              <h3 className="font-semibold text-orange-500 mb-3">Health Tips</h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                {[
+                  'Maintain a balanced diet with proper nutrition',
+                  'Regular physical activity is essential',
+                  'Stay hydrated throughout the day',
+                  'Consult healthcare professionals for guidance'
+                ].map((tip, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                    <span>{tip}</span>
+                  </div>
+                ))}
               </div>
             </div>
-
-            {/* <div className="flex gap-3">
-              <button className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors">
-                📊 View History
-              </button>
-              <button className="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors">
-                💾 Save Result
-              </button>
-              <button className="flex-1 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors">
-                📤 Share
-              </button>
-            </div> */}
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

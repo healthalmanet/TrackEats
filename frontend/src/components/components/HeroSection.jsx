@@ -112,7 +112,7 @@ text-[#263238] pt-16 pb-28 px-6 md:px-10 lg:px-12">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Calories Card */}
-            <div className="bg-[#FFFDF9] p-5 rounded-2xl border border-[#F4511E] shadow-xl hover:shadow-orange-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
+            <div className="bg-[#FFFDF9] p-5 rounded-2xl  shadow-xl hover:shadow-gray-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
               <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
                 <Flame size={18} />
               </div>
@@ -127,7 +127,7 @@ text-[#263238] pt-16 pb-28 px-6 md:px-10 lg:px-12">
             </div>
 
             {/* Water Card */}
-            <div className="bg-[#FFFDF9] p-5 rounded-2xl border border-[#F4511E] shadow-xl hover:shadow-orange-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
+            <div className="bg-[#FFFDF9] p-5 rounded-2xl  shadow-xl hover:shadow-gray-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
               <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
                 <Droplet size={18} />
               </div>
@@ -146,7 +146,7 @@ text-[#263238] pt-16 pb-28 px-6 md:px-10 lg:px-12">
             </div>
 
             {/* Weight Card */}
-            <div className="bg-[#FFFDF9] p-5 rounded-2xl border border-[#F4511E] shadow-xl hover:shadow-orange-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
+            <div className="bg-[#FFFDF9] p-5 rounded-2xl  shadow-xl hover:shadow-gray-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
               <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
                 <Weight size={18} />
               </div>

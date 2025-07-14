@@ -1,5 +1,7 @@
 from django.urls import path
 
+from diet import views
+
 from .views import (
     
 AllAssignedDietPlansListView,
@@ -7,6 +9,7 @@ ApproveOrRejectDietView,
 AssignPatientAPIView,
 AssignedPatientsView,
 EditDietPlanView,
+GeneratePlanForPatientView,
 NutritionistCreatePatientView,
 NutritionistPatientDietRecommendationsView,
 PatientMealLogView,
@@ -53,6 +56,9 @@ urlpatterns = [
 
     #TO create a new patient profile by nutritionist
     path("nutritionist/create-patient/", NutritionistCreatePatientView.as_view(), name="nutritionist-create-patient"),
+
+    #GENERATE PLAN
+    path('patients/<int:patient_id>/generate-plan/', GeneratePlanForPatientView.as_view(), name='nutritionist-generate-patient-plan'),
     
   
 ]

@@ -44,22 +44,22 @@ class FoodItem(models.Model):
     vitamin_b12_mcg = models.FloatField(null=True, blank=True, verbose_name="Vitamin B12 (mcg)")
     
     # --- Classification & Suitability ---
-    FOOD_TYPE_CHOICES = [("vegetarian", "Vegetarian"), ("non_vegetarian", "Non-Vegetarian"), ("eggetarian", "Eggetarian"), ("vegan", "Vegan"), ("other", "Other")]
+    FOOD_TYPE_CHOICES = [("Vegetarian", "Vegetarian"), ("Non-Vegetarian", "Non-Vegetarian"), ("Eggetarian", "Eggetarian"), ("Vegan", "Vegan"), ("Other", "Other")]
     food_type = models.CharField(max_length=20, choices=FOOD_TYPE_CHOICES, default="other")
     
     MEAL_TYPE_CHOICES = [
-    ("early_morning", "Early-Morning"),
-    ("breakfast", "Breakfast"),
-    ("morning_snack", "Mid-Morning Snack"),
-    ("lunch", "Lunch"),
-    ("afternoon_snack", "Afternoon Snack"),
-    ("dinner", "Dinner"),
-    ("bedtime", "Bedtime"),
+    ("Early-Morning", "Early-Morning"),
+    ("Breakfast", "Breakfast"),
+    ("Mid-Morning Snack", "Mid-Morning Snack"),
+    ("Lunch", "Lunch"),
+    ("Afternoon Snack", "Afternoon Snack"),
+    ("Dinner", "Dinner"),
+    ("Bedtime", "Bedtime"),
 ]
 
     meal_type = ArrayField(models.CharField(max_length=20, choices=MEAL_TYPE_CHOICES), default=list, help_text="Suitable for which meals?")
 
-    LEVEL_CHOICES = [("low", "Low"), ("medium", "Medium"), ("high", "High"), ("none", "None")]
+    LEVEL_CHOICES = [("Low", "Low"), ("Medium", "Medium"), ("High", "High"),("Moderate","Moderate"), ("Mild","Mild"), ("None", "None")]
     fodmap_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="low", verbose_name="FODMAP Level")
     spice_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="low", verbose_name="Spice Level")
     purine_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="low", verbose_name="Purine Level")
@@ -75,22 +75,25 @@ class FoodItem(models.Model):
 
 class UserMeal(models.Model):
     UNIT_CHOICES = [
-        ("g", "Grams"), ("kg", "Kilograms"),
-        ("ml", "Milliliters"), ("l", "Liters"),
-        ("cup", "Cup"), ("bowl", "Bowl"),
-        ("piece", "Piece"), ("tbsp", "Tablespoon"),
-        ("tsp", "Teaspoon"), ("slice", "Slice"),
-        ("other", "Other"),
+        ("Gram", "Gram"), ("Kilogram", "Kilogram"),
+        ("Milliliters", "Milliliters"), ("Liters", "Liters"),
+        ("Cup", "Cup"), ("Bowl", "Bowl"),
+        ("Piece", "Piece"), ("Tbsp", "Tablespoon"),
+        ("Tsp", "Teaspoon"), ("Slice", "Slice"),
+        ("Plate", "Plate"),
+        ("Handful", "Handful"), ("Pinch", "Pinch"),
+        ("Dash", "Dash"), ("Sprinkle", "Sprinkle"),
+        ("Other", "Other"),
     ]
 
     MEAL_CHOICES = [
-        ("early_morning", "Early-Morning"),
-        ("breakfast", "Breakfast"),
-        ("morning_snack", "Morning Snack"),
-        ("lunch", "Lunch"),
-        ("evening_snack", "Evening Snack"),
-        ("dinner", "Dinner"),
-        ("post_dinner", "Post-Dinner / Bedtime"),
+       ("Early-Morning", "Early-Morning"),
+       ("Breakfast", "Breakfast"),
+       ("Mid-Morning Snack", "Mid-Morning Snack"),
+       ("Lunch", "Lunch"),
+       ("Afternoon Snack", "Afternoon Snack"),
+       ("Dinner", "Dinner"),
+       ("Bedtime", "Bedtime"),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -98,7 +101,7 @@ class UserMeal(models.Model):
     food_name = models.CharField(max_length=100, blank=True, null=True)
 
     quantity = models.FloatField()
-    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default="g")
+    unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default="Gram")
     meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
 
     consumed_at = models.DateTimeField(blank=True, null=True)

@@ -19,8 +19,8 @@ const Dashboard = () => {
         const response = await getAssignedPatients();
         const data = response?.data;
 
-        if (Array.isArray(data)) {
-          setPatients(data);
+        if (Array.isArray(data?.results)) {
+          setPatients(data.results);
         } else {
           console.error("Unexpected response format:", data);
         }
@@ -71,6 +71,26 @@ const Dashboard = () => {
     setMeals([]);
   };
 
+  const groupMealsByDateAndType = () => {
+    const grouped = {};
+
+    meals.forEach((meal) => {
+      const date = meal.date;
+      const mealType = meal.meal_type;
+
+      if (!grouped[date]) {
+        grouped[date] = {};
+      }
+      if (!grouped[date][mealType]) {
+        grouped[date][mealType] = [];
+      }
+
+      grouped[date][mealType].push(meal);
+    });
+
+    return grouped;
+  };
+
   return (
     <div className="pl-20 pt-23 relative min-h-screen">
       <div>
@@ -100,7 +120,6 @@ const Dashboard = () => {
                   <p className="text-sm font-semibold text-gray-600">{patient.email}</p>
                   <p className="text-xs text-gray-400">
                     ID: #{patient.id?.toString().padStart(5, "0")} 
-                    
                   </p>
                 </div>
               </div>
@@ -127,9 +146,7 @@ const Dashboard = () => {
       {/* Profile Modal */}
       {showModal && selectedPatientProfile && (
         <div className="fixed inset-0 backdrop-blur-md bg-black/10 flex items-center justify-center z-50">
-
-          <div className="bg-white rounded-xl pt-10 px-6 pb-6 w-[90%] max-w-lg shadow-lg relative">
-
+          <div className="bg-white rounded-xl pt-10 px-6 pb-6 w-[90%] max-w-3xl shadow-lg relative">
             <button
               onClick={closeModal}
               className="absolute top-3 right-4 text-gray-500 hover:text-gray-700 text-xl z-10"
@@ -148,32 +165,50 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="overflow-y-auto max-h-[70vh] pr-1 space-y-4">
-              {selectedPatientProfile.user_profile && (
+            <div className="overflow-y-auto max-h-[70vh] pr-1 space-y-6">
+              {selectedPatientProfile.profile && (
                 <div>
-                  <h4 className="font-semibold text-gray-700 mb-2">Basic Info</h4>
-                  <div className="space-y-1 font-semibold text-sm text-gray-600">
-                    <p>Age: {selectedPatientProfile.user_profile.age}</p>
-                    <p>Height: {selectedPatientProfile.user_profile.height} cm</p>
-                    <p>Weight: {selectedPatientProfile.user_profile.weight} kg</p>
-                    <p>Activity Level: {selectedPatientProfile.user_profile.activity_level}</p>
-                    <p>Health Conditions: {selectedPatientProfile.user_profile.health_conditions?.join(", ") || "None"}</p>
+                  <h4 className="font-semibold text-red-700 mb-3">Basic Info</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm font-medium text-gray-600">
+                    <div>Date of Birth: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.date_of_birth}</span></div>
+                    <div>Gender: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.gender}</span></div>
+                    <div>Occupation: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.occupation}</span></div>
+                    <div>Height: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.height_cm} cm</span></div>
+                    <div>Weight: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.weight_kg} kg</span></div>
+                    <div>BMI: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.bmi}</span></div>
+                    <div>Activity Level: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.activity_level}</span></div>
+                    <div>Goal: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.goal}</span></div>
+                    <div>Diet Type: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.diet_type}</span></div>
+                    <div>Allergies: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.allergies || "None"}</span></div>
+                    <div>Chronic Conditions: 
+                      <span className="font-semibold text-gray-800">
+                        {[selectedPatientProfile.profile.is_diabetic && "Diabetes",
+                          selectedPatientProfile.profile.is_hypertensive && "Hypertension",
+                          selectedPatientProfile.profile.has_heart_condition && "Heart Issue",
+                          selectedPatientProfile.profile.has_thyroid_disorder && "Thyroid",
+                          selectedPatientProfile.profile.has_arthritis && "Arthritis",
+                          selectedPatientProfile.profile.has_gastric_issues && "Gastric",
+                          selectedPatientProfile.profile.other_chronic_condition,]
+                          .filter(Boolean)
+                          .join(", ") || "None"}
+                      </span>
+                    </div>
+                    <div>Family History: <span className="font-semibold text-gray-800">{selectedPatientProfile.profile.family_history || "None"}</span></div>
                   </div>
                 </div>
               )}
 
-              {selectedPatientProfile.diabetic_profiles?.length > 0 && (
+              {selectedPatientProfile.latest_lab_report && (
                 <div>
-                  <h4 className="font-semibold text-gray-700 mb-2">Diabetic Profiles</h4>
-                  {selectedPatientProfile.diabetic_profiles.map((profile, index) => (
-                    <div key={index} className="bg-purple-50 p-3 rounded-lg mb-2 border border-purple-100">
-                      <p className="text-sm text-gray-600">HbA1c: {profile.hba1c}</p>
-                      <p className="text-sm text-gray-600">Fasting Blood Sugar: {profile.fasting_blood_sugar}</p>
-                      <p className="text-sm text-gray-600">Diabetes Type: {profile.diabetes_type}</p>
-                      <p className="text-sm text-gray-600">Total Cholesterol: {profile.total_cholesterol}</p>
-                      <p className="text-sm text-gray-600">Medications: {profile.medications}</p>
-                    </div>
-                  ))}
+                  <h4 className="font-semibold text-red-700 mb-3">Latest Lab Report</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm font-medium text-gray-600">
+                    {Object.entries(selectedPatientProfile.latest_lab_report).map(([key, value]) => (
+                      <div key={key}>
+                        <span className="capitalize">{key.replace(/_/g, " ")}:</span>{" "}
+                        <span className="font-semibold text-gray-800">{value || "N/A"}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -184,8 +219,7 @@ const Dashboard = () => {
       {/* Meals Modal */}
       {showMealsModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-[6px] flex items-center justify-center z-50">
-
-          <div className="bg-white rounded-xl pt-10 px-6 pb-6 w-[90%] max-w-lg shadow-lg relative">
+          <div className="bg-white rounded-xl pt-10 px-6 pb-6 w-[90%] max-w-3xl shadow-lg relative">
             <button
               onClick={closeMealsModal}
               className="absolute top-3 right-4 text-gray-500 hover:text-gray-700 text-xl z-10"
@@ -202,31 +236,31 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="overflow-y-auto max-h-[70vh] pr-1 space-y-3">
-              {meals.length === 0 ? (
-                <p className="text-sm text-gray-500">No meals found for this user.</p>
-              ) : (
-                meals.map((meal, index) => {
-                  const colors = [
-                    "bg-green-50 border-green-100",
-                    "bg-yellow-50 border-yellow-100",
-                    "bg-blue-50 border-blue-100",
-                    "bg-pink-50 border-pink-100",
-                    "bg-indigo-50 border-indigo-100",
-                  ];
-                  const color = colors[index % colors.length];
-
-                  return (
-                    <div key={index} className={`p-3 font-semibold rounded-md border ${color} text-sm text-gray-700`}>
-                      <p>Type: {meal.meal_type}</p>
-                      <p>Food: {meal.food}</p>
-                      <p>Calories: {meal.calories} kcal</p>
-                      <p>Date: {meal.date}</p>
-                      <p>Time: {meal.time}</p>
-                    </div>
-                  );
-                })
-              )}
+            <div className="overflow-y-auto max-h-[70vh] pr-1 space-y-6 text-sm text-gray-700 font-medium">
+              {Object.entries(groupMealsByDateAndType())
+                .sort((a, b) => new Date(b[0]) - new Date(a[0])) // latest date first
+                .map(([date, mealTypes]) => (
+                  <div key={date}>
+                    <h4 className="text-base font-semibold text-gray-800 mb-2 border-b pb-1">{new Date(date).toDateString()}</h4>
+                    {Object.entries(mealTypes).map(([mealType, items]) => (
+                      <div key={mealType} className="mb-4 ml-2">
+                        <h5 className="text-sm font-bold text-blue-700 mb-1">{mealType}</h5>
+                        <div className="space-y-2">
+                          {items.map((meal, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-blue-50 border border-blue-100 rounded-md px-3 py-2"
+                            >
+                              <p>🍽 <strong>{meal.food_item_name}</strong></p>
+                              <p>Calories: {meal.calories} kcal</p>
+                              <p>Time: {new Date(meal.consumed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
             </div>
           </div>
         </div>

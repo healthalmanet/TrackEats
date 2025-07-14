@@ -6,19 +6,22 @@ const BASE_URL = 'https://trackeats.onrender.com/api/logmeals';
 const createAxiosInstance = (token) =>
   axios.create({
     baseURL: BASE_URL,
-    timeout: 60000, // ⏱️ 15 seconds timeout
+    timeout: 60000, // ⏱️ 60 seconds timeout
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
   });
 
+// ✅ CORRECTED: This function now includes the date and time fields.
 const formatMealData = (meal) => ({
   food_name: meal.food_name,
   quantity: meal.quantity,
   unit: meal.unit,
   meal_type: meal.meal_type,
   remarks: meal.remarks,
+  date: meal.date, // Added
+  consumed_at: meal.consumed_at, // Added
 });
 
 // ✅ Get meals (paginated), with forced HTTPS on pagination URLs
@@ -35,7 +38,7 @@ export const getMeals = async (token, url = null) => {
 
     const response = await axios.get(finalUrl, {
       headers,
-      timeout: 30000, // ⏱️ Added timeout here
+      timeout: 30000,
     });
     return response.data;
   } catch (error) {
@@ -48,13 +51,19 @@ export const getMeals = async (token, url = null) => {
 export const createMeal = async (mealData, token) => {
   try {
     const axiosInstance = createAxiosInstance(token);
-    const response = await axiosInstance.post('/', formatMealData(mealData));
+
+    // The request should be to the root endpoint '/' of the baseURL.
+    // The baseURL is already '.../api/logmeals'.
+    const response = await axiosInstance.post('/', mealData);
+
     return response.data;
   } catch (error) {
-    console.error('❌ Error creating meal:', error.response?.data || error.message);
+    // This will now log more useful backend errors if they occur
+    console.error('❌ Error creating meal:', error.response?.data);
     throw error;
   }
 };
+
 
 // ✅ Full update of a meal
 export const updateMeal = async (mealId, updatedMealData, token) => {
@@ -107,4 +116,3 @@ export const getMealsByDate = async (token, date) => {
     throw error;
   }
 };
-

@@ -95,4 +95,30 @@ export const createUserPatient = async (userData) => {
   return response; // or `return response.data;` if you want to simplify usage
 };
 
+// --- Separate Axios for non-nutritionist base URL ---
+const generalAxios = axios.create({
+  baseURL: "https://trackeats.onrender.com/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Attach auth token to the generalAxios requests too
+generalAxios.interceptors.request.use((config) => {
+  const token = getToken(); // Reuse your tokenService method
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// --- Generate Diet Plan (Different base URL) ---
+export const generateDietPlan = async (patientId) => {
+  await delay(500);
+  return generalAxios.post(`/patients/${patientId}/generate-plan/`);
+};
+
+
+
+
 

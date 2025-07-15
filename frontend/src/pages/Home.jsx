@@ -134,13 +134,13 @@ return (
         <div className="flex flex-wrap gap-4 mt-4">
           <button
             onClick={openRegister}
-            className="bg-[#FF6B3D] hover:bg-[#e85c2a] text-white px-5 py-2.5 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+            className="bg-[#FF6B3D] animate-bounce hover:bg-[#e85c2a] text-white px-5 py-2.5 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
           >
             Get Started
           </button>
           <button
             onClick={openLogin}
-            className="border border-[#FF6B3D] text-[#FF6B3D] hover:shadow-lg hover:scale-105 hover:bg-[#FFF1EB] px-5 py-2.5 rounded-full font-semibold transition duration-300"
+            className="border animate-bounce border-[#FF6B3D] text-[#FF6B3D] hover:shadow-lg hover:scale-105 hover:bg-[#FFF1EB] px-5 py-2.5 rounded-full font-semibold transition duration-300"
           >
             Login
           </button>

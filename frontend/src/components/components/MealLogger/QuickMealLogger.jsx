@@ -59,7 +59,8 @@ const QuickMealLogger = ({ onMealLogged }) => {
         </div>
 
         {/* The original 2-column layout is preserved */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative overflow-visible z-10">
+
           
           {/* Form Card: Redesigned with the light beige tint and theme effects */}
           <form
@@ -199,40 +200,46 @@ const QuickMealLogger = ({ onMealLogged }) => {
                 No meals logged yet.
               </div>
             ) : (
-              <ul className="space-y-3">
-                {loggedMeals.map((meal) => (
-                  <li
-                    key={meal._id}
-                    className="relative group flex items-center justify-between p-4 rounded-xl border border-[#ECEFF1] bg-white shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:border-[#FF7043]/50 hover:-translate-y-px"
-                  >
-                     <div className="flex items-center gap-4 overflow-hidden">
-                       <div className="bg-[#FFEDD5] p-3 rounded-full text-[#F4511E] text-xl flex-shrink-0">
-                         <FaUtensils />
-                       </div>
-                       <div className="truncate">
-  <p className="font-semibold text-[#FF7043] truncate">{meal.food_name}</p>
-  <p className="text-sm text-[#546E7A] capitalize">{meal.meal_type || 'Meal'} • {meal.quantity} {meal.unit}</p>
-  {meal.remarks && (
-    <p className="text-xs italic text-[#F4511E] truncate">“{meal.remarks}”</p>
-  )}
-</div>
+              <ul className="space-y-3 relative overflow-visible z-10">
 
-                    </div>
-                    <button
-                      onClick={() => handleDeleteMeal(meal._id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors p-2 flex-shrink-0"
-                    >
-                      <FaTrash size={14} />
-                    </button>
-                    <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 w-72 opacity-0 group-hover:opacity-100 transition duration-200 z-20 pointer-events-none">
-                      <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-xl p-4 text-sm">
-                        <h4 className="font-bold mb-1 text-[#263238] font-['Poppins']">{meal.food_name}</h4>
-                        <p className="text-[#546E7A] capitalize"><span className="font-semibold">{meal.quantity} {meal.unit}</span> • {meal.meal_type}</p>
-                        <p className="text-gray-500 mt-1">📅 {meal.date} at {meal.consumed_at}</p>
-                        {meal.remark && <p className="mt-2 italic text-sm text-[#F4511E]">“{meal.remark}”</p>}
-                      </div>
-                    </div>
-                  </li>
+                {loggedMeals.map((meal) => (
+                 <li
+  key={meal._id}
+  className="relative group z-50 flex items-center justify-between p-4 rounded-xl border border-[#ECEFF1] bg-white shadow-sm transition-all duration-300 ease-in-out hover:shadow-md hover:border-[#FF7043]/50 hover:-translate-y-px"
+>
+  <div className="flex items-center gap-4 overflow-hidden">
+    <div className="bg-[#FFEDD5] p-3 rounded-full text-[#F4511E] text-xl flex-shrink-0">
+      <FaUtensils />
+    </div>
+    <div className="truncate">
+      <p className="font-semibold text-[#FF7043] truncate">{meal.food_name}</p>
+      <p className="text-sm text-[#546E7A] capitalize">{meal.meal_type || 'Meal'} • {meal.quantity} {meal.unit}</p>
+      {meal.remarks && (
+        <p className="text-xs italic text-[#F4511E] truncate">“{meal.remarks}”</p>
+      )}
+    </div>
+  </div>
+
+  <button
+    onClick={() => handleDeleteMeal(meal._id)}
+    className="text-gray-400 hover:text-red-500 transition-colors p-2 flex-shrink-0"
+  >
+    <FaTrash size={14} />
+  </button>
+
+  {/* ✅ HOVER CARD FIXED WITH z-[999] and pointer-events-auto */}
+  <div className="absolute z-[999] left-1/2 -translate-x-1/2 top-full mt-2 w-72 opacity-0 group-hover:opacity-100 transition duration-200 pointer-events-auto">
+    <div className="bg-white border border-[#ECEFF1] rounded-lg shadow-2xl p-4 text-sm">
+      <h4 className="font-bold mb-1 text-[#263238] font-['Poppins']">{meal.food_name}</h4>
+      <p className="text-[#546E7A] capitalize">
+        <span className="font-semibold">{meal.quantity} {meal.unit}</span> • {meal.meal_type}
+      </p>
+      <p className="text-gray-500 mt-1">📅 {meal.date} at {meal.consumed_at}</p>
+      {meal.remark && <p className="mt-2 italic text-sm text-[#F4511E]">“{meal.remark}”</p>}
+    </div>
+  </div>
+</li>
+
                 ))}
               </ul>
             )}

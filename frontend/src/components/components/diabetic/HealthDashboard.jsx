@@ -45,26 +45,39 @@ const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-US', { 
 
 
 // --- UI SUB-COMPONENTS ---
-const KeyMetricsOverview = ({ latestReport }) => {
-    console.log("🧩 Props in KeyMetricsOverview:", latestReport);
 
+
+
+
+  const KeyMetricsOverview = ({ latestReport, activeView }) => {
   if (!latestReport) return null;
- 
 
-  const metricKeys = [
-    { key: 'blood_pressure', label: 'Blood Pressure', unit: 'mmHg', icon: <FaHeartbeat /> },
-    { key: 'hba1c', label: 'HbA1c', unit: '%', icon: <FaTint /> },
-    { key: 'ldl_cholesterol', label: 'LDL Cholesterol', unit: 'mg/dL', icon: <FaHeartbeat /> },
-    { key: 'tsh', label: 'TSH', unit: 'mU/L', icon: <FaShieldAlt /> },
-    { key: 'fasting_blood_sugar', label: 'Fasting Sugar', unit: 'mg/dL', icon: <FaTint /> },
-    { key: 'triglycerides', label: 'Triglycerides', unit: 'mg/dL', icon: <FaHeartbeat /> },
-  ];
+  const metricCategories = {
+    diabetes: [
+      { key: 'fasting_blood_sugar', label: 'Fasting Sugar', unit: 'mg/dL', icon: <FaTint /> },
+      { key: 'postprandial_sugar', label: 'Post-Meal Sugar', unit: 'mg/dL', icon: <FaTint /> },
+      { key: 'hba1c', label: 'HbA1c', unit: '%', icon: <FaTint /> }
+    ],
+    thyroid: [
+      { key: 'tsh', label: 'TSH', unit: 'mU/L', icon: <FaShieldAlt /> }
+    ],
+    heart: [
+      { key: 'ldl_cholesterol', label: 'LDL Cholesterol', unit: 'mg/dL', icon: <FaHeartbeat /> },
+      { key: 'hdl_cholesterol', label: 'HDL Cholesterol', unit: 'mg/dL', icon: <FaHeartbeat /> },
+      { key: 'triglycerides', label: 'Triglycerides', unit: 'mg/dL', icon: <FaHeartbeat /> }
+    ],
+    hypertension: [
+      { key: 'blood_pressure', label: 'Blood Pressure', unit: 'mmHg', icon: <FaHeartbeat /> }
+    ]
+  };
+
+  const metrics = metricCategories[activeView] || [];
 
   return (
     <div className="mb-10">
       <h2 className="text-xl font-bold text-gray-700 font-['Poppins'] mb-4">Latest Snapshot</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {metricKeys.map((metric, index) => {
+        {metrics.map((metric, index) => {
           const value = metric.key === 'blood_pressure'
             ? `${latestReport.blood_pressure_systolic}/${latestReport.blood_pressure_diastolic}`
             : latestReport[metric.key];
@@ -110,6 +123,7 @@ const KeyMetricsOverview = ({ latestReport }) => {
     </div>
   );
 };
+
 
 
 const ChartContainer = ({ title, children }) => (
@@ -343,7 +357,12 @@ const HealthDashboard = () => {
                     <p className="text-[#546E7A] mt-2 text-lg">Your consolidated health report. Track your progress over time.</p>
                 </header>
                 <Navigation />
-               <KeyMetricsOverview key={latestReport?.id || latestReport?.report_date} latestReport={{ ...latestReport }} />
+               <KeyMetricsOverview
+  key={latestReport?.id || latestReport?.report_date}
+  latestReport={{ ...latestReport }}
+  activeView={activeView}
+/>
+
 
 
 

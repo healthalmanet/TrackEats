@@ -1,5 +1,7 @@
-from rest_framework import status, permissions, viewsets
+from rest_framework import status, permissions, viewsets, filters
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+
 from rest_framework.views import APIView
 from .models import UserProfile, LabReport
 from .serializers import UserProfileSerializer, LabReportSerializer
@@ -65,27 +67,16 @@ class LabReportViewSet(viewsets.ModelViewSet):
     """
     A ViewSet for viewing and editing lab reports.
     Provides `list`, `create`, `retrieve`, `update`, `partial_update`, and `destroy` actions.
-    
-    Endpoints will be:
-    - GET /api/lab-reports/ -> List all reports for the user
-    - POST /api/lab-reports/ -> Create a new report
-    - GET /api/lab-reports/{id}/ -> Retrieve a specific report
-    - PUT /api/lab-reports/{id}/ -> Update a specific report
-    - DELETE /api/lab-reports/{id}/ -> Delete a specific report
     """
     serializer_class = LabReportSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ['report_date']
+    search_fields = ['report_date']
+    ordering_fields = ['report_date']
 
     def get_queryset(self):
-        """
-        This view should only return lab reports for the currently
-        authenticated user.
-        """
         return LabReport.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        """
-        Automatically associate the lab report with the logged-in user
-        upon creation.
-        """
         serializer.save(user=self.request.user)

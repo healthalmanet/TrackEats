@@ -33,10 +33,10 @@ import {
   submitFeedbackForML,
   generateDietPlan,
   getPatientMealsByDate,
-  getLabReportByDate,
+  getLabReportByDate
   
 } from "../../../api/nutritionistApi";
-// Removed getLabReportsInRange from imports
+
 
 
 const PatientDetailsPage = () => {

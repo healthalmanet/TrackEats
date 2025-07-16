@@ -119,6 +119,16 @@ export const generateDietPlan = async (patientId) => {
 };
 
 
+// --- Get Meals for a Specific Patient by Date ---
+export const getPatientMealsByDate = async (patientId, date) => {
+  await delay(500);
+  return axiosInstance.get(`/patient/${patientId}/meals/?date=${date}`);
+};
 
+// --- Get Lab Report by Date for a Specific Patient ---
+export const getLabReportByDate = async (patientId, date) => {
+  await delay(500);
+  return axiosInstance.get(`/patients/${patientId}/lab-reports/?report_date=${date}`);
+};
 
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 import {
   createUserPatient,
   getAllUsers,
@@ -14,6 +15,21 @@ import {
   FaTimes,
   FaArrowRight,
 } from "react-icons/fa";
+import toast, { Toaster } from "react-hot-toast";
+
+// --- Reusable Loader Components ---
+const Spinner = ({ size = "w-5 h-5", color = "border-t-white" }) => (
+  <div
+    className={`animate-spin rounded-full border-2 border-white/50 ${color} ${size}`}
+  ></div>
+);
+
+const PageLoader = () => (
+  <div className="flex flex-col items-center justify-center py-20">
+    <div className="w-16 h-16 animate-spin rounded-full border-4 border-t-[#FF7043] border-[#FFEDD5]"></div>
+    <p className="mt-4 text-lg text-[#546E7A]">Loading patients...</p>
+  </div>
+);
 
 const NutritionistDashboard = () => {
   const [patients, setPatients] = useState([]);
@@ -22,6 +38,7 @@ const NutritionistDashboard = () => {
   const [newPatient, setNewPatient] = useState({ lab_report: {} });
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // For form submission
   const [error, setError] = useState(null);
   const perPage = 8;
   const navigate = useNavigate();
@@ -35,12 +52,82 @@ const NutritionistDashboard = () => {
     "#BA68C8",
     "#7986CB",
   ];
+  const countryOptions = [
+    { value: "India", label: "India" },
+    { value: "United States", label: "United States" },
+    { value: "United Kingdom", label: "United Kingdom" },
+    { value: "Canada", label: "Canada" },
+    { value: "Australia", label: "Australia" },
+  ];
+  const activityLevels = [
+    { value: "sedentary", label: "Sedentary (little or no exercise)" },
+    {
+      value: "lightly_active",
+      label: "Lightly Active (light exercise/sports 1-3 days/week)",
+    },
+    {
+      value: "moderately_active",
+      label: "Moderately Active (moderate exercise/sports 3-5 days/week)",
+    },
+    {
+      value: "very_active",
+      label: "Very Active (hard exercise/sports 6-7 days a week)",
+    },
+    {
+      value: "extra_active",
+      label: "Extra Active (very hard exercise/physical job)",
+    },
+  ];
+  const goals = [
+    { value: "lose_weight", label: "Lose Weight" },
+    { value: "maintain", label: "Maintain Weight" },
+    { value: "gain_weight", label: "Gain Weight" },
+  ];
+  const dietTypeOptions = [
+    { value: "vegetarian", label: "Vegetarian" },
+    { value: "non_vegetarian", label: "Non-Vegetarian" },
+    { value: "vegan", label: "Vegan" },
+    { value: "eggetarian", label: "Eggetarian" },
+    { value: "keto", label: "Keto" },
+    { value: "other", label: "Other" },
+  ];
+  const genderOptions = [
+    { value: "male", label: "Male" },
+    { value: "female", label: "Female" },
+    { value: "other", label: "Other" },
+  ];
+  const today = new Date().toISOString().split("T")[0];
+
+  const customSelectStyles = {
+    control: (provided, state) => ({
+      ...provided,
+      backgroundColor: "white",
+      borderColor: state.isFocused ? "#FF7043" : "#ECEFF1",
+      boxShadow: state.isFocused ? "0 0 0 1px #FF7043" : "none",
+      "&:hover": { borderColor: state.isFocused ? "#FF7043" : "#FFC9B6" },
+      borderRadius: "0.5rem",
+      padding: "0.1rem",
+      minHeight: "48px",
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isSelected
+        ? "#FF7043"
+        : state.isFocused
+        ? "#FFF1E8"
+        : "white",
+      color: state.isSelected ? "white" : "#263238",
+      "&:active": { backgroundColor: "#F4511E" },
+      cursor: "pointer",
+    }),
+    placeholder: (provided) => ({ ...provided, color: "#90A4AE" }),
+    singleValue: (provided) => ({ ...provided, color: "#263238" }),
+  };
 
   useEffect(() => {
     fetchAllUsers();
   }, []);
 
-  // --- All original logic and API handlers are completely unchanged ---
   const fetchAllUsers = async () => {
     setIsLoading(true);
     setError(null);
@@ -69,6 +156,7 @@ const NutritionistDashboard = () => {
     } catch (err) {
       console.error("Error loading users", err);
       setError("Failed to load patient data. Please try again later.");
+      toast.error("Could not fetch patient data.");
     } finally {
       setIsLoading(false);
     }
@@ -101,9 +189,11 @@ const NutritionistDashboard = () => {
         })
       );
       setPatients(enhancedSearch);
+      toast.success(`${enhancedSearch.length} patient(s) found.`);
     } catch (err) {
       console.error("Search failed", err);
       setError("Failed to perform search.");
+      toast.error("Search failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -111,15 +201,24 @@ const NutritionistDashboard = () => {
 
   const handleCreatePatient = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    const toastId = toast.loading("Creating new patient...");
+
     try {
       await createUserPatient(newPatient);
-      alert("Patient added successfully!");
+      toast.success("Patient added successfully!", { id: toastId });
       setShowForm(false);
       setNewPatient({ lab_report: {} });
-      fetchAllUsers();
+      fetchAllUsers(); // Refresh the list
     } catch (err) {
       console.error("Failed to create patient", err);
-      alert(`Error: ${err.message || "Failed to create patient."}`);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to create patient.";
+      toast.error(errorMessage, { id: toastId });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -133,7 +232,6 @@ const NutritionistDashboard = () => {
   const handleFormChange = (e, section = null) => {
     const { name, value, type, checked } = e.target;
     const val = type === "checkbox" ? checked : value;
-
     if (section) {
       setNewPatient((prev) => ({
         ...prev,
@@ -146,8 +244,25 @@ const NutritionistDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#FFFDF9]">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#263238",
+            color: "white",
+            fontFamily: "Roboto",
+          },
+          success: {
+            iconTheme: { primary: "#AED581", secondary: "#263238" },
+          },
+          error: {
+            iconTheme: { primary: "#FF7043", secondary: "#263238" },
+          },
+        }}
+      />
       <nav className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 bg-white shadow-md sticky top-0 z-20">
-        <h1 className="text-3xl  font-bold text-[#FF7043] font-['Poppins']">
+        <h1 className="text-3xl font-bold text-[#FF7043] font-['Poppins']">
           TrackEats
         </h1>
         <button
@@ -185,13 +300,12 @@ const NutritionistDashboard = () => {
               />
             </div>
             <button
-  onClick={() => setShowForm(true)}
-  className="whitespace-nowrap w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FF7043] text-white px-5 py-3 rounded-full font-semibold transition-all duration-300 ease-in-out hover:bg-[#F4511E] hover:shadow-lg hover:-translate-y-0.5"
->
-  <FaUserPlus className="text-base" />
-  <span className="text-sm">Add Patient</span>
-</button>
-
+              onClick={() => setShowForm(true)}
+              className="whitespace-nowrap w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FF7043] text-white px-5 py-3 rounded-full font-semibold transition-all duration-300 ease-in-out hover:bg-[#F4511E] hover:shadow-lg hover:-translate-y-0.5"
+            >
+              <FaUserPlus className="text-base" />
+              <span className="text-sm">Add Patient</span>
+            </button>
           </div>
         </header>
 
@@ -200,7 +314,6 @@ const NutritionistDashboard = () => {
             className="fixed inset-0 bg-black/60 z-30 flex items-center justify-center p-4"
             onClick={() => setShowForm(false)}
           >
-            {/* ...Modal logic remains unchanged... */}
             <div
               className="bg-[#FFFDF9] p-6 sm:p-8 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative shadow-2xl"
               onClick={(e) => e.stopPropagation()}
@@ -218,6 +331,7 @@ const NutritionistDashboard = () => {
                 </button>
               </div>
               <form onSubmit={handleCreatePatient}>
+                {/* --- Form sections are unchanged --- */}
                 <div className="mb-6">
                   <h3 className="font-semibold text-lg text-[#263238] font-['Poppins'] border-b-2 border-[#FFEDD5] pb-2 mb-6">
                     Basic & Contact Info
@@ -232,7 +346,7 @@ const NutritionistDashboard = () => {
                             .replace(/_/g, " ")
                             .replace(/\b\w/g, (c) => c.toUpperCase())}
                           onChange={(e) => handleFormChange(e)}
-                          className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
+                          className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50 placeholder:text-[#263238]"
                           type={field === "password" ? "password" : "text"}
                         />
                       )
@@ -241,23 +355,26 @@ const NutritionistDashboard = () => {
                       name="date_of_birth"
                       placeholder="Date of Birth"
                       onChange={(e) => handleFormChange(e)}
-                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
+                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50 placeholder:text-[#263238]"
                       type="text"
+                      max={today}
                       onFocus={(e) => (e.target.type = "date")}
                       onBlur={(e) => (e.target.type = "text")}
                     />
-                    <select
-                      name="country"
-                      onChange={(e) => handleFormChange(e)}
-                      defaultValue=""
-                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
-                    >
-                      <option value="" disabled>
-                        Select Country
-                      </option>
-                      <option value="India">India</option>
-                      <option value="United States">United States</option>
-                    </select>
+                    <Select
+                      styles={customSelectStyles}
+                      options={countryOptions}
+                      value={countryOptions.find(
+                        (opt) => opt.value === newPatient.country
+                      )}
+                      onChange={(selected) =>
+                        setNewPatient({
+                          ...newPatient,
+                          country: selected.value,
+                        })
+                      }
+                      placeholder="Select Country..."
+                    />
                   </div>
                 </div>
                 <div className="mb-6">
@@ -265,67 +382,67 @@ const NutritionistDashboard = () => {
                     Physical & Lifestyle
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                    {["height_cm", "weight_kg", "occupation"].map((field) => (
-                      <input
-                        key={field}
-                        name={field}
-                        placeholder={field
-                          .replace(/_/g, " ")
-                          .replace(/\b\w/g, (c) => c.toUpperCase())}
-                        onChange={(e) => handleFormChange(e)}
-                        className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
-                      />
-                    ))}
-                    <select
-                      name="gender"
-                      onChange={(e) => handleFormChange(e)}
-                      defaultValue=""
-                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
-                    >
-                      <option value="" disabled>
-                        Select Gender
-                      </option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                    <select
-                      name="activity_level"
-                      onChange={(e) => handleFormChange(e)}
-                      defaultValue=""
-                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
-                    >
-                      <option value="" disabled>
-                        Activity Level
-                      </option>
-                      <option value="sedentary">Sedentary</option>
-                      <option value="lightly_active">Lightly Active</option>
-                    </select>
-                    <select
-                      name="goal"
-                      onChange={(e) => handleFormChange(e)}
-                      defaultValue=""
-                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
-                    >
-                      <option value="" disabled>
-                        Primary Goal
-                      </option>
-                      <option value="lose_weight">Lose Weight</option>
-                      <option value="maintain">Maintain</option>
-                      <option value="gain_weight">Gain Weight</option>
-                    </select>
-                    <select
-                      name="diet_type"
-                      onChange={(e) => handleFormChange(e)}
-                      defaultValue=""
-                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
-                    >
-                      <option value="" disabled>
-                        Dietary Preference
-                      </option>
-                      <option value="vegetarian">Vegetarian</option>
-                      <option value="non_vegetarian">Non-Veg</option>
-                      <option value="vegan">Vegan</option>
-                    </select>
+                    {["height_cm", "weight_kg", "occupation", "bmi"].map(
+                      (field) => (
+                        <input
+                          key={field}
+                          name={field}
+                          placeholder={field
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase())}
+                          onChange={(e) => handleFormChange(e)}
+                          className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50 placeholder:text-[#263238]"
+                        />
+                      )
+                    )}
+                    <Select
+                      styles={customSelectStyles}
+                      options={genderOptions}
+                      value={genderOptions.find(
+                        (opt) => opt.value === newPatient.gender
+                      )}
+                      onChange={(selected) =>
+                        setNewPatient({ ...newPatient, gender: selected.value })
+                      }
+                      placeholder="Select Gender..."
+                    />
+                    <Select
+                      styles={customSelectStyles}
+                      options={activityLevels}
+                      value={activityLevels.find(
+                        (opt) => opt.value === newPatient.activity_level
+                      )}
+                      onChange={(selected) =>
+                        setNewPatient({
+                          ...newPatient,
+                          activity_level: selected.value,
+                        })
+                      }
+                      placeholder="Activity Level..."
+                    />
+                    <Select
+                      styles={customSelectStyles}
+                      options={goals}
+                      value={goals.find((opt) => opt.value === newPatient.goal)}
+                      onChange={(selected) =>
+                        setNewPatient({ ...newPatient, goal: selected.value })
+                      }
+                      placeholder="Primary Goal..."
+                    />
+                    <Select
+                      styles={customSelectStyles}
+                      options={dietTypeOptions}
+                      value={dietTypeOptions.find(
+                        (opt) => opt.value === newPatient.diet_type
+                      )}
+                      onChange={(selected) =>
+                        setNewPatient({
+                          ...newPatient,
+                          diet_type: selected.value,
+                        })
+                      }
+                      placeholder="Dietary Preference..."
+                    />
                   </div>
                 </div>
                 <div className="mb-6">
@@ -341,7 +458,7 @@ const NutritionistDashboard = () => {
                           .replace(/_/g, " ")
                           .replace(/\b\w/g, (c) => c.toUpperCase())}
                         onChange={(e) => handleFormChange(e)}
-                        className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
+                        className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50 placeholder:text-[#263238]"
                       />
                     ))}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 md:col-span-2">
@@ -349,6 +466,15 @@ const NutritionistDashboard = () => {
                         { key: "is_diabetic", label: "Diabetic" },
                         { key: "is_hypertensive", label: "Hypertensive" },
                         { key: "has_gastric_issues", label: "Gastric Issues" },
+                        {
+                          key: "has_heart_condition",
+                          label: "Heart Condition",
+                        },
+                        {
+                          key: "has_thyroid_disorder",
+                          label: "Thyroid Disorder",
+                        },
+                        { key: "has_arthritis", label: "Arthritis" },
                       ].map(({ key, label }) => (
                         <label
                           key={key}
@@ -364,6 +490,12 @@ const NutritionistDashboard = () => {
                         </label>
                       ))}
                     </div>
+                    <input
+                      name="other_chronic_condition"
+                      placeholder="Other Chronic Conditions"
+                      onChange={(e) => handleFormChange(e)}
+                      className="p-3 mt-4 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50 placeholder:text-[#263238]"
+                    />
                   </div>
                 </div>
                 <div className="mb-6">
@@ -377,21 +509,22 @@ const NutritionistDashboard = () => {
                       onChange={(e) => handleFormChange(e, "lab_report")}
                       className="p-3 col-span-2 md:col-span-4 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
                       type="text"
+                      max={today}
                       onFocus={(e) => (e.target.type = "date")}
                       onBlur={(e) => (e.target.type = "text")}
                     />
                     {[
                       "weight_kg",
+                      "height_cm",
                       "waist_circumference_cm",
                       "blood_pressure_systolic",
                       "blood_pressure_diastolic",
                       "fasting_blood_sugar",
-                      "postprandial",
+                      "postprandial_sugar",
                       "hba1c",
                       "ldl_cholesterol",
                       "hdl_cholesterol",
                       "triglycerides",
-                      "tc",
                       "esr",
                       "creatinine",
                       "urea",
@@ -400,23 +533,30 @@ const NutritionistDashboard = () => {
                       "vitamin_d3",
                       "vitamin_b12",
                       "tsh",
+                      "crp",
+                      "uric_acid",
                     ].map((field) => (
                       <input
                         key={field}
                         name={field}
-                        placeholder={field.replace(/_/g, " ").toUpperCase()}
+                        placeholder={field.replace(/_/g, " ").toLowerCase().replace(/^\w/, c => c.toUpperCase())}
+
                         onChange={(e) => handleFormChange(e, "lab_report")}
-                        className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50"
+                      className="p-3 bg-white border border-[#ECEFF1] rounded-lg focus:ring-2 focus:ring-[#FF7043]/50 p"
                       />
                     ))}
                   </div>
                 </div>
+                {/* --- End of form sections --- */}
+
                 <div className="flex justify-end mt-8">
                   <button
                     type="submit"
-                    className="bg-[#FF7043] text-white px-8 py-3 rounded-lg font-semibold font-['Roboto'] transition-all duration-300 ease-in-out hover:bg-[#F4511E] hover:shadow-lg hover:-translate-y-0.5"
+                    disabled={isSubmitting}
+                    className="flex items-center justify-center gap-2 bg-[#FF7043] text-white px-8 py-3 rounded-lg font-semibold font-['Roboto'] transition-all duration-300 ease-in-out hover:bg-[#F4511E] hover:shadow-lg hover:-translate-y-0.5 disabled:bg-[#FFC9B6] disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    Create Patient
+                    {isSubmitting && <Spinner />}
+                    {isSubmitting ? "Creating..." : "Create Patient"}
                   </button>
                 </div>
               </form>
@@ -434,11 +574,9 @@ const NutritionistDashboard = () => {
             </span>
           </div>
           {isLoading ? (
-            <div className="text-center py-20">
-              <p className="text-lg text-[#546E7A]">Loading patients...</p>
-            </div>
+            <PageLoader />
           ) : error ? (
-            <div className="text-center py-20 bg-red-100 text-red-700 border border-red-200 rounded-lg">
+            <div className="text-center py-20 bg-red-50 text-red-700 border border-red-200 rounded-lg">
               <p className="font-semibold">{error}</p>
             </div>
           ) : patients.length === 0 ? (
@@ -517,14 +655,12 @@ const NutritionistDashboard = () => {
 
         {patients.length > perPage && (
           <div className="flex justify-center items-center mt-10 gap-4">
-            {/* ...Pagination logic remains unchanged... */}
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className="px-4 py-2 rounded-lg bg-white border border-[#ECEFF1] text-[#546E7A] font-semibold transition-all hover:bg-[#FF7043]/10 hover:border-[#FF7043]/50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={currentPage === 1}
             >
-              {" "}
-              Previous{" "}
+              Previous
             </button>
             <span className="text-sm font-semibold text-[#263238]">
               Page {currentPage} of {Math.ceil(patients.length / perPage)}
@@ -538,8 +674,7 @@ const NutritionistDashboard = () => {
               className="px-4 py-2 rounded-lg bg-white border border-[#ECEFF1] text-[#546E7A] font-semibold transition-all hover:bg-[#FF7043]/10 hover:border-[#FF7043]/50 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={currentPage * perPage >= patients.length}
             >
-              {" "}
-              Next{" "}
+              Next
             </button>
           </div>
         )}

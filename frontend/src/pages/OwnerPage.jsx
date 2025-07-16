@@ -1,513 +1,429 @@
-import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart, PieChart, Pie, Cell } from 'recharts';
-import { Users, UserPlus, Activity, DollarSign, Plus, Eye, Calendar, Star } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Users, UserPlus, Activity, DollarSign, Calendar, Star, MoreVertical, ArrowUpRight, ArrowDownRight, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
 
-const Dashboard = () => {
-  const [userStatsView, setUserStatsView] = useState('Weekly');
-  const [mealsView, setMealsView] = useState('Weekly');
-  const [ownerData, setOwnerData] = useState(null);
-  const [loading, setLoading] = useState(true);
+// Import the API function
+import { getOwner } from '../api/owner';
 
-  const BASE_URL = 'https://trackeats.onrender.com/api';
+// The static 'apiResponse' object has been removed and will be fetched dynamically.
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  };
+// Animation Variants for Framer Motion
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
 
-  const getWeight = async () => {
-    const response = await fetch(`${BASE_URL}/weight/`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    return response.json();
-  };
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+    },
+  },
+};
 
-  const postWeight = async (formData) => {
-    const response = await fetch(`${BASE_URL}/weight/`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(formData),
-    });
-    return response.json();
-  };
+// Helper to format large numbers
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k`;
+  }
+  return num.toString();
+};
 
-  const getOwner = async () => {
-    const response = await fetch(`${BASE_URL}/owner/`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    return response.json();
-  };
+// Reusable Card Component
+const Card = ({ children, className }) => (
+  <motion.div
+    variants={itemVariants}
+    className={clsx(
+      "bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl shadow-lg",
+      className
+    )}
+  >
+    {children}
+  </motion.div>
+);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const data = await getOwner();
-        setOwnerData(data);
-      } catch (error) {
-        console.error('Error fetching owner data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+// Modern Metric Card Component
+const MetricCard = ({ title, value, change, Icon, trend = 'neutral' }) => {
+  const trendColor = trend === 'up' ? 'text-emerald-400' : 'text-red-400';
+  const TrendIcon = trend === 'up' ? ArrowUpRight : ArrowDownRight;
 
-  const getMealsData = () => {
-    if (!ownerData || !ownerData.usage) {
-      return [];
-    }
-
-    const total = mealsView === 'Weekly' 
-      ? ownerData.usage.meals_logged_week 
-      : ownerData.usage.meals_logged_month;
-
-    const count = mealsView === 'Weekly' ? 7 : 4;
-    const labels = mealsView === 'Weekly'
-      ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-      : ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-
-    const perUnit = Math.round(total / count);
-
-    return labels.map((label) => ({
-      name: label,
-      meals: perUnit + Math.floor(Math.random() * 50) - 25,
-    }));
-  };
-
-  const getUserStatsData = () => {
-    if (!ownerData || !ownerData.user_stats) {
-      return [];
-    }
-
-    const { total_users, new_users_month, active_patients_week } = ownerData.user_stats;
-    
-    if (userStatsView === 'Weekly') {
-      const dailyNew = Math.round(new_users_month / 30 * 7);
-      const dailyTotal = Math.round(total_users / 7);
-      
-      return [
-        { name: 'Mon', newUsers: Math.round(dailyNew * 0.8), totalUsers: Math.round(dailyTotal * 0.9) },
-        { name: 'Tue', newUsers: Math.round(dailyNew * 0.6), totalUsers: Math.round(dailyTotal * 0.7) },
-        { name: 'Wed', newUsers: Math.round(dailyNew * 1.2), totalUsers: Math.round(dailyTotal * 1.1) },
-        { name: 'Thu', newUsers: Math.round(dailyNew * 0.5), totalUsers: Math.round(dailyTotal * 0.6) },
-        { name: 'Fri', newUsers: Math.round(dailyNew * 0.9), totalUsers: Math.round(dailyTotal * 0.8) },
-        { name: 'Sat', newUsers: Math.round(dailyNew * 1.4), totalUsers: Math.round(dailyTotal * 1.3) },
-        { name: 'Sun', newUsers: Math.round(dailyNew * 1.1), totalUsers: Math.round(dailyTotal * 1.0) }
-      ];
-    }
-    
-    return [];
-  };
-
-  const countryColors = ['#1e40af', '#7c3aed', '#059669', '#dc2626', '#ea580c', '#6b7280'];
-
-  const getCountryData = () => {
-    if (!ownerData || !ownerData.users_by_country) {
-      return [];
-    }
-
-    const totalUsers = ownerData?.user_stats?.total_users || 1;
-    return ownerData.users_by_country.map((item, index) => {
-      const percentage = ((item.user_count / totalUsers) * 100).toFixed(1);
-      return {
-        name: item.country,
-        value: item.user_count,
-        percentage,
-        color: countryColors[index % countryColors.length]
-      };
-    });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Active': 
-      case 'Running': 
-        return 'bg-green-100 text-green-800';
-      case 'Scheduled': 
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Completed':
-      case 'Ended': 
-        return 'bg-gray-100 text-gray-800';
-      default: 
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const MetricCard = ({ title, value, change, changeType, icon: Icon, iconBg }) => (
-    <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs sm:text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl sm:text-3xl font-bold text-gray-900">{value}</p>
-          {change && (
-            <p className={`text-xs sm:text-sm ${changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
-              {changeType === 'positive' ? '↗' : '↘'} {change} Since last month
-            </p>
-          )}
+  return (
+    <Card className="p-5">
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col">
+          <p className="text-sm text-slate-400 uppercase tracking-wider">{title}</p>
+          <span className="text-3xl font-bold text-slate-50 mt-1">{value}</span>
         </div>
-        <Icon className="h-8 w-8 sm:h-12 sm:w-12 text-blue-600" />
+        <div className="p-2 bg-slate-700/50 rounded-lg">
+          <Icon className="w-6 h-6 text-slate-300" />
+        </div>
       </div>
-    </div>
+      {change && (
+        <div className={`flex items-center text-sm mt-2 ${trendColor}`}>
+          <TrendIcon className="w-4 h-4 mr-1" />
+          <span>{change} vs last month</span>
+        </div>
+      )}
+    </Card>
   );
+};
 
-  const TabButton = ({ active, onClick, children }) => (
+// Styled Tab Button Component
+const TabButton = ({ active, onClick, children }) => (
     <button
       onClick={onClick}
-      className={`px-3 py-1 text-sm rounded transition-colors ${
-        active
-          ? 'bg-blue-600 text-white'
-          : 'text-gray-600 hover:bg-gray-100'
-      }`}
+      className={clsx(
+        "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900",
+        active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700/50'
+      )}
     >
       {children}
     </button>
   );
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    console.log('Logout clicked');
-  };
+// Custom Chart Tooltip
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-700/80 backdrop-blur-sm text-slate-200 p-3 rounded-lg border border-slate-600 shadow-xl">
+        <p className="label font-bold mb-1">{`${label}`}</p>
+        {payload.map((p, i) => (
+          <p key={i} style={{ color: p.color }} className="intro">{`${p.name}: ${p.value.toLocaleString()}`}</p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+// Main Dashboard Component
+const Dashboard = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userStatsView, setUserStatsView] = useState('Weekly');
+  const [mealsView, setMealsView] = useState('Weekly');
+
+  // useEffect now fetches data from the API on component mount.
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // Call the imported API function
+        const responseData = await getOwner();
+        
+        // Assuming the API returns the data object directly.
+        // If it's nested (e.g., response.data), adjust accordingly.
+        if (responseData && responseData.user_stats) {
+            setData(responseData);
+        } else {
+            throw new Error("Received invalid data from the server.");
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err);
+        setError("Failed to load dashboard data. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []); // The empty dependency array ensures this runs only once.
+
+  // Memoized calculations to prevent re-computing on every render
+  const processedData = useMemo(() => {
+    if (!data) return null;
+
+    // User Stats Chart Data (Approximated from totals)
+    const generateChartData = (total, period) => {
+      const days = period === 'Weekly' ? 7 : 30;
+      const labels = period === 'Weekly' 
+        ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : Array.from({ length: 4 }, (_, i) => `Week ${i + 1}`);
+      const baseValue = total / (period === 'Weekly' ? 7 : 4);
+      return labels.map(label => ({
+        name: label,
+        value: Math.round(baseValue + (Math.random() - 0.5) * baseValue * 0.5),
+      }));
+    };
+
+    const userStatsChartData = generateChartData(
+        userStatsView === 'Weekly' ? data.user_stats.new_users_week : data.user_stats.new_users_month,
+        userStatsView
+    );
+
+    const mealsChartData = generateChartData(
+        mealsView === 'Weekly' ? data.usage.meals_logged_week : data.usage.meals_logged_month,
+        mealsView
+    );
+
+    // Country Pie Chart Data
+    const countryColors = ['#3b82f6', '#8b5cf6', '#10b981', '#f97316', '#ec4899'];
+    const usersByCountry = data.users_by_country.map((c, i) => ({
+      ...c,
+      fill: countryColors[i % countryColors.length],
+    }));
+
+    // Feedback Analysis
+    const feedbacks = data.feedback_summary.latest_feedbacks;
+    const totalReviews = data.feedback_summary.feedback_collected;
+    const averageRating = feedbacks.length > 0
+        ? (feedbacks.reduce((acc, f) => acc + f.rating, 0) / feedbacks.length).toFixed(1)
+        : 0;
+    
+    const ratingDistribution = [5, 4, 3, 2, 1].map(star => {
+        const count = feedbacks.filter(f => f.rating === star).length;
+        return { star, count, percentage: totalReviews > 0 ? (count / totalReviews) * 100 : 0 };
+    });
+
+    return { userStatsChartData, mealsChartData, usersByCountry, averageRating, totalReviews, ratingDistribution };
+  }, [data, userStatsView, mealsView]);
+
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading dashboard...</div>
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-300 mt-4 text-lg">Loading Dashboard...</p>
+        </div>
       </div>
     );
   }
 
-  if (!ownerData) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="text-lg text-red-600">Failed to load dashboard data. Please try again.</div>
-      </div>
-    );
+  if (error || !data) {
+    return <div className="min-h-screen bg-slate-900 text-center text-red-400 p-8">{error || "Failed to load dashboard data."}</div>;
   }
-
-  const mealsData = getMealsData();
-  const countryData = getCountryData();
-  const userStatsData = getUserStatsData();
+  
+  // The rest of the component remains the same, as it dynamically reads from the `data` and `processedData` variables.
+  const { user_stats, revenue } = data;
+  const { userStatsChartData, mealsChartData, usersByCountry, averageRating, totalReviews, ratingDistribution } = processedData;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-          <div className="flex items-center text-gray-600 space-x-4">
-            <div className="flex items-center text-sm">
-              <Calendar className="w-4 h-4 mr-2" />
-              {new Date(ownerData.date).toDateString()}
+    <AnimatePresence>
+      <div className="min-h-screen bg-slate-900 text-slate-300 p-4 sm:p-6 lg:p-8 font-sans">
+        <motion.div 
+          className="max-w-7xl mx-auto"
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          {/* Header */}
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-50">Dashboard</h1>
+              <p className="text-slate-400 mt-1 flex items-center">
+                <Calendar className="w-4 h-4 mr-2" />
+                {new Date(data.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
             </div>
-            <span className="bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
-            <button
-              onClick={handleLogout}
-              className="px-3 py-1 text-xs font-medium bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Owner Details</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <p className="text-sm text-gray-700"><strong>Name:</strong> {ownerData.name}</p>
-            <p className="text-sm text-gray-700"><strong>Email:</strong> {ownerData.email}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <MetricCard 
-            title="TOTAL USERS" 
-            value={ownerData.user_stats?.total_users?.toLocaleString() || "0"} 
-            change="+3.2%" 
-            changeType="positive" 
-            icon={Users} 
-            iconBg="bg-blue-600" 
-          />
-          <MetricCard 
-            title="NEW USERS (MONTHLY)" 
-            value={ownerData.user_stats?.new_users_month?.toLocaleString() || "0"} 
-            change="+8.1%" 
-            changeType="positive" 
-            icon={UserPlus} 
-            iconBg="bg-green-600" 
-          />
-          <MetricCard 
-            title="ACTIVE PATIENTS (WEEKLY)" 
-            value={ownerData.user_stats?.active_patients_week?.toLocaleString() || "0"} 
-            change="-2.7%" 
-            changeType="negative" 
-            icon={Activity} 
-            iconBg="bg-purple-600" 
-          />
-          <MetricCard 
-            title="TOTAL REVENUE" 
-            value={ownerData.revenue || "$0"} 
-            change="+15.3%" 
-            changeType="positive" 
-            icon={DollarSign} 
-            iconBg="bg-green-600" 
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-              <h3 className="text-lg font-semibold text-gray-900">User Statistics</h3>
-              <div className="flex flex-wrap space-x-2">
-                <TabButton active={userStatsView === 'Weekly'} onClick={() => setUserStatsView('Weekly')}>
-                  Weekly
-                </TabButton>
-                <TabButton active={userStatsView === 'Monthly'} onClick={() => setUserStatsView('Monthly')}>
-                  Monthly
-                </TabButton>
-                <TabButton active={userStatsView === 'Yearly'} onClick={() => setUserStatsView('Yearly')}>
-                  Yearly
-                </TabButton>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <input type="text" placeholder="Search..." className="bg-slate-800 border border-slate-700 rounded-full w-full sm:w-64 pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <div className="h-64">
-              {userStatsData.length > 0 ? (
+          </motion.div>
+
+          {/* Metric Cards Grid */}
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            variants={containerVariants}
+          >
+            <MetricCard title="Total Users" value={formatNumber(user_stats.total_users)} Icon={Users} />
+            <MetricCard title="Revenue" value={revenue} Icon={DollarSign} />
+            <MetricCard title="New Users (Weekly)" value={formatNumber(user_stats.new_users_week)} Icon={UserPlus} change={`${((user_stats.new_users_week / (user_stats.new_users_month / 4)) * 100 - 100).toFixed(1)}%`} trend="up" />
+            <MetricCard title="Active Patients (Weekly)" value={formatNumber(user_stats.active_patients_week)} Icon={Activity} change="-2.1%" trend="down"/>
+          </motion.div>
+          
+          {/* Main Chart Grid */}
+          <motion.div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8" variants={containerVariants}>
+            {/* User Statistics Chart */}
+            <Card className="lg:col-span-3 p-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-100">User Growth</h3>
+                <div className="flex space-x-2 mt-2 sm:mt-0">
+                  <TabButton active={userStatsView === 'Weekly'} onClick={() => setUserStatsView('Weekly')}>Weekly</TabButton>
+                  <TabButton active={userStatsView === 'Monthly'} onClick={() => setUserStatsView('Monthly')}>Monthly</TabButton>
+                </div>
+              </div>
+              <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={userStatsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="totalUsers" fill="#1e40af" name="Total Users" />
-                    <Bar dataKey="newUsers" fill="#10b981" name="New Users" />
+                  <BarChart data={userStatsChartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#475569" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
+                    <Bar dataKey="value" name="New Users" fill="url(#colorUv)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  No data available for {userStatsView.toLowerCase()} view
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-              <h3 className="text-lg font-semibold text-gray-900">Meals Logged</h3>
-              <div className="flex space-x-2">
-                <TabButton active={mealsView === 'Weekly'} onClick={() => setMealsView('Weekly')}>
-                  Weekly
-                </TabButton>
-                <TabButton active={mealsView === 'Monthly'} onClick={() => setMealsView('Monthly')}>
-                  Monthly
-                </TabButton>
               </div>
-            </div>
-            <div className="h-64">
-              {mealsData.length > 0 ? (
+            </Card>
+
+            {/* Meals Logged Chart */}
+            <Card className="lg:col-span-2 p-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                <h3 className="text-lg font-semibold text-slate-100">Meals Logged</h3>
+                <div className="flex space-x-2 mt-2 sm:mt-0">
+                  <TabButton active={mealsView === 'Weekly'} onClick={() => setMealsView('Weekly')}>Weekly</TabButton>
+                  <TabButton active={mealsView === 'Monthly'} onClick={() => setMealsView('Monthly')}>Monthly</TabButton>
+                </div>
+              </div>
+              <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={mealsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="meals" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.3} />
+                  <AreaChart data={mealsChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorMeals" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#475569" vertical={false}/>
+                    <XAxis dataKey="name" tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="value" name="Meals" stroke="#8b5cf6" strokeWidth={2} fill="url(#colorMeals)" />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  No meal data available
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+              </div>
+            </Card>
+          </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Users by Country</h3>
-              <button className="text-blue-600 text-sm hover:text-blue-800 transition-colors">📊 Export</button>
-            </div>
-            {countryData.length > 0 ? (
-              <>
-                <div className="flex items-center justify-center mb-4">
-                  <div className="w-48 h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={countryData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={40}
-                          outerRadius={80}
-                          dataKey="value"
-                        >
-                          {countryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
+          {/* Demographics & Feedback Grid */}
+          <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" variants={containerVariants}>
+            {/* Users by Country */}
+            <Card className="p-5">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Users by Country</h3>
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="w-full md:w-1/2 h-52">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie data={usersByCountry} dataKey="user_count" nameKey="country" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2}>
+                        {usersByCountry.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <div className="space-y-2">
-                  {countryData.map((country, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm">
+                <div className="w-full md:w-1/2 space-y-3">
+                  {usersByCountry.map(c => (
+                    <div key={c.country} className="flex items-center justify-between text-sm">
                       <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: country.color }}></div>
-                        <span className="text-gray-700">{country.name}</span>
+                        <span className="w-3 h-3 rounded-full mr-3" style={{ backgroundColor: c.fill }}></span>
+                        <span className="text-slate-300">{c.country}</span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-gray-900 font-medium">{country.value.toLocaleString()}</span>
-                        <span className="text-gray-500">{country.percentage}%</span>
-                      </div>
+                      <span className="font-medium text-slate-100">{formatNumber(c.user_count)}</span>
                     </div>
                   ))}
                 </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-48 text-gray-500">
-                No country data available
               </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">User Feedback</h3>
-              <span className="text-blue-600 text-sm">New 24</span>
-            </div>
-            {ownerData.feedback_summary ? (
-              <>
-                <div className="text-center mb-6">
-                  <div className="text-5xl font-bold text-gray-900 mb-2">
-                    {ownerData.feedback_summary.average_rating}
-                  </div>
-                  <div className="flex justify-center mb-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span key={star} className="text-yellow-400 text-xl">★</span>
+            </Card>
+            
+            {/* User Feedback */}
+            <Card className="p-5">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Feedback Summary</h3>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="text-5xl font-bold text-slate-50">{averageRating}</div>
+                <div>
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className={clsx("w-5 h-5", i < Math.round(averageRating) ? "text-amber-400" : "text-slate-600")} fill="currentColor" />
                     ))}
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Based on {ownerData.feedback_summary.total_reviews} reviews
-                  </p>
+                  <p className="text-sm text-slate-400 mt-1">Based on {totalReviews} reviews</p>
                 </div>
-                <div className="space-y-3">
-                  {[
-                    { stars: 5, percentage: 75 },
-                    { stars: 4, percentage: 20 },
-                    { stars: 3, percentage: 3 },
-                    { stars: 2, percentage: 1 },
-                    { stars: 1, percentage: 1 }
-                  ].map((rating) => (
-                    <div key={rating.stars} className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600 w-8">{rating.stars} star</span>
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-yellow-400 h-2 rounded-full" 
-                          style={{ width: `${rating.percentage}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm text-gray-600 w-8">{rating.percentage}%</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-48 text-gray-500">
-                No feedback data available
               </div>
-            )}
-          </div>
-        </div>
-
-        {ownerData.feedback_summary?.latest_feedbacks && ownerData.promotions && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
-            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Latest Feedback</h3>
-              <div className="space-y-4">
-                {ownerData.feedback_summary.latest_feedbacks.map((fb) => (
-                  <div key={fb.id} className="border-b pb-4 last:border-b-0">
-                    <p className="text-sm text-gray-800 font-medium">{fb.user_email}</p>
-                    <div className="flex items-center text-yellow-500 mb-1">
-                      {[...Array(fb.rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-yellow-500" />
-                      ))}
+              <div className="space-y-2">
+                {ratingDistribution.map(r => (
+                  <div key={r.star} className="flex items-center gap-3 text-sm">
+                    <span className="text-slate-400 w-12">{r.star} star</span>
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <motion.div
+                        className="bg-amber-400 h-2 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${r.percentage}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      />
                     </div>
-                    <p className="text-sm text-gray-600">{fb.message}</p>
+                    <span className="text-slate-300 font-medium w-8 text-right">{r.percentage.toFixed(0)}%</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
+          </motion.div>
 
-            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Promotions</h3>
-              <div className="space-y-4">
-                {ownerData.promotions.map((promo, idx) => (
-                  <div key={idx} className="border-b pb-4 last:border-b-0">
+          {/* Latest Feedback & Promotions */}
+          <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-6" variants={containerVariants}>
+            <Card className="p-5">
+              <h3 className="text-lg font-semibold text-slate-100 mb-4">Latest Feedback</h3>
+              <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+                {data.feedback_summary.latest_feedbacks.map(fb => (
+                  <div key={fb.id} className="p-4 rounded-lg bg-slate-800/70 border border-slate-700 hover:border-slate-600 transition-colors">
                     <div className="flex justify-between items-start">
-                      <p className="text-sm font-medium text-gray-800">{promo.campaign}</p>
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(promo.status)}`}>
-                        {promo.status}
-                      </span>
+                      <div>
+                        <p className="font-semibold text-slate-200">{fb.user_email}</p>
+                        <p className="text-sm text-slate-400 mt-2">{fb.message}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-amber-400 text-sm font-bold shrink-0 ml-4">
+                        {fb.rating}
+                        <Star className="w-4 h-4 fill-current" />
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600">Reach: {promo.reach}</p>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
+            </Card>
 
-        {ownerData.promotions && (
-          <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <h3 className="text-xl font-semibold text-gray-900">Promotional Campaigns</h3>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded text-sm flex items-center hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4 mr-1" />
-                New Campaign
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-gray-600 bg-gray-50">
-                    <th className="text-left py-3 px-4 font-medium">CAMPAIGN NAME</th>
-                    <th className="text-left py-3 px-4 font-medium">STATUS</th>
-                    <th className="text-left py-3 px-4 font-medium">REACH</th>
-                    <th className="text-center py-3 px-4 font-medium">ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ownerData.promotions.map((campaign, idx) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-4">
-                        <span className="text-gray-900 font-medium">{campaign.campaign}</span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
-                          {campaign.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-gray-700 font-medium">{campaign.reach}</td>
-                      <td className="py-4 px-4 text-center">
-                        <button className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+            <Card className="p-5">
+                <h3 className="text-lg font-semibold text-slate-100 mb-4">Active Promotions</h3>
+                <div className="space-y-4">
+                  {data.promotions.map((promo, i) => {
+                      const statusConfig = {
+                          'Running': { color: 'bg-green-500/20 text-green-300 border-green-500/30' },
+                          'Ended': { color: 'bg-slate-600/20 text-slate-400 border-slate-600/30' }
+                      };
+                      return (
+                          <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-slate-800/70 border border-slate-700">
+                              <div>
+                                  <p className="font-semibold text-slate-200">{promo.campaign}</p>
+                                  <p className="text-sm text-slate-400">Reach: {promo.reach}</p>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                  <span className={clsx('px-3 py-1 text-xs font-medium rounded-full border', statusConfig[promo.status]?.color)}>
+                                    {promo.status}
+                                  </span>
+                                  <button className="text-slate-400 hover:text-white transition-colors">
+                                    <MoreVertical size={20} />
+                                  </button>
+                              </div>
+                          </div>
+                      );
+                  })}
+                </div>
+            </Card>
+          </motion.div>
+
+        </motion.div>
       </div>
-    </div>
+    </AnimatePresence>
   );
 };
 

@@ -9,9 +9,11 @@ const Layout = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    // Set the theme's primary font for the entire layout
+    <div className="flex flex-col min-h-screen font-['Poppins']">
       <Navbar />
-      <main className="flex-grow p-4 bg-gray-50">
+      {/* Replaced bg-gray-50 with the theme's 'bg-main' class */}
+      <main className="flex-grow p-4 bg-main">
         <Outlet />
       </main>
       <Footer />

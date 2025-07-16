@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
-const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
+const Navbar = ({ links = [], rightContent, align = "right" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -16,22 +16,24 @@ const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Base style for nav links using theme colors
   const baseStyle =
-    "relative font-medium text-[#4A4A4A] hover:text-[#FF7043] transition duration-200 " +
+    "relative font-medium text-body hover:text-primary transition duration-200 " +
     "after:absolute after:-bottom-1 after:left-0 after:w-0 hover:after:w-full after:h-[2px] " +
-    "after:bg-[#FF7043] after:transition-all after:duration-300 focus:outline-none focus:ring-0";
+    "after:bg-primary after:transition-all after:duration-300 focus:outline-none focus:ring-0";
 
+  // Active style for the current page link, using the theme's primary accent color
   const activeStyle =
-    "relative font-semibold text-[#FF7043] transition duration-200 " +
+    "relative font-semibold text-primary transition duration-200 " +
     "after:absolute after:-bottom-1 after:left-0 after:w-full after:h-[2px] " +
-    "after:bg-[#FF7043] after:transition-all after:duration-300";
+    "after:bg-primary after:transition-all after:duration-300";
 
   const renderNavLink = ({ to, label }) => {
     const isHashLink = to.startsWith("#");
 
     if (isHashLink) {
       return (
-        <a key={to} href={to} className={baseStyle}>
+        <a key={to} href={to} className={baseStyle} onClick={() => setIsOpen(false)}>
           {label}
         </a>
       );
@@ -56,17 +58,15 @@ const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
 
   return (
     <nav
-      className={`sticky top-0 z-50 bg-white h-16 px-6 flex items-center justify-between font-['Poppins'] text-sm md:text-base backdrop-blur-lg transition-shadow duration-300 ${
-        isScrolled ? "shadow-md" : ""
+      className={`sticky top-0 z-50 bg-section/80 h-16 px-6 flex items-center justify-between font-['Poppins'] text-sm md:text-base backdrop-blur-lg transition-shadow duration-300 ${
+        isScrolled ? "shadow-soft" : ""
       }`}
     >
-      {/* Logo */}
+      {/* Logo using the theme's primary text color */}
       <div className="flex items-center space-x-3">
-        
-          <span className="pl-5 text-[#FF7043] font-extrabold text-2xl tracking-wide">
+          <span className="pl-5 text-primary font-extrabold text-2xl tracking-wide">
             TrackEats
           </span>
-        
       </div>
 
       {/* Desktop Nav Links */}
@@ -74,19 +74,20 @@ const Navbar = ({ logo, links = [], rightContent, align = "right" }) => {
         {links.map(renderNavLink)}
       </div>
 
-      {/* Right Content */}
+      {/* Right Content & Mobile Menu Toggle */}
       <div className="flex items-center gap-4">
         <div className="hidden md:block">{rightContent}</div>
-        <div className="md:hidden text-[#FF7043]">
-          <button onClick={toggleMenu}>
+        {/* Mobile menu button uses the primary accent color */}
+        <div className="md:hidden text-primary">
+          <button onClick={toggleMenu} aria-label="Toggle menu">
             {isOpen ? <X size={26} /> : <Menu size={26} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile Dropdown using theme backgrounds and borders */}
       {isOpen && (
-        <div className="absolute top-16 left-0 w-full bg-[#FAF3EB] border-t border-[#ECEFF1] flex flex-col items-center py-4 z-40 gap-4 shadow-md">
+        <div className="absolute top-16 left-0 w-full bg-main border-t border-custom flex flex-col items-center py-4 z-40 gap-4 shadow-soft">
           {links.map(renderNavLink)}
           <div className="block md:hidden">{rightContent}</div>
         </div>

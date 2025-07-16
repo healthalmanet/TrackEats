@@ -1,121 +1,115 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Poppins:wght@400;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Poppins:wght@400;600&display=swap');
-
 @import "tailwindcss";
 
+/* ============================================= */
+/* 🎨 Neon Green Theme                           */
+/* ============================================= */
+:root {
+  --color-primary-accent: #39FF14; /* Neon green main */
+  --color-primary-hover: #66ff66;  /* Lighter green hover */
+  --color-accent-yellow: #ffff66;  /* Neon yellow highlights */
+  --color-accent-blue: #00f0ff;    /* Cyan accents */
+  --color-accent-pink: #ff6ec7;    /* Pink accent */
+  --color-text-heading: #e0e0e0;   /* Bright heading text */
+  --color-text-body: #c5c5c5;      /* Softer body text */
+  --color-bg-main: #0d0d0d;        /* Dark main background */
+  --color-bg-section: #141414;     /* Slightly lighter sections */
+  --color-bg-light: #1f1f1f;       /* Cards or light sections */
+  --color-border: #333333;         /* Subtle dark border */
+  --color-text-light: #ffffff;     /* Text on colored backgrounds */
+  --color-accent-red: #ff4d6d;     /* Alert red */
+
+  --font-primary: 'Poppins', sans-serif;
+  --font-secondary: 'Orbitron', sans-serif;
 
 
-@keyframes pop {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.3);
-  }
-  100% {
-    transform: scale(1);
-  }
+
+  /* TOASTIFY */
+    --toastify-color-light: var(--color-bg-section);
+  --toastify-color-dark: var(--color-bg-light);
+  --toastify-color-success: var(--color-primary-accent);
+  --toastify-color-warning: var(--color-accent-orange);
+  --toastify-color-error: var(--color-accent-red);
+
+  --toastify-color-progress-light: var(--color-primary-accent);
+  --toastify-color-progress-success: var(--color-primary-hover);
+  --toastify-color-progress-error: var(--color-accent-red);
+
+  --toastify-icon-color-success: var(--color-text-light);
+  --toastify-icon-color-warning: var(--color-text-light);
+  --toastify-icon-color-error: var(--color-text-light);
+
+  --toastify-text-color-light: var(--color-text-heading);
+  --toastify-text-color-dark: var(--color-text-heading);
+  
+  --toastify-font-family: var(--font-primary);
 }
 
-.animate-pop {
-  animation: pop 0.5s ease-in-out;
+/* Typography */
+body {
+  font-family: var(--font-primary);
+  background-color: var(--color-bg-main);
+  color: var(--color-text-body);
 }
 
-.drop-shadow-glow {
-  filter: drop-shadow(0 0 8px #39FF14);
-}
+/* Background Utilities */
+.bg-main { background-color: var(--color-bg-main); }
+.bg-section { background-color: var(--color-bg-section); }
+.bg-light { background-color: var(--color-bg-light); }
+.bg-primary { background-color: var(--color-primary-accent); }
+.bg-yellow { background-color: var(--color-accent-yellow); }
+.bg-blue { background-color: var(--color-accent-blue); }
+.bg-pink { background-color: var(--color-accent-pink); }
 
+/* Text Utilities */
+.text-heading { color: var(--color-text-heading); }
+.text-body { color: var(--color-text-body); }
+.text-light { color: var(--color-text-light); }
+.text-primary { color: var(--color-primary-accent); }
+.text-yellow { color: var(--color-accent-yellow); }
+.text-blue { color: var(--color-accent-blue); }
+.text-pink { color: var(--color-accent-pink); }
+.text-red { color: var(--color-accent-red); }
+
+/* Borders */
+.border-custom { border-color: var(--color-border); }
+.border-primary { border-color: var(--color-primary-accent); }
+
+/* Hover */
+.hover\:bg-primary-hover:hover { background-color: var(--color-primary-hover); }
+.hover\:text-primary:hover { color: var(--color-primary-accent); }
+.hover\:bg-section-light:hover { background-color: var(--color-bg-section); }
+
+/* Drop Shadows */
 .shadow-neon {
-  box-shadow: 0 0 8px #39FF14, 0 0 16px #39FF14;
+  box-shadow: 0 0 12px var(--color-primary-accent), 0 0 24px var(--color-accent-yellow);
 }
 
+/* Animations */
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.animate-pop { animation: pop 0.4s ease-in-out; }
 
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+@keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-up { animation: fade-up 0.6s ease-out forwards; }
 
-.animate-fade-up {
-  animation: fade-up 0.6s ease-out forwards;
-}
-
-
-/* src/index.css */
-/* ... existing imports and body styles ... */
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 2s linear infinite; /* Slower spin */
-}
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
-}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade-in { animation: fade-in 0.5s ease-in-out forwards; }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-  20%, 40%, 60%, 80% { transform: translateX(5px); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
 }
+.animate-shake { animation: shake 0.8s cubic-bezier(.36,.07,.19,.97); }
 
-.animate-shake {
-  animation: shake 0.8s cubic-bezier(.36,.07,.19,.97) both;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-}
-
-/* For a more subtle scrollbar in Webkit browsers (Chrome, Safari) */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #d1d5db; /* A light gray */
+  background-color: var(--color-primary-accent);
   border-radius: 10px;
-  border: 3px solid transparent;
 }
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #d1d5db transparent;
+  scrollbar-color: var(--color-primary-accent) transparent;
 }

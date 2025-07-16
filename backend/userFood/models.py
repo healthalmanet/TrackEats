@@ -60,9 +60,9 @@ class FoodItem(models.Model):
     meal_type = ArrayField(models.CharField(max_length=20, choices=MEAL_TYPE_CHOICES), default=list, help_text="Suitable for which meals?")
 
     LEVEL_CHOICES = [("Low", "Low"), ("Medium", "Medium"), ("High", "High"),("Moderate","Moderate"), ("Mild","Mild"), ("None", "None")]
-    fodmap_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="low", verbose_name="FODMAP Level")
-    spice_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="low", verbose_name="Spice Level")
-    purine_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="low", verbose_name="Purine Level")
+    fodmap_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="Low", verbose_name="FODMAP Level")
+    spice_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="Low", verbose_name="Spice Level")
+    purine_level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default="Low", verbose_name="Purine Level")
 
     # --- Allergens & Remarks ---
     allergens = models.TextField(blank=True, help_text="List of potential allergens, slash-separated (e.g., Gluten/Dairy/Nuts)")

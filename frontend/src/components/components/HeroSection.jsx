@@ -15,43 +15,23 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
   const [waterGoalML, setWaterGoalML] = useState(3000);
 
   const glassSizeML = 250;
-  const today = new Date().toISOString().split("T")[0];
+  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  const waterIntakeGlasses = useMemo(
-    () => Math.floor(waterIntakeML / glassSizeML) || 0,
-    [waterIntakeML]
-  );
-
-  const waterGoalGlasses = useMemo(
-    () => Math.round(waterGoalML / glassSizeML),
-    [waterGoalML]
-  );
+  const waterIntakeGlasses = useMemo(() => Math.floor(waterIntakeML / glassSizeML) || 0, [waterIntakeML]);
+  const waterGoalGlasses = useMemo(() => Math.round(waterGoalML / glassSizeML), [waterGoalML]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchAllData = async () => {
       try {
-        const data = await getUserProfile();
-        setWeight(data.weight_kg);
+        const [profileData, goalData] = await Promise.all([getUserProfile(), targetApi()]);
+        setWeight(profileData.weight_kg);
+        setCalorieGoal(goalData.recommended_calories || 2000);
+        setWaterGoalML(goalData.water?.recommended_ml || 3000);
       } catch (error) {
-        toast.error("Failed to load user profile");
+        toast.error("Failed to load profile and goal data");
       }
     };
-    fetchProfile();
-  }, []);
-
-  useEffect(() => {
-    const fetchGoal = async () => {
-      try {
-        const data = await targetApi();
-        setCalorieGoal(data.recommended_calories || 2000);
-        setWaterGoalML(data.water?.recommended_ml || 3000);
-      } catch (error) {
-        toast.error("Failed to load nutrition goals");
-        setCalorieGoal(2000);
-        setWaterGoalML(3000);
-      }
-    };
-    fetchGoal();
+    fetchAllData();
   }, []);
 
   useEffect(() => {
@@ -63,13 +43,11 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
         const todayMeals = meals.filter(
           (meal) => meal.date === today && typeof meal.calories === "number"
         );
-        const totalCalories = todayMeals.reduce(
-          (acc, meal) => acc + meal.calories,
-          0
-        );
+        const totalCalories = todayMeals.reduce((acc, meal) => acc + meal.calories, 0);
         setCaloriesToday(Number(totalCalories.toFixed(0)));
       } catch (error) {
-        toast.error("Failed to load calorie data");
+        // This can be noisy, so maybe a console log is better than a toast
+        console.error("Failed to load today's calorie data:", error);
       }
     };
     fetchTodayCalories();
@@ -80,107 +58,83 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
       try {
         const data = await getWater(today);
         const entries = data.results || [];
-        const totalML = entries.reduce(
-          (sum, item) => sum + Number(item.amount_ml || 0),
-          0
-        );
+        const totalML = entries.reduce((sum, item) => sum + Number(item.amount_ml || 0), 0);
         setWaterIntakeML(totalML);
       } catch (error) {
-        toast.error("Failed to load water intake data");
+        console.error("Failed to load water intake data:", error);
       }
     };
     fetchWaterIntake();
   }, [today, waterUpdateTrigger]);
 
   return (
-    <div className="w-full relative overflow-hidden bg-gradient-to-br from-[#FF7043] via-[#F4511E] to-[#FF8A65]
-text-[#263238] pt-16 pb-28 px-6 md:px-10 lg:px-12">
-
+    // Replaced gradient and SVG with a clean, tinted background from the theme
+    <div className="w-full relative overflow-hidden bg-primary/10 text-heading pt-16 pb-20 px-6 md:px-10 lg:px-12 rounded-b-3xl">
       <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
-        {/* Left Info */}
-        <div className="w-full md:w-2/3 space-y-6 font-poppins">
+        
+        {/* Left Info with themed typography */}
+        <div className="w-full md:w-2/3 space-y-6 font-['Poppins']">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-white">
+            <h1 className="text-3xl sm:text-4xl font-['Lora'] font-bold text-heading">
               Fuel your journey with{" "}
-              <span className="text-[#5ED8D1]">smart nutrition</span>
+              <span className="text-primary">smart nutrition</span>
             </h1>
-            <p className="mt-2 text-lg font-roboto text-[#FFFDF9]">
+            <p className="mt-2 text-lg text-body">
               Log, learn, and stay ahead of your health goals every day.
             </p>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards with themed styling */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Calories Card */}
-            <div className="bg-[#FFFDF9] p-5 rounded-2xl  shadow-xl hover:shadow-gray-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
-              <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
+            <div className="bg-section p-5 rounded-2xl shadow-soft hover:shadow-lg hover:border-primary border border-transparent hover:-translate-y-2 transform transition-all duration-300 ease-in-out relative">
+              <div className="absolute top-3 right-3 bg-accent-orange/10 text-accent-orange p-2 rounded-full">
                 <Flame size={18} />
               </div>
-              <p className="text-sm font-medium mb-1 text-[#546E7A]">Calories Today</p>
-              <p className="text-2xl font-bold text-[#263238]">{caloriesToday}</p>
-              <p className="text-sm text-[#546E7A]">Goal: {calorieGoal ?? "Loading..."}</p>
+              <p className="text-sm font-medium mb-1 text-body">Calories Today</p>
+              <p className="text-2xl font-bold text-heading">{caloriesToday}</p>
+              <p className="text-sm text-body">Goal: {calorieGoal ?? "..."}</p>
               {calorieGoal && caloriesToday >= calorieGoal && (
-                <p className="text-sm text-[#F4511E] mt-1 font-semibold">
-                  You've hit your calorie goal!
+                <p className="text-sm text-primary mt-1 font-semibold">
+                  Goal reached!
                 </p>
               )}
             </div>
 
             {/* Water Card */}
-            <div className="bg-[#FFFDF9] p-5 rounded-2xl  shadow-xl hover:shadow-gray-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
-              <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
+            <div className="bg-section p-5 rounded-2xl shadow-soft hover:shadow-lg hover:border-primary border border-transparent hover:-translate-y-2 transform transition-all duration-300 ease-in-out relative">
+              <div className="absolute top-3 right-3 bg-accent-yellow/10 text-accent-yellow p-2 rounded-full">
                 <Droplet size={18} />
               </div>
-              <p className="text-sm font-medium mb-1 text-[#546E7A]">Water Intake</p>
-              <p className="text-2xl font-bold text-[#263238]">
+              <p className="text-sm font-medium mb-1 text-body">Water Intake</p>
+              <p className="text-2xl font-bold text-heading">
                 {waterIntakeGlasses} Glass{waterIntakeGlasses !== 1 ? "es" : ""}
               </p>
-              <p className="text-sm text-[#546E7A]">Goal: {waterGoalGlasses} Glasses</p>
-              {waterIntakeGlasses > waterGoalGlasses && (
-                <p className="text-sm text-[#F4511E] mt-1 font-semibold">
-                  Surpassed by {waterIntakeGlasses - waterGoalGlasses} Glass
-                  {waterIntakeGlasses - waterGoalGlasses > 1 ? "es" : ""}
-                </p>
-              )}
-              <p className="text-sm text-gray-500 mt-1">({waterIntakeML} ml)</p>
+              <p className="text-sm text-body">Goal: {waterGoalGlasses} Glasses</p>
+              <p className="text-xs text-body/70 mt-1">({waterIntakeML} ml)</p>
             </div>
 
             {/* Weight Card */}
-            <div className="bg-[#FFFDF9] p-5 rounded-2xl  shadow-xl hover:shadow-gray-500/50 hover:scale-110 transform transition-all duration-300 ease-in-out relative">
-              <div className="absolute top-3 right-3 bg-[#F4511E] text-white p-1 rounded-full shadow">
+            <div className="bg-section p-5 rounded-2xl shadow-soft hover:shadow-lg hover:border-primary border border-transparent hover:-translate-y-2 transform transition-all duration-300 ease-in-out relative">
+              <div className="absolute top-3 right-3 bg-primary/10 text-primary p-2 rounded-full">
                 <Weight size={18} />
               </div>
-              <p className="text-sm font-medium mb-1 text-[#546E7A]">Weight</p>
-              <p className="text-2xl font-bold text-[#263238]">
-                {weight !== null ? `${weight} kg` : "Loading..."}
+              <p className="text-sm font-medium mb-1 text-body">Weight</p>
+              <p className="text-2xl font-bold text-heading">
+                {weight !== null ? `${weight} kg` : "..."}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right Image */}
+        {/* Right Image with softened shadow */}
         <div className="hidden md:block w-full md:w-1/3 z-10">
           <img
             src={heroImage}
-            alt="Hero"
-            className="max-h-[280px] mx-auto drop-shadow-[0_10px_25px_rgba(0,0,0,0.4)] hover:scale-110 transition-all duration-300 ease-in-out rounded-xl"
+            alt="Healthy food bowl"
+            className="max-h-[280px] mx-auto shadow-lg hover:scale-110 transition-all duration-300 ease-in-out rounded-xl"
           />
         </div>
-      </div>
-
-      {/* Wavy Background */}
-      <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-0">
-        <svg
-          className="relative block w-full h-[350px]"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 1440 320"
-          preserveAspectRatio="none"
-        >
-          <path
-            fill="#FFFDF9"
-            d="M0,200 C360,360 1080,80 1440,200 L1440,320 L0,320 Z"
-          />
-        </svg>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { registerUser } from "../api/auth";
 import { User, Mail, Lock, CircleCheck, CircleX } from "lucide-react";
@@ -19,97 +18,94 @@ const Register = ({ onClose, onSwitchToLogin }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!isFormValid) {
-      toast.warning("Please ensure your password meets all the requirements.");
+      toast.warning("Please ensure your password meets all requirements.");
       return;
     }
-
     try {
       await registerUser({ full_name, email, password, password2 });
-      toast.success("Registration successful! Redirecting to login...");
-setTimeout(() => {
-  onSwitchToLogin(); // Switch to login modal
-}, 1000);
-
+      toast.success("Registration successful! Please login to continue.");
+      setTimeout(() => {
+        onSwitchToLogin();
+      }, 1000);
     } catch (error) {
-      toast.error(
-        error?.response?.data?.message || "Registration failed. Please try again."
-      );
+      toast.error(error?.response?.data?.message || "Registration failed. Please try again.");
     }
   };
 
   return (
-    <div className="text-left w-full max-w-xs mx-auto text-sm">
-      <h2 className="text-xl font-bold text-center mb-4 text-gray-900">Sign up</h2>
+    // The main container is designed to fit inside a themed modal.
+    <div className="text-left w-full max-w-sm mx-auto p-4 font-['Poppins']">
+      <h2 className="text-3xl font-['Lora'] font-bold text-center mb-6 text-heading">Create Account</h2>
 
-      <form onSubmit={handleRegister}>
+      <form onSubmit={handleRegister} className="space-y-4">
         {/* Full Name */}
-        <div className="mb-3">
-          <label htmlFor="full_name" className="block mb-1 font-medium text-gray-800">
-            Name
+        <div>
+          <label htmlFor="register-full_name" className="block mb-1 font-semibold text-heading text-sm">
+            Full Name
           </label>
           <div className="relative">
             <input
-              id="full_name"
+              id="register-full_name"
               type="text"
-              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
-              placeholder="Full name"
+              className="w-full pl-10 pr-4 py-3 bg-main border border-custom text-heading rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-sm placeholder:text-body/60"
+              placeholder="Enter your full name"
               value={full_name}
               onChange={(e) => setfull_name(e.target.value)}
               required
             />
-            <User className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-body/60" />
           </div>
         </div>
 
         {/* Email */}
-        <div className="mb-3">
-          <label htmlFor="email" className="block mb-1 font-medium text-gray-800">
+        <div>
+          <label htmlFor="register-email" className="block mb-1 font-semibold text-heading text-sm">
             Email
           </label>
           <div className="relative">
             <input
-              id="email"
+              id="register-email"
               type="email"
-              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
-              placeholder="email@domain"
+              className="w-full pl-10 pr-4 py-3 bg-main border border-custom text-heading rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-sm placeholder:text-body/60"
+              placeholder="email@domain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-body/60" />
           </div>
         </div>
 
         {/* Password */}
-        <div className="mb-3">
-          <label htmlFor="password" className="block mb-1 font-medium text-gray-800">
+        <div>
+          <label htmlFor="register-password" className="block mb-1 font-semibold text-heading text-sm">
             Password
           </label>
           <div className="relative">
             <input
-              id="password"
+              id="register-password"
               type="password"
-              className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
-              placeholder="Min 8 chars + symbol"
+              className="w-full pl-10 pr-4 py-3 bg-main border border-custom text-heading rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-sm placeholder:text-body/60"
+              placeholder="Min 8 chars + 1 symbol"
               value={password}
               onFocus={() => setShowChecklist(true)}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-body/60" />
           </div>
         </div>
 
         {/* Confirm Password */}
-        <div className="mb-3">
-          <label htmlFor="password2" className="block mb-1 font-medium text-gray-800">
-            Confirm
+        <div>
+          <label htmlFor="register-password2" className="block mb-1 font-semibold text-heading text-sm">
+            Confirm Password
           </label>
           <input
-            id="password2"
+            id="register-password2"
             type="password"
-            className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-[#FF6B3D] text-sm placeholder:text-xs"
-            placeholder="Re-enter"
+            className="w-full px-4 py-3 bg-main border border-custom text-heading rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-sm placeholder:text-body/60"
+            placeholder="Re-enter your password"
             value={password2}
             onChange={(e) => setPassword2(e.target.value)}
             required
@@ -118,29 +114,17 @@ setTimeout(() => {
 
         {/* Checklist */}
         {(showChecklist || password || password2) && (
-          <div className="mb-3 text-xs text-gray-700 bg-[#FFF8F0] border border-orange-200 p-2 rounded-md space-y-1">
-            <div className="flex items-center gap-2">
-              {isLengthValid ? (
-                <CircleCheck className="text-green-600 w-4 h-4" />
-              ) : (
-                <CircleX className="text-red-500 w-4 h-4" />
-              )}
-              <span>8+ characters</span>
+          <div className="text-sm text-heading bg-primary/10 border border-primary/20 p-3 rounded-md space-y-1">
+            <div className={`flex items-center gap-2 ${isLengthValid ? 'text-primary' : 'text-red'}`}>
+              {isLengthValid ? <CircleCheck className="w-4 h-4" /> : <CircleX className="w-4 h-4" />}
+              <span>At least 8 characters</span>
             </div>
-            <div className="flex items-center gap-2">
-              {hasSymbol ? (
-                <CircleCheck className="text-green-600 w-4 h-4" />
-              ) : (
-                <CircleX className="text-red-500 w-4 h-4" />
-              )}
-              <span>1+ symbol</span>
+            <div className={`flex items-center gap-2 ${hasSymbol ? 'text-primary' : 'text-red'}`}>
+              {hasSymbol ? <CircleCheck className="w-4 h-4" /> : <CircleX className="w-4 h-4" />}
+              <span>At least 1 special symbol</span>
             </div>
-            <div className="flex items-center gap-2">
-              {isMatch ? (
-                <CircleCheck className="text-green-600 w-4 h-4" />
-              ) : (
-                <CircleX className="text-red-500 w-4 h-4" />
-              )}
+            <div className={`flex items-center gap-2 ${isMatch ? 'text-primary' : 'text-red'}`}>
+              {isMatch ? <CircleCheck className="w-4 h-4" /> : <CircleX className="w-4 h-4" />}
               <span>Passwords match</span>
             </div>
           </div>
@@ -148,37 +132,29 @@ setTimeout(() => {
 
         {/* Submit */}
         <button
-  type="submit"
-  className="w-full bg-[#FF6B3D] hover:bg-[#e85c2a] hover:shadow-lg text-white px-5 py-2.5 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
->
-  Register
-</button>
-
+          type="submit"
+          disabled={!isFormValid}
+          className="w-full bg-primary hover:bg-primary-hover text-light px-5 py-3 rounded-lg font-semibold shadow-soft hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Register
+        </button>
       </form>
 
       {/* Social */}
-      <div className="mt-5 text-center">
-        <p className="text-gray-500 text-xs mb-2">or continue with</p>
+      <div className="mt-6 text-center">
+        <p className="text-body text-sm mb-2">or continue with</p>
         <div className="flex justify-center gap-4">
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            alt="Google"
-            className="w-5 h-5 cursor-pointer hover:scale-110 transition"
-          />
-          <img
-            src="https://www.svgrepo.com/show/448224/facebook.svg"
-            alt="Facebook"
-            className="w-5 h-5 cursor-pointer hover:scale-110 transition"
-          />
+          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-6 h-6 cursor-pointer hover:scale-110 transition" />
+          <img src="https://www.svgrepo.com/show/448224/facebook.svg" alt="Facebook" className="w-6 h-6 cursor-pointer hover:scale-110 transition" />
         </div>
       </div>
 
       {/* Switch to Login */}
-      <div className="mt-4 text-center text-xs">
-        <span className="text-gray-700 font-medium">Already registered? </span>
+      <div className="mt-6 text-center text-sm">
+        <span className="text-body font-medium">Already registered? </span>
         <button
           onClick={onSwitchToLogin}
-          className="text-[#FF6B3D] font-semibold underline hover:text-[#e85c2a] transition"
+          className="text-primary font-semibold underline hover:text-primary-hover transition"
         >
           Login here
         </button>

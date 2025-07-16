@@ -102,6 +102,8 @@ export const deleteMeal = async (mealId, token) => {
 };
 
 export const getMealsByDate = async (token, date) => {
+  console.log("Date sent to API:", date);  // Should look like "2025-07-15"
+
   try {
     const headers = {
       'Content-Type': 'application/json',

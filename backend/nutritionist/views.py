@@ -130,15 +130,17 @@ class PatientProfileDetailView(APIView):
 class PatientMealLogView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsNutritionist]
     serializer_class = UserMealSerializer1
-    # pagination_class = StandardResultsSetPagination # Uncomment if you have this
-    
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ['consumed_at','date']  # ✅ Filter by exact date
+    ordering_fields = ['consumed_at']
+    ordering = ['-consumed_at']
+
     def get_queryset(self):
         patient_id = self.kwargs['patient_id']
-        # 1. Verify assignment
         if not PatientAssignment.objects.filter(nutritionist=self.request.user, patient_id=patient_id).exists():
             raise PermissionDenied("You are not assigned to this patient.")
-        # 2. Return meal logs for the specified patient, ordered by most recent
         return UserMeal.objects.filter(user_id=patient_id).order_by('-consumed_at')
+
 
 
 class NutritionistPatientDietRecommendationsView(generics.ListAPIView):
@@ -408,3 +410,17 @@ class GeneratePlanForPatientView(APIView):
         except Exception as e:
             import traceback; traceback.print_exc()
             return Response({'error': f'An internal error occurred during diet generation: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PatientLabReportsView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+    serializer_class = LabReportSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['report_date']
+    ordering_fields = ['report_date']
+
+    def get_queryset(self):
+        patient_id = self.kwargs['patient_id']
+        if not PatientAssignment.objects.filter(nutritionist=self.request.user, patient_id=patient_id).exists():
+            raise PermissionDenied("You are not assigned to this patient.")
+        return LabReport.objects.filter(user_id=patient_id).order_by('-report_date')

@@ -12,6 +12,7 @@ EditDietPlanView,
 GeneratePlanForPatientView,
 NutritionistCreatePatientView,
 NutritionistPatientDietRecommendationsView,
+PatientLabReportsView,
 PatientMealLogView,
 PatientProfileDetailView,
 UpdateRetrainingFlagsView,
@@ -60,6 +61,8 @@ urlpatterns = [
     #GENERATE PLAN
     path('patients/<int:patient_id>/generate-plan/', GeneratePlanForPatientView.as_view(), name='nutritionist-generate-patient-plan'),
     
+    
+    path('nutritionist/patients/<int:patient_id>/lab-reports/', PatientLabReportsView.as_view()),
   
 ]
 

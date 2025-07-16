@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { getMealsByDate } from "../../../api/mealLog";
 // Import react-toastify for attractive notifications
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -33,13 +32,12 @@ import {
   reviewDietPlan,
   submitFeedbackForML,
   generateDietPlan,
+  getPatientMealsByDate,
+  getLabReportByDate,
+  
 } from "../../../api/nutritionistApi";
 // Removed getLabReportsInRange from imports
-import {
-  getLatestLabReports,
-  getLabReportByDate,
-  getLabReportsByMonth,
-} from "../../../api/diabeticApi";
+
 
 const PatientDetailsPage = () => {
   const { id } = useParams();
@@ -52,6 +50,8 @@ const PatientDetailsPage = () => {
   const [feedback, setFeedback] = useState("");
   const [editStates, setEditStates] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearchingReports, setIsSearchingReports] = useState(false);
+
 
   const [filteredMeals, setFilteredMeals] = useState([]);
   const [selectedMealDate, setSelectedMealDate] = useState("");
@@ -186,40 +186,45 @@ const PatientDetailsPage = () => {
   };
 
   const handleMealSearchByDate = async (e) => {
-    const input = e.target.value;
-    setSelectedMealDate(input);
-    setMealCurrentPage(1);
+  const input = e.target.value;
+  setSelectedMealDate(input);
+  setMealCurrentPage(1);
 
-    if (!input) {
-      setFilteredMeals([]);
-      setActiveLogDate(null);
-      return;
-    }
+  if (!input) {
+    setFilteredMeals([]);
     setActiveLogDate(null);
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("❌ No token found in localStorage.");
-      toast.error("Authentication token not found. Please log in again.");
-      return;
-    }
+    return;
+  }
 
-    setIsSearchingMeals(true);
-    try {
-      const res = await getMealsByDate(token, input);
-      const results = res.data?.results || [];
-      setFilteredMeals(results);
-      if (results.length > 0) {
-        setActiveLogDate(new Date(results[0].date).toDateString());
-      } else {
-        toast.info(`No meals found for ${input}.`);
-      }
-    } catch (err) {
-      console.error("❌ Error fetching meals by date:", err);
-      toast.error("Failed to fetch meals for the selected date.");
-    } finally {
-      setIsSearchingMeals(false);
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.error("❌ No token found in localStorage.");
+    toast.error("Authentication token not found. Please log in again.");
+    return;
+  }
+
+  setIsSearchingMeals(true);
+  setActiveLogDate(null);
+
+  try {
+    const res = await getPatientMealsByDate(id, input); // ✅ Use `id` directly here
+    const results = res.data?.results || [];
+    setFilteredMeals(results);
+
+    if (results.length > 0) {
+      setActiveLogDate(new Date(results[0].date).toDateString());
+    } else {
+      toast.info(`No meals found for ${input}.`);
     }
-  };
+  } catch (err) {
+    console.error("❌ Error fetching meals by date:", err);
+    toast.error("Failed to fetch meals for the selected date.");
+  } finally {
+    setIsSearchingMeals(false);
+  }
+};
+
+
 
   const handleLogDateClick = (date) => {
     setActiveLogDate((prevDate) => (prevDate === date ? null : date));
@@ -271,24 +276,46 @@ const PatientDetailsPage = () => {
     }
   };
 
-  const handleFetchByDate = () => {
-    if (!reportDate) return toast.warn("Please select a date.");
-    handleApiCall(
-      () => getLabReportByDate(id, reportDate), // Correctly passing ID
-      `Report for ${reportDate} loaded.`
-    );
-  };
+  const handleLabReportSearchByDate = async (e) => {
+  const inputDate = e.target.value;
+  setReportDate(inputDate);
 
-  const handleFetchByMonth = () => {
-    if (!reportMonth) return toast.warn("Please select a month.");
-    handleApiCall(
-      () => getLabReportsByMonth(id, reportMonth),
-      `Reports for ${new Date(reportMonth + "-02").toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      })} loaded.`
-    );
-  };
+  if (!inputDate) {
+    setLabReports([]);
+    return;
+  }
+
+  setIsSearchingReports(true);
+
+  try {
+    const res = await getLabReportByDate(id, inputDate);
+    const results = res.data?.results || [];
+
+    if (results.length > 0) {
+      setLabReports(results);
+      toast.success(`Report for ${inputDate} loaded.`);
+    } else {
+      toast.info(`No lab reports found for ${inputDate}.`);
+    }
+  } catch (err) {
+    console.error("❌ Error fetching lab report by date:", err);
+    toast.error("Failed to fetch lab report.");
+  } finally {
+    setIsSearchingReports(false);
+  }
+};
+
+
+  // const handleFetchByMonth = () => {
+  //   if (!reportMonth) return toast.warn("Please select a month.");
+  //   handleApiCall(
+  //     () => getLabReportsByMonth(id, reportMonth),
+  //     `Reports for ${new Date(reportMonth + "-02").toLocaleString("default", {
+  //       month: "long",
+  //       year: "numeric",
+  //     })} loaded.`
+  //   );
+  // };
 
   const handleFetchLatest = () => {
     handleApiCall(() => getLatestLabReports(id), "Latest reports loaded.");
@@ -610,69 +637,50 @@ const PatientDetailsPage = () => {
               </div>
             )}
             {activeTab === "reports" && (
-              <div>
+              <>
                 <h2 className="text-2xl font-bold font-['Poppins'] text-[#263238] mb-4">
                   Lab Reports
                 </h2>
-                <div className="p-4 bg-gray-50/70 rounded-xl border border-gray-200 mb-6 space-y-4">
-                  <h3 className="text-lg font-['Poppins'] font-semibold text-gray-800">
-                    Filter Reports
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 items-end">
-                    <div className="flex items-end gap-2">
-                      <div className="flex-grow">
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">
-                          By Specific Date
-                        </label>
-                        <input
-                          type="date"
-                          value={reportDate}
-                          onChange={(e) => setReportDate(e.target.value)}
-                          max={today}
-                          className="w-full border border-[#ECEFF1] px-3 py-2 rounded-md text-sm bg-white focus:ring-1 focus:ring-[#FF7043]"
-                        />
-                      </div>
-                      <button
-                        onClick={handleFetchByDate}
-                        disabled={loadingReport}
-                        className="px-4 py-2 bg-[#FF7043] text-white rounded-md text-sm font-semibold hover:bg-[#F4511E] transition disabled:bg-gray-300"
-                      >
-                        Search
-                      </button>
-                    </div>
-                    <div className="flex items-end gap-2">
-                      <div className="flex-grow">
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">
-                          By Month
-                        </label>
-                        <input
-                          type="month"
-                          value={reportMonth}
-                          onChange={(e) => setReportMonth(e.target.value)}
-                          max={today.slice(0, 7)}
-                          className="w-full border border-[#ECEFF1] px-3 py-2 rounded-md text-sm bg-white focus:ring-1 focus:ring-[#FF7043]"
-                        />
-                      </div>
-                      <button
-                        onClick={handleFetchByMonth}
-                        disabled={loadingReport}
-                        className="px-4 py-2 bg-[#FF7043] text-white rounded-md text-sm font-semibold hover:bg-[#F4511E] transition disabled:bg-gray-300"
-                      >
-                        Search
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-200">
+                
+
+  <div className="mb-6 flex flex-wrap items-center gap-4">
+  <label
+    htmlFor="reportDate"
+    className="text-sm font-semibold text-[#546E7A] mr-2"
+  >
+    Filter by Report Date:
+  </label>
+  <input
+    type="date"
+    id="reportDate"
+    value={reportDate}
+    onChange={handleLabReportSearchByDate}
+    max={new Date().toISOString().split("T")[0]}
+    className="border border-gray-300 rounded-md p-2 mr-2"
+  />
+  {isSearchingReports && (
+    <FaSpinner className="animate-spin text-gray-500 text-lg mr-2" />
+  )}
+  {reportDate && !isSearchingReports && (
+    <button
+      onClick={() => {
+        setReportDate("");
+        setLabReports([]);
+        handleFetchLatest(); // reload latest reports
+      }}
+      className="text-xs text-red-500 hover:underline"
+    >
+      Clear
+    </button>
+  )}
+</div>
+
+
+
+                    
+                 
                    
-                    <button
-                      onClick={handleResetFilters}
-                      disabled={loadingReport}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-md text-sm font-semibold hover:bg-gray-600 transition disabled:bg-gray-300"
-                    >
-                      <FaUndo /> Reset
-                    </button>
-                  </div>
-                </div>
+                   
                 {loadingReport ? (
                   <div className="flex justify-center items-center py-10">
                     <FaSpinner className="animate-spin text-4xl text-[#FF7043]" />
@@ -719,8 +727,10 @@ const PatientDetailsPage = () => {
                     </p>
                   </div>
                 )}
-              </div>
+              
+              </>
             )}
+            
             {activeTab === "meals" && (
               <div>
                 <h2 className="text-2xl font-bold font-['Poppins'] text-[#263238] mb-6">
@@ -1206,6 +1216,7 @@ const PatientDetailsPage = () => {
               </div>
             )}
           </div>
+        
         </div>
       </main>
     </div>

@@ -27,7 +27,8 @@ const QuickMealLogger = ({ onMealLogged }) => {
     return match ? parseInt(match[1], 10) : 1;
   };
 
-  const currentPage = pagination.currentPageUrl ? extractPageNumber(pagination.currentPageUrl) : 1;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const totalPages = Math.ceil(pagination.count / 5);
 
   const mealTypeMap = {
@@ -237,32 +238,59 @@ const QuickMealLogger = ({ onMealLogged }) => {
 
                   return (
                     <li
-                      key={meal._id}
-                      className={`relative group z-50 flex items-center justify-between p-4 rounded-xl border ${style.border} bg-section shadow-sm transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary hover:-translate-y-px`}
-                    >
-                      <div className="flex items-center gap-4 overflow-hidden">
-                        <div className={`p-3 rounded-full text-xl ${style.bg} ${style.iconColor} flex-shrink-0`}>
-                          <FaUtensils />
-                        </div>
-                        <div className="truncate">
-                          <p className="font-semibold text-heading truncate">{meal.food_name}</p>
-                          <p className="text-sm text-body capitalize">
-                            {meal.meal_type || 'Meal'} • {meal.quantity} {meal.unit}
-                          </p>
-                          {meal.remarks && (
-                            <p className="text-xs italic text-body/70 truncate">“{meal.remarks}”</p>
-                          )}
-                        </div>
-                      </div>
+  key={meal.id}
+  className={`relative group flex flex-col gap-1 p-4 rounded-xl border ${style.border} bg-section shadow-sm transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary`}
+>
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-4 overflow-hidden">
+      <div className={`p-3 rounded-full text-xl ${style.bg} ${style.iconColor} flex-shrink-0`}>
+        <FaUtensils />
+      </div>
+      <div className="truncate">
+        <p className="font-semibold text-heading truncate">{meal.food_name}</p>
+        <p className="text-sm text-body capitalize">
+          {meal.meal_type || 'Meal'} • {meal.quantity} {meal.unit}
+        </p>
+        {meal.remarks && (
+          <p className="text-xs italic text-body/70 truncate">“{meal.remarks}”</p>
+        )}
+      </div>
+    </div>
 
-                      <button
-                        onClick={() => handleDeleteMeal(meal._id)}
-                        className="text-body/60 hover:text-red-500 transition-colors p-2 flex-shrink-0"
-                        title="Remove"
-                      >
-                        <FaTrash size={14} />
-                      </button>
-                    </li>
+    <button
+      onClick={() => handleDeleteMeal(meal.id)}
+      className="text-body/60 hover:text-red-500 transition-colors p-2 flex-shrink-0 z-40"
+      title="Remove"
+    >
+      <FaTrash size={14} />
+    </button>
+  </div>
+
+  {/* Hover Info Box below */}
+  <div
+  className="absolute w-[200px] left-[60%] bg-white border border-gray-300 
+    rounded-md shadow-lg p-3 opacity-0 group-hover:opacity-100 
+    transition-opacity duration-300 z-30 pointer-events-none"
+>
+
+    <p className="text-xs text-gray-700">
+      <span className="font-semibold">📅 Date:</span> {meal.date}
+    </p>
+    <p className="text-xs text-gray-700">
+      <span className="font-semibold">⏰ Time:</span>{' '}
+      {new Date(meal.consumed_at).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}
+    </p>
+    <p className="text-xs text-gray-700">
+      <span className="font-semibold">🔥 Calories:</span> {meal.calories} kcal
+    </p>
+  </div>
+</li>
+
+
+
                   );
                 })}
               </ul>
@@ -270,20 +298,43 @@ const QuickMealLogger = ({ onMealLogged }) => {
 
             {totalPages > 1 && (
               <div className="flex justify-center mt-6 items-center gap-2 flex-wrap">
-                <button onClick={handlePrevPage} disabled={!pagination.previous} className="px-3 py-1 text-base rounded-md border border-custom disabled:text-body/40 disabled:cursor-not-allowed text-body bg-light hover:bg-light/80 disabled:bg-light transition-colors">
+                <button
+  onClick={() => {
+    handlePrevPage();
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  }}
+ className="px-3 py-1 text-base rounded-md border border-custom disabled:text-body/40 disabled:cursor-not-allowed text-body bg-light hover:bg-light/80 disabled:bg-light transition-colors">
                   ←
                 </button>
-                {Array.from({ length: totalPages }).map((_, idx) => {
-                  const pageNum = idx + 1;
-                  const isCurrent = pageNum === currentPage;
-                  return (
-                    <button key={pageNum} onClick={() => handlePageChange(`https://trackeats.onrender.com/api/logmeals/?page=${pageNum}`)}
-                      className={`px-3 py-1 text-sm rounded-md border transition-colors ${isCurrent ? 'bg-primary text-light border-primary font-semibold' : 'bg-light text-body border-custom hover:bg-primary/10'}`}>
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                <button onClick={() => handlePageChange(pagination.next)} disabled={!pagination.next} className="px-3 py-1 text-base rounded-md border border-custom disabled:text-body/40 disabled:cursor-not-allowed text-body bg-light hover:bg-light/80 disabled:bg-light transition-colors">
+               {Array.from({ length: totalPages }).map((_, idx) => {
+  const pageNum = idx + 1;
+  const isCurrent = pageNum === currentPage;
+
+  return (
+    <button
+      key={pageNum}
+      onClick={() => {
+  handlePageChange(`https://trackeats.onrender.com/api/logmeals/?page=${pageNum}`);
+  setCurrentPage(pageNum);
+}}
+
+      className={`px-3 py-1 text-sm rounded-md border transition-colors ${
+        isCurrent
+          ? 'bg-primary text-light border-primary font-semibold'
+          : 'bg-light text-body border-custom hover:bg-primary/10'
+      }`}
+    >
+      {pageNum}
+    </button>
+  );
+})}
+
+                <button 
+  onClick={() => {
+    handlePageChange(pagination.next);
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  }}
+ className="px-3 py-1 text-base rounded-md border border-custom disabled:text-body/40 disabled:cursor-not-allowed text-body bg-light hover:bg-light/80 disabled:bg-light transition-colors">
                   →
                 </button>
               </div>

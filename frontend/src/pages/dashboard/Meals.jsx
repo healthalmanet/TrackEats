@@ -10,13 +10,12 @@ import { getUserProfile } from '../../api/userProfile';
 import { getDiabeticProfile } from '../../api/diabeticApi';
 
 // --- THEME-ALIGNED LIFESTYLE RECOMMENDATION ENGINE ---
+// ... (generateHealthTips function remains the same)
 const generateHealthTips = (profile, report) => {
   if (!profile || !report) return [];
   const bmi = profile.weight_kg / ((profile.height_cm / 100) ** 2);
   
   const tipLibrary = [
-    // All icons now use 'text-primary' for a consistent, branded look.
-    // Backgrounds are still varied for visual interest.
     { id: 'manage_sugar', priority: 10, condition: () => profile.is_diabetic || report.hba1c > 5.7, content: { icon: <ShieldCheck />, title: "Focus on Low-GI Carbs", description: "Choose whole grains and vegetables over refined carbs to help keep your blood sugar levels stable.", bg: 'bg-primary/10', color: 'text-primary' }},
     { id: 'heart_health_fats', priority: 9, condition: () => report.ldl_cholesterol > 100 || report.triglycerides > 150, content: { icon: <HeartPulse />, title: "Embrace Healthy Fats", description: "Support your heart with foods rich in healthy fats like avocados, nuts, seeds, and olive oil.", bg: 'bg-accent-coral/10', color: 'text-primary' }},
     { id: 'heart_health_bp', priority: 9, condition: () => profile.is_hypertensive || report.blood_pressure_systolic >= 130, content: { icon: <HeartPulse />, title: "Be Mindful of Sodium", description: "Support healthy blood pressure by being mindful of sodium and adding flavor with herbs and spices.", bg: 'bg-accent-coral/10', color: 'text-primary' }},
@@ -34,7 +33,6 @@ const generateHealthTips = (profile, report) => {
   uniqueMatchedTips.sort((a, b) => b.priority - a.priority);
   return uniqueMatchedTips.slice(0, 4);
 };
-
 
 const Meals = () => {
   const [showAll, setShowAll] = useState(false);
@@ -89,31 +87,52 @@ const Meals = () => {
         const [currentPlanResponse, historyResponse, profileResponse, medicalResponse] = await Promise.all([
           getDietApi(), getDietHistoryApi(), getUserProfile(), getDiabeticProfile()
         ]);
-        let combinedPlans = [], initialPlanToDisplay = null;
+
+        let combinedPlans = [];
+        let initialPlanToDisplay = null;
+        let currentPlanStartDate = null; // --- FIX: Variable to track current plan's date
+
+        // First, process the current active plan
         if (currentPlanResponse.status_code === "ACTIVE_PLAN_FOUND" && currentPlanResponse.plan_data) {
           const currentPlan = { ...currentPlanResponse.plan_data, id: 'current', label: 'Current Active Plan' };
           combinedPlans.push(currentPlan);
           initialPlanToDisplay = currentPlan;
+          currentPlanStartDate = currentPlan.for_week_starting; // --- FIX: Store its start date for de-duplication
         }
+
+        // Then, process history, ensuring no duplicates are added
         if (historyResponse.status_code === "HISTORY_FOUND" && Array.isArray(historyResponse.plans)) {
-          const formattedHistory = historyResponse.plans.map(p => ({ ...p, label: `Plan: ${formatDate(p.for_week_starting)}`}));
+          // --- FIX: Filter the history to remove the plan that is already showing as "Current"
+          const uniqueHistory = historyResponse.plans.filter(
+            p => p.for_week_starting !== currentPlanStartDate
+          );
+          
+          const formattedHistory = uniqueHistory.map(p => ({ ...p, label: `Plan: ${formatDate(p.for_week_starting)}`}));
           combinedPlans = [...combinedPlans, ...formattedHistory];
         }
+
         setAllPlans(combinedPlans);
+
         if (initialPlanToDisplay) {
           const { processedDietData, processedDailyMeals } = processPlanData(initialPlanToDisplay);
-          setDietData(processedDietData); setDailyMeals(processedDailyMeals); setSelectedPlanId('current');
+          setDietData(processedDietData);
+          setDailyMeals(processedDailyMeals);
+          setSelectedPlanId('current');
         } else if (combinedPlans.length > 0) {
           const firstPlan = combinedPlans[0];
           const { processedDietData, processedDailyMeals } = processPlanData(firstPlan);
-          setDietData(processedDietData); setDailyMeals(processedDailyMeals); setSelectedPlanId(firstPlan.id);
+          setDietData(processedDietData);
+          setDailyMeals(processedDailyMeals);
+          setSelectedPlanId(firstPlan.id);
         } else {
           setDietData({ status: 'NO_PLAN_FOUND', message: 'No diet plans found.' });
         }
+        
         if (profileResponse && medicalResponse) {
           setHealthTips(generateHealthTips(profileResponse, medicalResponse));
         }
       } catch (error) {
+        console.error("Failed to fetch diet data:", error);
         setDietData({ status: 'ERROR', message: 'Failed to load data.' });
       } finally {
         setLoading(false);
@@ -124,14 +143,19 @@ const Meals = () => {
   
   const handlePlanChange = (e) => {
     const newPlanId = e.target.value;
+    // Find the selected plan from the corrected 'allPlans' list
     const selectedPlan = allPlans.find(p => String(p.id) === String(newPlanId));
     if (selectedPlan) {
       const { processedDietData, processedDailyMeals } = processPlanData(selectedPlan);
-      setDietData(processedDietData); setDailyMeals(processedDailyMeals); setSelectedPlanId(newPlanId);
-      setShowAll(false); setActiveDay(null);
+      setDietData(processedDietData);
+      setDailyMeals(processedDailyMeals);
+      setSelectedPlanId(newPlanId);
+      setShowAll(false);
+      setActiveDay(null);
     }
   };
   
+  // ... (rest of the component remains the same)
   const handleCardClick = (day) => setActiveDay(day);
   const handleCloseModal = () => setActiveDay(null);
 

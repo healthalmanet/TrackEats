@@ -40,7 +40,7 @@ const getAxiosConfig = () => {
 export const getDietApi = async () => {
   try {
     // The endpoint for the active plan
-    const response = await axios.get(`${BASE_URL}/diet-plan/active/`, getAxiosConfig());
+    const response = await axios.get(`${BASE_URL}/diet/`, getAxiosConfig());
     return response.data;
   } catch (error) {
     console.error("API Error in getDietApi:", error.response?.data || error.message);

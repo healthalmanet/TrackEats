@@ -1,120 +1,132 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
+// --- Themed CalorieProgressBar Component ---
 const CalorieProgressBar = ({ 
-  currentCalories = 434348447, 
-  targetCalories = 1995, 
-  title = "Progress",
-  showWarning = true 
+  currentCalories = 0, 
+  targetCalories = 2000, 
+  title = "Progress"
 }) => {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   
-  // Calculate progress percentage
-  const progressPercentage = Math.min((currentCalories / targetCalories) * 100, 100);
+  // Calculate progress and state
+  const progressPercentage = targetCalories > 0 ? Math.min((currentCalories / targetCalories) * 100, 100) : 0;
   const isOverTarget = currentCalories > targetCalories;
-  const excessCalories = currentCalories - targetCalories;
+  const remainingCalories = targetCalories - currentCalories;
   
   useEffect(() => {
+    // Animate the bar on change
     const timer = setTimeout(() => {
       setAnimatedProgress(progressPercentage);
     }, 100);
-    
     return () => clearTimeout(timer);
   }, [progressPercentage]);
 
   const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-IN').format(num);
+    return new Intl.NumberFormat('en-IN').format(Math.round(num));
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 sm:p-6 shadow-sm">
-        {/* Header */}
+    <div className="w-full max-w-md mx-auto font-['Poppins']">
+      {/* Card now uses theme's section colors */}
+      <div className="bg-section border border-custom rounded-2xl p-4 sm:p-6 shadow-soft">
+        
+        {/* Header with themed text */}
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-gray-700 font-medium text-base sm:text-lg">
+          <h3 className="text-heading font-semibold text-base sm:text-lg">
             {title}
           </h3>
-          <div className="text-gray-700 font-medium text-sm sm:text-base">
-            <span className="font-semibold">{formatNumber(currentCalories)}</span>
-            <span className="text-gray-500"> / {formatNumber(targetCalories)} cal</span>
+          <div className="text-heading font-medium text-sm sm:text-base">
+            <span className="font-bold">{formatNumber(currentCalories)}</span>
+            <span className="text-body"> / {formatNumber(targetCalories)} cal</span>
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar with themed track and fill */}
         <div className="mb-4">
-          <div className="w-full bg-gray-200 rounded-full h-3 sm:h-4 overflow-hidden">
+          <div className="w-full bg-light rounded-full h-3 sm:h-4 overflow-hidden">
             <div 
-              className={`h-full rounded-full transition-all duration-1000 ease-out ${isOverTarget ? 'bg-red-500' : 'bg-red-400'}`}
+              className={`h-full rounded-full transition-all duration-1000 ease-out ${isOverTarget ? 'bg-red' : 'bg-primary'}`}
               style={{ 
                 width: `${animatedProgress}%`,
-                boxShadow: isOverTarget ? '0 0 8px rgba(239, 68, 68, 0.5)' : 'none'
+                boxShadow: isOverTarget ? '0 0 8px var(--color-accent-red)' : 'none'
               }}
             />
           </div>
         </div>
 
-        {/* Status Text */}
+        {/* Status Text (Percentage) with themed colors */}
         <div className="text-center mb-2">
-          <span className={`text-base sm:text-lg font-semibold ${isOverTarget ? 'text-red-600' : 'text-gray-700'}`}>
+          <span className={`text-base sm:text-lg font-bold ${isOverTarget ? 'text-red' : 'text-primary'}`}>
             {Math.round(progressPercentage)}% Complete
           </span>
         </div>
 
-        {/* Warning Message */}
-        {showWarning && isOverTarget && (
-          <div className="flex items-center justify-center gap-2 text-gray-600 text-sm sm:text-base">
-            <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+        {/* Improved Status/Warning Message */}
+        <div className="text-center text-body text-sm sm:text-base">
+          {isOverTarget ? (
+            <div className="flex items-center justify-center gap-2 text-red font-medium">
+              <AlertTriangle className="w-4 h-4 text-red flex-shrink-0" />
+              <span>
+                <span className="font-semibold">{formatNumber(currentCalories - targetCalories)}</span> calories over target
+              </span>
+            </div>
+          ) : (
             <span>
-              <span className="font-semibold">{formatNumber(excessCalories)}</span> calories over target
+              <span className="font-semibold text-heading">{formatNumber(remainingCalories)}</span> calories remaining
             </span>
-          </div>
-        )}
-        
-        {showWarning && !isOverTarget && (
-          <div className="text-center text-gray-600 text-sm sm:text-base">
-            Great job! You've reached your calorie target.
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
+// --- Parent Demo Component (also themed) ---
 const CalorieProgress = () => {
   const [calorieData, setCalorieData] = useState({
     current: 1200,
     target: 1995
   });
 
+  // Example data scenarios to cycle through
   const simulateDataUpdate = () => {
     const scenarios = [
-      { current: 1200, target: 1995 },
+      { current: 800, target: 1995 },
       { current: 1995, target: 1995 },
       { current: 2500, target: 1995 },
-      { current: 434348447, target: 1995 },
-      { current: 800, target: 1995 },
+      { current: 434, target: 1995 },
     ];
-    
-    const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-    setCalorieData(randomScenario);
+    const currentIndex = scenarios.findIndex(s => s.current === calorieData.current);
+    const nextIndex = (currentIndex + 1) % scenarios.length;
+    setCalorieData(scenarios[nextIndex]);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
-      
+    <div className="min-h-screen bg-main p-4 sm:p-8 font-['Poppins']">
       <div className="max-w-2xl mx-auto space-y-8">
-        
         <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-            Calorie Bar
+          <h1 className="text-2xl sm:text-3xl font-['Lora'] font-bold text-heading mb-2">
+            Daily Calorie Progress
           </h1>
-          <p className="text-gray-600 mb-6"></p>
+          <p className="text-body mb-6">A visual summary of your energy intake.</p>
         </div>
 
         <CalorieProgressBar 
           currentCalories={calorieData.current}
           targetCalories={calorieData.target}
+          title="Today's Calories"
         />
+
+        {/* Added a button to demonstrate the component's different states */}
+        <div className="text-center">
+          <button
+            onClick={simulateDataUpdate}
+            className="bg-primary text-light font-semibold px-6 py-2 rounded-lg shadow-soft hover:bg-primary-hover transition-all transform hover:scale-105"
+          >
+            Simulate Update
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -20,37 +20,37 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
-import { getWeight, postWeight } from "../../../api/Weight"; // Assuming this path is correct
+import { getWeight, postWeight } from "../../../api/Weight";
 
 // --- Helper: Reusable Card Component for consistent styling ---
 const Card = ({ children, className }) => (
     <div 
-        className={`bg-white/60 backdrop-blur-md p-5 rounded-2xl border border-orange-200/60 shadow-md ${className}`}
+        className={`bg-section p-5 rounded-2xl border border-custom shadow-soft ${className}`}
     >
         {children}
     </div>
 );
 
-// --- Helper: Custom Tooltip for the Chart ---
-const CustomTooltip = ({ active, payload, label }) => {
+// --- Helper: Custom Tooltip for the Chart (now themed) ---
+const CustomTooltip = ({ active, payload, label, themeColors }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white/80 backdrop-blur-sm p-3 border border-orange-200 rounded-lg shadow-lg">
-        <p className="text-slate-500 text-xs font-medium mb-1">{label}</p>
-        <p className="font-bold text-orange-500">{payload[0].value.toFixed(1)} kg</p>
+      <div className="bg-section p-3 border rounded-lg shadow-lg" style={{ borderColor: themeColors.primary }}>
+        <p className="text-body text-xs font-medium mb-1">{label}</p>
+        <p className="font-bold" style={{ color: themeColors.primary }}>{payload[0].value.toFixed(1)} kg</p>
       </div>
     );
   }
   return null;
 };
 
-// --- Current Status Component ---
+// --- Current Status Component (now themed) ---
 const CurrentStatus = ({ entries }) => {
   if (!entries || entries.length === 0) {
     return (
       <Card className="text-center">
-        <h3 className="text-md font-semibold text-slate-700 mb-2">Welcome!</h3>
-        <p className="text-sm text-slate-500">Log your weight to begin.</p>
+        <h3 className="text-md font-semibold text-heading mb-2">Welcome!</h3>
+        <p className="text-sm text-body">Log your weight to begin.</p>
       </Card>
     );
   }
@@ -64,24 +64,24 @@ const CurrentStatus = ({ entries }) => {
     <Card>
       <div className="flex justify-between items-start mb-2">
         <div>
-          <p className="text-sm text-slate-500">Current Weight</p>
-          <p className="text-3xl font-bold text-orange-500">{parseFloat(latestEntry.weight_kg).toFixed(1)}<span className="text-xl text-slate-400"> kg</span></p>
+          <p className="text-sm text-body">Current Weight</p>
+          <p className="text-3xl font-bold text-primary">{parseFloat(latestEntry.weight_kg).toFixed(1)}<span className="text-xl text-body"> kg</span></p>
         </div>
         {change !== 0 && (
-          <div className={`flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full ${isIncrease ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+          <div className={`flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full ${isIncrease ? 'bg-red/10 text-red' : 'bg-primary/10 text-primary'}`}>
             {isIncrease ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
             <span>{Math.abs(change).toFixed(1)}</span>
           </div>
         )}
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-body">
         Logged on {new Date(latestEntry.date).toLocaleDateString("en-GB", { day: 'numeric', month: 'long' })}
       </p>
     </Card>
   );
 };
 
-// --- Weight Insights Component ---
+// --- Weight Insights Component (now themed) ---
 const WeightInsights = ({ entries }) => {
   const { highest, lowest, trend } = useMemo(() => {
     if (entries.length < 2) return { highest: null, lowest: null, trend: null };
@@ -93,19 +93,19 @@ const WeightInsights = ({ entries }) => {
 
   return (
     <Card>
-      <h3 className="text-md font-semibold text-slate-700 mb-4">Overall Insights</h3>
+      <h3 className="text-md font-semibold text-heading mb-4">Overall Insights</h3>
       <div className="space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-3"><ChevronsUp className="text-red-500" size={18} /><span className="text-slate-600">Highest</span></div>
-          <span className="font-semibold text-slate-800">{highest?.toFixed(1)} kg</span>
+          <div className="flex items-center gap-3"><ChevronsUp className="text-red" size={18} /><span className="text-body">Highest</span></div>
+          <span className="font-semibold text-heading">{highest?.toFixed(1)} kg</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-3"><ChevronsDown className="text-green-500" size={18} /><span className="text-slate-600">Lowest</span></div>
-          <span className="font-semibold text-slate-800">{lowest?.toFixed(1)} kg</span>
+          <div className="flex items-center gap-3"><ChevronsDown className="text-primary" size={18} /><span className="text-body">Lowest</span></div>
+          <span className="font-semibold text-heading">{lowest?.toFixed(1)} kg</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-3">{trend > 0 ? <TrendingUp className="text-red-500" size={18}/> : <TrendingDown className="text-green-500" size={18}/>}<span className="text-slate-600">Trend</span></div>
-          <span className={`font-semibold ${trend > 0 ? 'text-red-500' : 'text-green-500'}`}>{trend > 0 ? '+' : ''}{trend?.toFixed(1)} kg</span>
+          <div className="flex items-center gap-3">{trend > 0 ? <TrendingUp className="text-red" size={18}/> : <TrendingDown className="text-primary" size={18}/>}<span className="text-body">Trend</span></div>
+          <span className={`font-semibold ${trend > 0 ? 'text-red' : 'text-primary'}`}>{trend > 0 ? '+' : ''}{trend?.toFixed(1)} kg</span>
         </div>
       </div>
     </Card>
@@ -119,7 +119,21 @@ const WeightTracker = () => {
   const [quickLogWeight, setQuickLogWeight] = useState("");
   const [quickLogDate, setQuickLogDate] = useState(new Date().toISOString().split("T")[0]);
   
-  const accentColor = "#FF7043"; // Your primary color
+  // ✅ DYNAMICALLY LOAD THEME COLORS FOR RECHARTS
+  const [chartColors, setChartColors] = useState({
+    primary: '#4CAF50', // Fallback
+    border: '#DDDDDD',  // Fallback
+    textBody: '#555555', // Fallback
+  });
+
+  useEffect(() => {
+    const styles = getComputedStyle(document.documentElement);
+    setChartColors({
+      primary: styles.getPropertyValue('--color-primary-accent').trim(),
+      border: styles.getPropertyValue('--color-border').trim(),
+      textBody: styles.getPropertyValue('--color-text-body').trim(),
+    });
+  }, []); // Run once on mount to get colors
 
   const fetchWeight = async () => {
     setLoading(true);
@@ -151,21 +165,34 @@ const WeightTracker = () => {
     })), [entries]);
 
   return (
-    // --- MODIFIED: Unified background gradient ---
-    <div className="min-h-screen bg-gradient-to-r to-blue-50 font-sans text-slate-800">
+    <div className="min-h-screen bg-main font-['Poppins'] text-body">
       <div className="max-w-6xl mx-auto p-4 lg:p-6">
-        <header className="mb-8"><h1 className="text-4xl font-extrabold text-orange-500">Weight Tracker</h1></header>
+        <header className="mb-8">
+            <h1 className="text-4xl font-['Lora'] font-extrabold text-heading">Weight Tracker</h1>
+        </header>
 
         <div className="flex flex-col lg:flex-row gap-6">
           <motion.aside initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="w-full lg:w-80 flex-shrink-0">
             <div className="space-y-5">
               <CurrentStatus entries={entries} />
               <Card>
-                <h3 className="text-md font-semibold text-slate-700 mb-4">Log New Weight</h3>
+                <h3 className="text-md font-semibold text-heading mb-4">Log New Weight</h3>
                 <div className="space-y-4">
-                  <div className="relative"><Scale className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input type="number" value={quickLogWeight} onChange={(e) => setQuickLogWeight(e.target.value)} className="w-full bg-orange-50/90 text-slate-800 border-orange-200/80 border rounded-lg pl-9 pr-4 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none" placeholder="Weight (kg)"/></div>
-                  <div className="relative"><Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input type="date" value={quickLogDate} onChange={(e) => setQuickLogDate(e.target.value)} className="w-full bg-orange-50/90 text-slate-800 border-orange-200/80 border rounded-lg pl-9 pr-4 py-2 focus:ring-2 focus:ring-orange-500 focus:outline-none"/></div>
-                  <motion.button onClick={handleSaveEntry} whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white py-2.5 rounded-lg font-semibold shadow-lg shadow-orange-500/40 hover:bg-orange-600 transition-all"><Plus size={18} />Add Entry</motion.button>
+                  <div className="relative">
+                    <Scale className="absolute left-3 top-1/2 -translate-y-1/2 text-body/60" size={16}/>
+                    <input type="number" value={quickLogWeight} onChange={(e) => setQuickLogWeight(e.target.value)} 
+                      className="w-full bg-main text-heading border border-custom rounded-lg pl-9 pr-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none" 
+                      placeholder="Weight (kg)"/>
+                  </div>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-body/60" size={16}/>
+                    <input type="date" value={quickLogDate} onChange={(e) => setQuickLogDate(e.target.value)} 
+                      className="w-full bg-main text-heading border border-custom rounded-lg pl-9 pr-4 py-2 focus:ring-2 focus:ring-primary focus:outline-none"/>
+                  </div>
+                  <motion.button onClick={handleSaveEntry} whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }} 
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-light py-2.5 rounded-lg font-semibold shadow-soft hover:shadow-lg hover:bg-primary-hover transition-all">
+                    <Plus size={18} />Add Entry
+                  </motion.button>
                 </div>
               </Card>
               <WeightInsights entries={entries} />
@@ -175,30 +202,37 @@ const WeightTracker = () => {
           <main className="flex-1 space-y-5">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
               <Card>
-                <h3 className="text-md font-semibold text-slate-700 mb-4">Progress Chart</h3>
+                <h3 className="text-md font-semibold text-heading mb-4">Progress Chart</h3>
                 <div className="h-72">
-                  {loading ? ( <div className="flex items-center justify-center h-full text-slate-400">Loading Chart...</div> ) 
+                  {loading ? ( <div className="flex items-center justify-center h-full text-body">Loading Chart...</div> ) 
                   : chartData.length > 1 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                        <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={accentColor} stopOpacity={0.4} /><stop offset="95%" stopColor={accentColor} stopOpacity={0.05} /></linearGradient></defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} domain={['dataMin - 1', 'dataMax + 1']} />
-                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: accentColor, strokeWidth: 1, strokeDasharray: '3 3' }}/>
-                        <Area type="monotone" dataKey="weight" stroke={accentColor} fill="url(#chartGradient)" strokeWidth={2.5} activeDot={{ r: 6, fill: '#fff', stroke: accentColor, strokeWidth: 2 }} />
+                        <defs>
+                          {/* ✅ Dynamic Gradient Colors */}
+                          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.4} />
+                            <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        {/* ✅ Dynamic Chart Colors */}
+                        <CartesianGrid strokeDasharray="3 3" stroke={chartColors.border} vertical={false} />
+                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: chartColors.textBody }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: chartColors.textBody }} axisLine={false} tickLine={false} domain={['dataMin - 1', 'dataMax + 1']} />
+                        <Tooltip content={<CustomTooltip themeColors={chartColors} />} cursor={{ stroke: chartColors.primary, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                        <Area type="monotone" dataKey="weight" stroke={chartColors.primary} fill="url(#chartGradient)" strokeWidth={2.5} activeDot={{ r: 6, fill: '#fff', stroke: chartColors.primary, strokeWidth: 2 }} />
                       </AreaChart>
                     </ResponsiveContainer>
-                  ) : ( <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2"><Scale className="w-8 h-8"/>Log another entry to see your chart.</div> )}
+                  ) : ( <div className="flex flex-col items-center justify-center h-full text-body gap-2"><Scale className="w-8 h-8"/>Log another entry to see your chart.</div> )}
                 </div>
               </Card>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
               <Card>
-                <h3 className="text-md font-semibold text-slate-700 mb-4">History</h3>
+                <h3 className="text-md font-semibold text-heading mb-4">History</h3>
                 <div className="relative">
-                  <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-orange-100 rounded"></div>
+                  <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-primary/10 rounded"></div>
                   <ul className="space-y-1">
                     <AnimatePresence>
                       {entries.map((entry, index) => {
@@ -208,14 +242,14 @@ const WeightTracker = () => {
                         const key = entry.id || entry.date;
                         return (
                           <motion.li key={key} layout initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -10 }} transition={{duration: 0.3}} className="relative flex items-center gap-4 py-2.5 pl-8">
-                            <div className="absolute left-2 top-1/2 -translate-y-1/2 -ml-1 w-2 h-2 bg-white border-2 border-orange-500 rounded-full z-10"></div>
+                            <div className="absolute left-2 top-1/2 -translate-y-1/2 -ml-1 w-2 h-2 bg-section border-2 border-primary rounded-full z-10"></div>
                             <div className="flex-1 flex items-center justify-between">
                               <div>
-                                <p className="font-semibold text-slate-800">{parseFloat(entry.weight_kg).toFixed(1)} kg</p>
-                                <p className="text-xs text-slate-500">{new Date(entry.date).toLocaleDateString("en-GB", { day: '2-digit', month: 'short' })}</p>
+                                <p className="font-semibold text-heading">{parseFloat(entry.weight_kg).toFixed(1)} kg</p>
+                                <p className="text-xs text-body">{new Date(entry.date).toLocaleDateString("en-GB", { day: '2-digit', month: 'short' })}</p>
                               </div>
                               {prevEntry && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isIncrease ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isIncrease ? 'bg-red/10 text-red' : 'bg-primary/10 text-primary'}`}>
                                   {isIncrease ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}{Math.abs(change).toFixed(1)}</span>
                               )}
                             </div>

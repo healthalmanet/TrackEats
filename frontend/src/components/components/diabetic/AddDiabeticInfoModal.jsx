@@ -7,28 +7,12 @@ import {
 import { toast } from "react-hot-toast";
 
 const defaultForm = {
-  date: "",
-  weight_kg: "",
-  height_cm: "",
-  waist_circumference_cm: "",
-  blood_pressure_systolic: "",
-  blood_pressure_diastolic: "",
-  fasting_blood_sugar: "",
-  postprandial_sugar: "",
-  hba1c: "",
-  ldl_cholesterol: "",
-  hdl_cholesterol: "",
-  triglycerides: "",
-  crp: "",
-  esr: "",
-  uric_acid: "",
-  creatinine: "",
-  urea: "",
-  alt: "",
-  ast: "",
-  vitamin_d3: "",
-  vitamin_b12: "",
-  tsh: "",
+  date: "", weight_kg: "", height_cm: "", waist_circumference_cm: "",
+  blood_pressure_systolic: "", blood_pressure_diastolic: "",
+  fasting_blood_sugar: "", postprandial_sugar: "", hba1c: "",
+  ldl_cholesterol: "", hdl_cholesterol: "", triglycerides: "",
+  crp: "", esr: "", uric_acid: "", creatinine: "", urea: "",
+  alt: "", ast: "", vitamin_d3: "", vitamin_b12: "", tsh: "",
 };
 
 const AddDiabeticInfoModal = ({
@@ -51,28 +35,27 @@ const AddDiabeticInfoModal = ({
   }, [isOpen, initialMode]);
 
   useEffect(() => {
+    const fetchLatestProfileForEdit = async () => {
+      try {
+        const res = await getDiabeticProfile();
+        const latest = res?.results?.[res.results.length - 1];
+        if (latest) {
+          const id = latest.id || latest._id;
+          if (!id) return toast.error("No ID found in profile.");
+          setFormData({ ...defaultForm, ...latest });
+          setRecordId(id);
+        } else {
+          toast.error("No existing profile found to edit.");
+        }
+      } catch (err) {
+        toast.error("Failed to load diabetic info.");
+      }
+    };
+
     if (mode === "edit" && isOpen) {
       fetchLatestProfileForEdit();
     }
   }, [mode, isOpen]);
-
-  const fetchLatestProfileForEdit = async () => {
-    try {
-      const res = await getDiabeticProfile();
-      const latest = res?.results?.[res.results.length - 1];
-      if (latest) {
-        const id = latest.id || latest._id;
-        if (!id) return toast.error("No ID found in profile.");
-        setFormData({ ...defaultForm, ...latest });
-        setRecordId(id);
-      } else {
-        toast.error("No existing profile found.");
-      }
-    } catch (err) {
-      toast.error("Failed to load diabetic info.");
-      console.error("GET error:", err);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,45 +63,37 @@ const AddDiabeticInfoModal = ({
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-
-  try {
-    const payload = {
-      ...formData,
-      // ✅ Ensure only date part is sent
-      date: formData.date?.split("T")[0], // This strips time if any
-    };
-
-    if (mode === "edit") {
-      if (!recordId) return toast.error("Profile ID missing.");
-      await updateDiabeticProfile({ ...payload, id: recordId });
-      toast.success("Diabetic info updated.");
-    } else {
-      await createDiabeticProfile(payload);
-      toast.success("Diabetic info added.");
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const payload = { ...formData, date: formData.date?.split("T")[0] };
+      if (mode === "edit") {
+        if (!recordId) return toast.error("Profile ID missing.");
+        await updateDiabeticProfile({ ...payload, id: recordId });
+        toast.success("Diabetic info updated.");
+      } else {
+        await createDiabeticProfile(payload);
+        toast.success("Diabetic info added.");
+      }
+      if (onSubmit) onSubmit();
+      handleClose();
+    } catch (err) {
+      toast.error("Submission failed.");
+    } finally {
+      setLoading(false);
     }
-
-    if (onSubmit) onSubmit();
-    handleClose();
-  } catch (err) {
-    toast.error("Submission failed.");
-    console.error("Submission error:", err);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleEditClick = () => setMode("edit");
 
   const handleClose = () => {
     onClose();
+    // Reset form state after a delay to avoid flicker during closing animation
     setTimeout(() => {
-      setMode("create");
+      setMode(initialMode);
       setFormData(defaultForm);
       setRecordId(null);
-    }, 60000);
+    }, 300); 
   };
 
   useEffect(() => {
@@ -135,9 +110,10 @@ const AddDiabeticInfoModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
-      <div className="bg-[#FFFDF9] p-6 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 sm:mx-6 my-10 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-4 text-[#263238]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30 p-4 animate-fade-in">
+      {/* Modal is styled with theme variables */}
+      <div className="bg-section p-6 rounded-2xl shadow-xl w-full max-w-2xl mx-auto my-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <h2 className="text-xl font-['Lora'] font-bold mb-4 text-heading">
           {mode === "edit" ? "Edit Lab Report" : "Add Lab Report"}
         </h2>
 
@@ -148,34 +124,29 @@ const AddDiabeticInfoModal = ({
               name={field}
               value={formData[field]}
               onChange={handleChange}
-              placeholder={
-                field === "date"
-                  ? undefined
-                  : field.replace(/_/g, " ").toUpperCase()
-              }
+              placeholder={field === "date" ? undefined : field.replace(/_/g, " ").toUpperCase()}
               type={field === "date" ? "date" : "number"}
               step={field === "date" ? undefined : "any"}
-              className="border border-gray-300 px-4 py-2 rounded-md w-full focus:ring-2 focus:ring-[#FF7043]"
-              required
+              // Inputs are styled with theme variables
+              className="bg-main border border-custom px-4 py-3 rounded-md w-full text-body placeholder:text-body/60 focus:outline-none focus:ring-2 focus:ring-primary"
+              required={field === "date"} // Only date is strictly required initially
             />
           ))}
 
           <div className="col-span-full flex justify-end gap-3 mt-6">
+            {/* Cancel button is a secondary, outline-style button */}
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+              className="px-5 py-2 rounded-full border border-custom text-body font-semibold hover:bg-light transition"
             >
               Cancel
             </button>
+            {/* Submit button is a primary action button */}
             <button
               type="submit"
               disabled={loading}
-              className={`px-5 py-2 rounded-full font-medium shadow-md text-white transition duration-300 ${
-                loading
-                  ? "bg-orange-300 cursor-not-allowed"
-                  : "bg-[#FF7043] hover:bg-[#F4511E]"
-              }`}
+              className="px-6 py-2 rounded-full font-semibold shadow-soft text-light transition duration-300 bg-primary hover:bg-primary-hover disabled:bg-primary/50 disabled:cursor-not-allowed"
             >
               {loading ? "Submitting..." : "Submit"}
             </button>
@@ -184,9 +155,10 @@ const AddDiabeticInfoModal = ({
 
         {mode !== "edit" && (
           <div className="mt-6 text-right">
+            {/* "Edit" link uses the primary theme color */}
             <button
               onClick={handleEditClick}
-              className="text-sm text-[#FF7043] hover:underline font-medium"
+              className="text-sm text-primary hover:underline font-medium"
             >
               Edit Latest Info
             </button>

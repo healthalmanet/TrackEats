@@ -1,37 +1,36 @@
 import React from 'react';
 import { Facebook, Twitter, Instagram } from 'lucide-react';
-import logo from '../../assets/logo.png';
 
 const Footer = () => {
   return (
-    <footer className="bg-[#1A1A1A] text-[#EDEDED] font-['Poppins']">
+    // Footer now uses the theme's main background and body text color
+    <footer className="bg-main text-body font-['Poppins']">
       <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-10">
+          
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-5">
-              {/* <img
-                src={logo}
-                alt="TrackEats Logo"
-                className="h-10 w-auto object-contain"
-              /> */}
-              <span className="text-[#FF7043] font-bold text-xl tracking-wide">TrackEats</span>
+              {/* Logo now uses the primary theme color */}
+              <span className="text-primary font-bold text-xl tracking-wide">TrackEats</span>
             </div>
 
-            <p className="text-[#CCCCCC] leading-relaxed mb-6 max-w-md">
+            <p className="text-body leading-relaxed mb-6 max-w-md">
               Smart nutrition tracking for a healthier lifestyle. Monitor, analyze, and optimize your daily nutrition intake.
             </p>
 
-            {/* Social Media Links */}
+            {/* Social Media Links with theme colors */}
             <div className="flex items-center gap-4">
               {[Facebook, Twitter, Instagram].map((Icon, i) => (
                 <a
                   key={i}
                   href="#"
-                  className="w-10 h-10 rounded-full flex items-center justify-center border border-[#333] hover:bg-[#FF7043] hover:border-[#FF7043] transition duration-200"
+                  // Border and hover effects now use theme variables
+                  className="w-10 h-10 rounded-full flex items-center justify-center border border-custom hover:bg-primary hover:border-primary transition duration-200"
                   aria-label="Social Icon"
                 >
-                  <Icon className="w-4 h-4 text-[#AAAAAA] hover:text-white" />
+                  {/* Icon color uses body text and changes to light text on hover */}
+                  <Icon className="w-4 h-4 text-body/70 group-hover:text-light" />
                 </a>
               ))}
             </div>
@@ -39,13 +38,15 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold text-[#FF7043] mb-4">Quick Links</h4>
+            {/* Heading uses primary theme color */}
+            <h4 className="text-lg font-semibold text-primary mb-4">Quick Links</h4>
             <ul className="space-y-3">
               {['Dashboard', 'Tools', 'Profile', 'Support'].map((label, i) => (
                 <li key={i}>
                   <a
                     href="#"
-                    className="text-[#CCCCCC] hover:text-[#FFD1B7] transition duration-200 block py-1"
+                    // Link hover effect uses primary theme color
+                    className="text-body hover:text-primary transition duration-200 block py-1"
                   >
                     {label}
                   </a>
@@ -56,13 +57,15 @@ const Footer = () => {
 
           {/* Legal */}
           <div>
-            <h4 className="text-lg font-semibold text-[#FF7043] mb-4">Legal</h4>
+            {/* Heading uses primary theme color */}
+            <h4 className="text-lg font-semibold text-primary mb-4">Legal</h4>
             <ul className="space-y-3">
               {['Privacy Policy', 'Terms of Service', 'Contact'].map((label, i) => (
                 <li key={i}>
                   <a
                     href="#"
-                    className="text-[#CCCCCC] hover:text-[#FFD1B7] transition duration-200 block py-1"
+                    // Link hover effect uses primary theme color
+                    className="text-body hover:text-primary transition duration-200 block py-1"
                   >
                     {label}
                   </a>
@@ -72,9 +75,9 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Footer Note */}
-        <p className="text-center text-sm text-[#888] mt-16">
-          © 2025 <span className="text-[#FF7043] font-medium">TrackEats</span>. All rights reserved.
+        {/* Footer Note with theme colors */}
+        <p className="text-center text-sm text-body/70 mt-16">
+          © 2025 <span className="text-primary font-medium">TrackEats</span>. All rights reserved.
         </p>
       </div>
     </footer>

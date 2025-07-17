@@ -5,22 +5,26 @@ function LogoutButton() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Clear all user-related data from local storage
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userRole");
+    
+    // Navigate to the home page
     navigate("/");
-    window.location.reload(); // optional full reset
+
+    // Optional: Force a full reload to reset any in-memory state
+    window.location.reload(); 
   };
 
   return (
     <button
       onClick={handleLogout}
-      className="relative inline-block px-6 py-2 font-['Orbitron'] font-bold text-[#39FF14] border border-[#39FF14] rounded-full transition duration-300 ease-in-out 
-                 bg-transparent hover:bg-[#00FF7F] hover:text-black 
-                 shadow-[0_0_5px_#39FF14,0_0_10px_#39FF14,0_0_20px_#00FFB3] 
-                 hover:shadow-[0_0_10px_#00FF7F,0_0_20px_#00FF7F,0_0_30px_#00FFB3] 
-                 hover:scale-105"
+      className="px-6 py-2 font-['Poppins'] font-bold rounded-full transition-all duration-300 ease-in-out
+                 text-primary border border-primary bg-transparent
+                 hover:bg-primary hover:text-light hover:shadow-soft hover:scale-105
+                 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
     >
       Logout
     </button>

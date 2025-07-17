@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+// Import Link for navigation
+import { useParams, Link } from "react-router-dom";
+import { getMealsByDate } from "../../../api/mealLog";
 // Import react-toastify for attractive notifications
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -23,6 +25,7 @@ import {
   FaChevronDown,
   FaSpinner, // Added for loading indicators
   FaUndo,
+  FaArrowLeft, // Icon for the new back button
 } from "react-icons/fa";
 import {
   getPatientProfile,
@@ -32,38 +35,41 @@ import {
   reviewDietPlan,
   submitFeedbackForML,
   generateDietPlan,
-  getPatientMealsByDate,
-  getLabReportByDate,
 } from "../../../api/nutritionistApi";
+// Removed getLabReportsInRange from imports
+import {
+  getLatestLabReports,
+  getLabReportByDate,
+  getLabReportsByMonth,
+} from "../../../api/diabeticApi";
 
 const PatientDetailsPage = () => {
   const { id } = useParams();
   const [profile, setProfile] = useState(null);
-  const [labReports, setLabReports] = useState([]); // Changed to handle multiple reports
+  const [labReports, setLabReports] = useState([]);
   const [activeTab, setActiveTab] = useState("profile");
   const [meals, setMeals] = useState([]);
-  const [diets, setDiets] = useState([]);
+  const [diets, setDiets] = useState([]); // Now holds only the currently displayed plan
   const [comment, setComment] = useState("");
   const [feedback, setFeedback] = useState("");
   const [editStates, setEditStates] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isSearchingReports, setIsSearchingReports] = useState(false);
-  const [labReportDates, setLabReportDates] = useState([]);
-  const [selectedLabDate, setSelectedLabDate] = useState("");
 
   const [filteredMeals, setFilteredMeals] = useState([]);
   const [selectedMealDate, setSelectedMealDate] = useState("");
+  
+  // --- START: NEW STATE FOR PLAN HISTORY ---
+  const [allDietPlans, setAllDietPlans] = useState([]);
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
+  // --- END: NEW STATE FOR PLAN HISTORY ---
 
-  // --- State for Lab Report Filters ---
   const [reportDate, setReportDate] = useState("");
   const [reportMonth, setReportMonth] = useState("");
   const [mealCurrentPage, setMealCurrentPage] = useState(1);
-  const mealsPerPage = 5; // Paginate by days
+  const mealsPerPage = 5;
 
-  // --- State for Meal Log Accordion ---
   const [activeLogDate, setActiveLogDate] = useState(null);
 
-  // --- Loaders for specific actions ---
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
@@ -72,22 +78,19 @@ const PatientDetailsPage = () => {
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportError, setReportError] = useState("");
 
-  // --- State and Refs for the animated tabs ---
   const [underlineStyle, setUnderlineStyle] = useState({});
   const tabRefs = useRef([]);
 
-  // --- UI State ONLY for the Diet Plan UX ---
   const [activeDayPerDiet, setActiveDayPerDiet] = useState({});
 
   const today = new Date().toISOString().split("T")[0];
-
-  const processAndSetLatestDiet = (allDiets) => {
-    const nonRejected = allDiets.filter((diet) => diet.status !== "rejected");
-    nonRejected.sort(
-      (a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting)
-    );
-    const latestValidPlan = nonRejected.length > 0 ? [nonRejected[0]] : [];
-    setDiets(latestValidPlan);
+  
+  // This helper function finds the most recent, non-rejected plan from a list
+  const findLatestValidPlan = (allPlans) => {
+     if (!allPlans || allPlans.length === 0) return null;
+     const nonRejected = allPlans.filter((diet) => diet.status !== "rejected");
+     // Already sorted, so the first one is the latest
+     return nonRejected.length > 0 ? nonRejected[0] : null;
   };
 
   useEffect(() => {
@@ -99,39 +102,15 @@ const PatientDetailsPage = () => {
           getPatientMeals(id),
           getDietByPatientId(id),
         ]);
-        console.log("Profile API Response:", profileRes.data); // 🔍 Debug here
-
         setProfile(profileRes.data.profile);
-
-        setProfile(profileRes.data.profile);
-        // Ensure labReports is an array, containing the latest report initially
-        const latestReport = profileRes.data.latest_lab_report;
-
-        // Set latest lab report if available
-        if (latestReport) {
-          setLabReports([latestReport]);
-          setSelectedLabDate(latestReport.report_date); // <- Set as selected in dropdown
-        }
-
-        // Get all report dates if available
-        // ✅ New – fallback to [latest_lab_report] if lab_reports isn't present
-        const allLabReports =
-          profileRes.data.lab_reports ||
-          (profileRes.data.latest_lab_report
+        setLabReports(
+          profileRes.data.latest_lab_report
             ? [profileRes.data.latest_lab_report]
-            : []);
-        // <-- Your backend must provide this
-        const reportDates = allLabReports
-          .map((r) => r.report_date)
-          .filter(Boolean)
-          .sort((a, b) => new Date(b) - new Date(a)); // Newest first
-
-        setLabReportDates(reportDates); // <- populate dropdown
+            : []
+        );
 
         const allMeals = mealsRes.data.results || [];
         setMeals(allMeals);
-
-        // Auto-expand the first date in meal logs if available
         if (allMeals.length > 0) {
           const firstDate = new Date(
             allMeals.sort((a, b) => new Date(b.date) - new Date(a.date))[0].date
@@ -139,20 +118,25 @@ const PatientDetailsPage = () => {
           setActiveLogDate(firstDate);
         }
 
-        const allDiets = dietRes.data.results || [];
+        // --- MODIFIED LOGIC: To handle all plans for the dropdown ---
+        const allDietsData = (dietRes.data.results || []).sort(
+            (a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting)
+        );
+        setAllDietPlans(allDietsData);
 
-        processAndSetLatestDiet(allDiets);
+        const latestPlan = findLatestValidPlan(allDietsData);
 
-        if (allDiets && allDiets.length > 0) {
-          const initialActiveDays = {};
-          allDiets.forEach((diet) => {
-            const planDays = Object.keys(diet.meals || {});
+        if (latestPlan) {
+            setDiets([latestPlan]); // Display the latest valid plan by default
+            setSelectedPlanId(latestPlan.id);
+            const planDays = Object.keys(latestPlan.meals || {});
             if (planDays.length > 0) {
-              initialActiveDays[diet.id] = planDays[0];
+                 setActiveDayPerDiet({ [latestPlan.id]: planDays[0] });
             }
-          });
-          setActiveDayPerDiet(initialActiveDays);
+        } else {
+            setDiets([]); // No valid plans found
         }
+        
       } catch (err) {
         console.error("Error fetching patient details:", err);
         toast.error("Failed to load patient data.");
@@ -181,6 +165,20 @@ const PatientDetailsPage = () => {
       (Date.now() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
     );
   };
+  
+  // NEW: Handler for the plan history dropdown
+  const handlePlanChange = async (e) => {
+    const newPlanId = e.target.value;
+    setSelectedPlanId(newPlanId);
+    
+    const planToDisplay = allDietPlans.find(p => String(p.id) === String(newPlanId));
+
+    if (planToDisplay) {
+        setDiets([planToDisplay]);
+        setComment(""); // Reset comment field when switching plans
+    }
+  };
+
 
   const handleReview = async (dietId, action) => {
     if (!comment) {
@@ -193,7 +191,24 @@ const PatientDetailsPage = () => {
     try {
       await reviewDietPlan(dietId, action, comment);
       const updated = await getDietByPatientId(id);
-      processAndSetLatestDiet(updated.data.results || []);
+      const allDietsData = (updated.data.results || []).sort(
+        (a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting)
+      );
+      setAllDietPlans(allDietsData); // Refresh all plans
+      // Re-select the currently viewed plan to update its status
+      const currentlyViewedPlan = allDietsData.find(p => p.id === dietId);
+      if (currentlyViewedPlan && currentlyViewedPlan.status !== 'rejected') {
+        setDiets([currentlyViewedPlan]);
+      } else {
+        // If the reviewed plan was rejected, show the latest valid one instead
+        const latestPlan = findLatestValidPlan(allDietsData);
+        if (latestPlan) {
+          setDiets([latestPlan]);
+          setSelectedPlanId(latestPlan.id);
+        } else {
+          setDiets([]);
+        }
+      }
       setComment("");
       toast.success(`Diet plan ${action} successfully.`);
     } catch (err) {
@@ -214,7 +229,7 @@ const PatientDetailsPage = () => {
       setActiveLogDate(null);
       return;
     }
-
+    setActiveLogDate(null);
     const token = localStorage.getItem("token");
     if (!token) {
       console.error("❌ No token found in localStorage.");
@@ -223,13 +238,10 @@ const PatientDetailsPage = () => {
     }
 
     setIsSearchingMeals(true);
-    setActiveLogDate(null);
-
     try {
-      const res = await getPatientMealsByDate(id, input); // ✅ Use `id` directly here
+      const res = await getMealsByDate(token, input);
       const results = res.data?.results || [];
       setFilteredMeals(results);
-
       if (results.length > 0) {
         setActiveLogDate(new Date(results[0].date).toDateString());
       } else {
@@ -293,45 +305,24 @@ const PatientDetailsPage = () => {
     }
   };
 
-  const handleLabReportSearchByDate = async (e) => {
-    const inputDate = e.target.value;
-    setReportDate(inputDate);
-
-    if (!inputDate) {
-      setLabReports([]);
-      return;
-    }
-
-    setIsSearchingReports(true);
-
-    try {
-      const res = await getLabReportByDate(id, inputDate);
-      const results = res.data?.results || [];
-
-      if (results.length > 0) {
-        setLabReports(results);
-        toast.success(`Report for ${inputDate} loaded.`);
-      } else {
-        toast.info(`No lab reports found for ${inputDate}.`);
-      }
-    } catch (err) {
-      console.error("❌ Error fetching lab report by date:", err);
-      toast.error("Failed to fetch lab report.");
-    } finally {
-      setIsSearchingReports(false);
-    }
+  const handleFetchByDate = () => {
+    if (!reportDate) return toast.warn("Please select a date.");
+    handleApiCall(
+      () => getLabReportByDate(id, reportDate),
+      `Report for ${reportDate} loaded.`
+    );
   };
 
-  // const handleFetchByMonth = () => {
-  //   if (!reportMonth) return toast.warn("Please select a month.");
-  //   handleApiCall(
-  //     () => getLabReportsByMonth(id, reportMonth),
-  //     `Reports for ${new Date(reportMonth + "-02").toLocaleString("default", {
-  //       month: "long",
-  //       year: "numeric",
-  //     })} loaded.`
-  //   );
-  // };
+  const handleFetchByMonth = () => {
+    if (!reportMonth) return toast.warn("Please select a month.");
+    handleApiCall(
+      () => getLabReportsByMonth(id, reportMonth),
+      `Reports for ${new Date(reportMonth + "-02").toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      })} loaded.`
+    );
+  };
 
   const handleFetchLatest = () => {
     handleApiCall(() => getLatestLabReports(id), "Latest reports loaded.");
@@ -343,7 +334,6 @@ const PatientDetailsPage = () => {
     handleFetchLatest();
     toast.success("Filters reset.");
   };
-  // --- End Lab Report Logic ---
 
   const handleFeedback = async (dietId, approved) => {
     setIsSubmittingFeedback(true);
@@ -370,12 +360,22 @@ const PatientDetailsPage = () => {
       toast.info(
         "Diet plan generation requested! The new plan will appear here shortly."
       );
-      const updated = await getDietByPatientId(id);
-      processAndSetLatestDiet(updated.data.results || []);
+       setTimeout(async () => {
+         const updated = await getDietByPatientId(id);
+         const allDietsData = (updated.data.results || []).sort(
+           (a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting)
+         );
+         setAllDietPlans(allDietsData);
+         const latestPlan = findLatestValidPlan(allDietsData);
+         if (latestPlan) {
+            setDiets([latestPlan]);
+            setSelectedPlanId(latestPlan.id);
+         }
+         setIsGenerating(false);
+      }, 3000);
     } catch (err) {
       console.error("Diet generation failed:", err);
       toast.error("Failed to generate diet plan.");
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -390,7 +390,14 @@ const PatientDetailsPage = () => {
     try {
       await editDiet(dietId, id, day, updatedMeals);
       const updated = await getDietByPatientId(id);
-      processAndSetLatestDiet(updated.data.results || []);
+      const allDietsData = (updated.data.results || []).sort(
+        (a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting)
+      );
+      setAllDietPlans(allDietsData); // Refresh full list
+      const currentlyViewedPlan = allDietsData.find(p => p.id === dietId);
+      if (currentlyViewedPlan) {
+        setDiets([currentlyViewedPlan]);
+      }
       setEditStates((prev) => {
         const newState = { ...prev };
         if (newState[dietId]) {
@@ -475,12 +482,13 @@ const PatientDetailsPage = () => {
     dinner: "bg-indigo-100 text-indigo-800 border-indigo-200",
     uncategorized: "bg-gray-100 text-gray-800 border-gray-200",
   };
-
-  const activePlans = diets.filter(
+  
+  const hasPendingOrApprovedPlan = allDietPlans.some(
     (diet) => diet.status === "pending" || diet.status === "approved"
   );
-
-  const isGenerateDisabled = activePlans.length > 0;
+  
+  // MODIFIED: Create a filtered list of plans for the dropdown.
+  const displayablePlans = allDietPlans.filter(plan => plan.status !== 'rejected');
 
   return (
     <div className="min-h-screen bg-[#FFFDF9] font-['Roboto']">
@@ -498,19 +506,28 @@ const PatientDetailsPage = () => {
       />
       <main className="text-[#546E7A] p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         <header className="mb-8 p-6 bg-white rounded-2xl shadow-lg border border-[#ECEFF1] transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1.5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="p-4 bg-[#FFEDD5] text-[#F4511E] rounded-full text-4xl">
-              <FaUser />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-6">
+              <div className="p-4 bg-[#FFEDD5] text-[#F4511E] rounded-full text-4xl">
+                <FaUser />
+              </div>
+              <div className="flex-grow">
+                <h1
+                  className="text-3xl sm:text-4xl font-bold text-[#263238] font-['Poppins']"
+                  style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.05)" }}
+                >
+                  {profile.full_name}
+                </h1>
+                <p className="text-lg text-[#546E7A]">Patient Overview</p>
+              </div>
             </div>
-            <div className="flex-grow">
-              <h1
-                className="text-3xl sm:text-4xl font-bold text-[#263238] font-['Poppins']"
-                style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.05)" }}
-              >
-                {profile.full_name}
-              </h1>
-              <p className="text-lg text-[#546E7A]">Patient Overview</p>
-            </div>
+            <Link
+              to="/nutritionist"
+              className="flex items-center gap-2 px-4 py-2 bg-white text-[#546E7A] border border-[#ECEFF1] rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-md hover:border-[#FF7043] hover:text-[#FF7043] hover:-translate-y-0.5"
+            >
+              <FaArrowLeft />
+              Back to Dashboard
+            </Link>
           </div>
           <div className="mt-6 pt-6 border-t border-[#ECEFF1] flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-[#546E7A]">
             <div className="flex items-center gap-2">
@@ -653,49 +670,69 @@ const PatientDetailsPage = () => {
               </div>
             )}
             {activeTab === "reports" && (
-              <>
+              <div>
                 <h2 className="text-2xl font-bold font-['Poppins'] text-[#263238] mb-4">
                   Lab Reports
                 </h2>
-
-                <div className="mb-6">
-                  <label
-                    htmlFor="labDateDropdown"
-                    className="block mb-2 text-sm font-semibold text-[#546E7A]"
-                  >
-                    Select Lab Report Date:
-                  </label>
-                  <select
-                    id="labDateDropdown"
-                    value={selectedLabDate}
-                    onChange={async (e) => {
-                      const selectedDate = e.target.value;
-                      setSelectedLabDate(selectedDate);
-                      setLoadingReport(true);
-                      try {
-                        const res = await getLabReportByDate(id, selectedDate);
-                        const results = res.data?.results || [];
-                        setLabReports(results);
-                      } catch (err) {
-                        toast.error("Failed to load report for selected date.");
-                      } finally {
-                        setLoadingReport(false);
-                      }
-                    }}
-                    className="border border-gray-300 rounded-md p-2"
-                  >
-                    {labReportDates.length === 0 ? (
-                      <option disabled>No report dates available</option>
-                    ) : (
-                      labReportDates.map((date) => (
-                        <option key={date} value={date}>
-                          {new Date(date).toLocaleDateString()}
-                        </option>
-                      ))
-                    )}
-                  </select>
+                <div className="p-4 bg-gray-50/70 rounded-xl border border-gray-200 mb-6 space-y-4">
+                  <h3 className="text-lg font-['Poppins'] font-semibold text-gray-800">
+                    Filter Reports
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 items-end">
+                    <div className="flex items-end gap-2">
+                      <div className="flex-grow">
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">
+                          By Specific Date
+                        </label>
+                        <input
+                          type="date"
+                          value={reportDate}
+                          onChange={(e) => setReportDate(e.target.value)}
+                          max={today}
+                          className="w-full border border-[#ECEFF1] px-3 py-2 rounded-md text-sm bg-white focus:ring-1 focus:ring-[#FF7043]"
+                        />
+                      </div>
+                      <button
+                        onClick={handleFetchByDate}
+                        disabled={loadingReport}
+                        className="px-4 py-2 bg-[#FF7043] text-white rounded-md text-sm font-semibold hover:bg-[#F4511E] transition disabled:bg-gray-300"
+                      >
+                        Search
+                      </button>
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-grow">
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">
+                          By Month
+                        </label>
+                        <input
+                          type="month"
+                          value={reportMonth}
+                          onChange={(e) => setReportMonth(e.target.value)}
+                          max={today.slice(0, 7)}
+                          className="w-full border border-[#ECEFF1] px-3 py-2 rounded-md text-sm bg-white focus:ring-1 focus:ring-[#FF7043]"
+                        />
+                      </div>
+                      <button
+                        onClick={handleFetchByMonth}
+                        disabled={loadingReport}
+                        className="px-4 py-2 bg-[#FF7043] text-white rounded-md text-sm font-semibold hover:bg-[#F4511E] transition disabled:bg-gray-300"
+                      >
+                        Search
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-3 pt-3 border-t border-gray-200">
+                   
+                    <button
+                      onClick={handleResetFilters}
+                      disabled={loadingReport}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-md text-sm font-semibold hover:bg-gray-600 transition disabled:bg-gray-300"
+                    >
+                      <FaUndo /> Reset
+                    </button>
+                  </div>
                 </div>
-
                 {loadingReport ? (
                   <div className="flex justify-center items-center py-10">
                     <FaSpinner className="animate-spin text-4xl text-[#FF7043]" />
@@ -742,9 +779,8 @@ const PatientDetailsPage = () => {
                     </p>
                   </div>
                 )}
-              </>
+              </div>
             )}
-
             {activeTab === "meals" && (
               <div>
                 <h2 className="text-2xl font-bold font-['Poppins'] text-[#263238] mb-6">
@@ -866,9 +902,10 @@ const PatientDetailsPage = () => {
                                         )
                                         .map((item) => (
                                           <tr
-                                            key={item.id}
-                                            className="transition-all duration-300 ease-in-out hover:bg-[#FFEDD5] hover:scale-[1.01] hover:shadow-md cursor-pointer"
-                                          >
+                                              key={item.id}
+                                              className="transition-all duration-300 ease-in-out hover:bg-[#FFEDD5] hover:scale-[1.01] hover:shadow-md cursor-pointer"
+                                            >
+
                                             <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
                                               <span
                                                 className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full capitalize border ${
@@ -942,30 +979,55 @@ const PatientDetailsPage = () => {
                 ) : (
                   <div className="text-center py-16 bg-[#FFFDF9] rounded-xl border-2 border-dashed border-[#ECEFF1]">
                     <p className="text-[#546E7A]">
-                      No meal logs have been recorded for this patient yet.
+                      No meal logs have been recorded for this patient.
                     </p>
                   </div>
                 )}
               </div>
             )}
             {activeTab === "diet" && (
-              <div className="space-y-6">
-                <div className="bg-[#FFFDF9] border border-[#ECEFF1] p-4 rounded-xl flex justify-between items-center">
-                  <h2 className="text-xl font-['Poppins'] font-semibold text-[#263238]">
-                    Diet Plan Management
-                  </h2>
+               <div className="space-y-6">
+                <div className="bg-[#FFFDF9] border border-[#ECEFF1] p-4 rounded-xl flex flex-wrap gap-4 justify-between items-center">
+                   <div>
+                      <h2 className="text-xl font-['Poppins'] font-semibold text-[#263238]">
+                        Diet Plan Management
+                      </h2>
+                    </div>
+
+                    {/* MODIFIED: PLAN HISTORY DROPDOWN only shows non-rejected plans */}
+                    {displayablePlans.length > 0 && (
+                        <div className="relative">
+                           <label htmlFor="plan-selector" className="text-xs font-semibold text-gray-600 absolute -top-4 left-1">View Plan History</label>
+                           <select 
+                                id="plan-selector" 
+                                value={selectedPlanId || ''} 
+                                onChange={handlePlanChange} 
+                                className="appearance-none w-full sm:w-60 bg-white border border-[#ECEFF1] text-sm text-[#263238] font-semibold py-2 pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF7043]"
+                            >
+                            {displayablePlans.map(plan => (
+                                <option key={plan.id} value={plan.id}>
+                                {`Plan: ${new Date(plan.for_week_starting).toLocaleDateString()} (${plan.status})`}
+                                </option>
+                            ))}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <FaChevronDown size={12} />
+                            </div>
+                        </div>
+                    )}
+                    
                   <div
                     title={
-                      isGenerateDisabled
+                      hasPendingOrApprovedPlan
                         ? "Cannot generate while a plan is pending or approved."
                         : ""
                     }
                   >
                     <button
                       onClick={handleGenerateDiet}
-                      disabled={isGenerateDisabled || isGenerating}
+                      disabled={hasPendingOrApprovedPlan || isGenerating}
                       className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all w-40 ${
-                        isGenerateDisabled || isGenerating
+                        hasPendingOrApprovedPlan || isGenerating
                           ? "bg-gray-300 cursor-not-allowed text-white"
                           : "bg-[#FF7043] text-white hover:bg-[#F4511E] hover:shadow-md hover:-translate-y-0.5"
                       }`}
@@ -979,8 +1041,9 @@ const PatientDetailsPage = () => {
                     </button>
                   </div>
                 </div>
+
                 {diets.length > 0 ? (
-                  diets.map((diet) => {
+                  diets.map((diet) => { 
                     const planDays = Object.keys(diet.meals || {});
                     const activeDay =
                       activeDayPerDiet[diet.id] ||
@@ -1003,7 +1066,9 @@ const PatientDetailsPage = () => {
                               className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
                                 diet.status === "approved"
                                   ? "bg-green-100 text-green-700"
-                                  : "bg-yellow-100 text-yellow-700"
+                                  : diet.status === "pending"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-red-100 text-red-700"
                               }`}
                             >
                               {diet.status}
@@ -1221,7 +1286,7 @@ const PatientDetailsPage = () => {
                 ) : (
                   <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-[#ECEFF1]">
                     <p className="text-[#546E7A]">
-                      No diet plans available. Generate a new one to get
+                      No diet plans available for this patient. Generate a new one to get
                       started.
                     </p>
                   </div>

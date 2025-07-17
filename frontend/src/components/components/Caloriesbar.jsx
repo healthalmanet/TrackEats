@@ -1,5 +1,23 @@
+// src/components/dashboard/CalorieProgressBar.jsx
+
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, TrendingUp } from 'lucide-react';
+import { motion, animate as framerAnimate } from "framer-motion";
+
+// --- Animated Number Helper ---
+const AnimatedNumber = ({ value }) => {
+    const [displayValue, setDisplayValue] = useState(0);
+    useEffect(() => {
+        const controls = framerAnimate(displayValue, value, {
+            type: "spring", mass: 0.8, stiffness: 100, damping: 20,
+            onUpdate: (latest) => setDisplayValue(latest),
+        });
+        return () => controls.stop();
+    }, [value]);
+
+    const formatNumber = (num) => new Intl.NumberFormat('en-IN').format(Math.round(num));
+    return <>{formatNumber(displayValue)}</>;
+};
 
 // --- Themed CalorieProgressBar Component ---
 const CalorieProgressBar = ({ 
@@ -7,95 +25,85 @@ const CalorieProgressBar = ({
   targetCalories = 2000, 
   title = "Progress"
 }) => {
-  const [animatedProgress, setAnimatedProgress] = useState(0);
-  
-  // Calculate progress and state
-  const progressPercentage = targetCalories > 0 ? Math.min((currentCalories / targetCalories) * 100, 100) : 0;
+  const progressPercentage = targetCalories > 0 ? (currentCalories / targetCalories) * 100 : 0;
   const isOverTarget = currentCalories > targetCalories;
   const remainingCalories = targetCalories - currentCalories;
-  
-  useEffect(() => {
-    // Animate the bar on change
-    const timer = setTimeout(() => {
-      setAnimatedProgress(progressPercentage);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [progressPercentage]);
-
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-IN').format(Math.round(num));
-  };
 
   return (
-    <div className="w-full max-w-md mx-auto font-['Poppins']">
-      {/* Card now uses theme's section colors */}
-      <div className="bg-section border border-custom rounded-2xl p-4 sm:p-6 shadow-soft">
+    <div className="w-full max-w-md mx-auto font-[var(--font-secondary)]">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-[var(--color-bg-surface)] border-2 border-[var(--color-border-default)] rounded-2xl p-4 sm:p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-[var(--color-primary)]"
+      >
         
-        {/* Header with themed text */}
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-heading font-semibold text-base sm:text-lg">
+          <h3 className="text-[var(--color-text-strong)] font-semibold text-base sm:text-lg">
             {title}
           </h3>
-          <div className="text-heading font-medium text-sm sm:text-base">
-            <span className="font-bold">{formatNumber(currentCalories)}</span>
-            <span className="text-body"> / {formatNumber(targetCalories)} cal</span>
+          <div className="text-[var(--color-text-strong)] font-medium text-sm sm:text-base">
+            <span className="font-bold"><AnimatedNumber value={currentCalories} /></span>
+            <span className="text-[var(--color-text-default)]"> / {new Intl.NumberFormat('en-IN').format(targetCalories)} cal</span>
           </div>
         </div>
 
-        {/* Progress Bar with themed track and fill */}
         <div className="mb-4">
-          <div className="w-full bg-light rounded-full h-3 sm:h-4 overflow-hidden">
-            <div 
-              className={`h-full rounded-full transition-all duration-1000 ease-out ${isOverTarget ? 'bg-red' : 'bg-primary'}`}
-              style={{ 
-                width: `${animatedProgress}%`,
-                boxShadow: isOverTarget ? '0 0 8px var(--color-accent-red)' : 'none'
-              }}
-            />
+          <div className="w-full bg-[var(--color-bg-app)] rounded-full h-3 sm:h-4 overflow-hidden border border-[var(--color-border-default)]">
+            <motion.div
+              className={`h-full rounded-full ${isOverTarget ? 'bg-[var(--color-danger-text)]' : 'bg-[var(--color-primary)]'}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(progressPercentage, 100)}%` }}
+              transition={{ duration: 1, ease: "circOut" }}
+            >
+              {progressPercentage >= 100 && (
+                <div className={`h-full w-full rounded-full ${isOverTarget ? 'animate-pulse' : ''}`} 
+                     style={{boxShadow: `0 0 12px ${isOverTarget ? 'var(--color-danger-text)' : 'var(--color-primary)'}`}}
+                />
+              )}
+            </motion.div>
           </div>
         </div>
 
-        {/* Status Text (Percentage) with themed colors */}
         <div className="text-center mb-2">
-          <span className={`text-base sm:text-lg font-bold ${isOverTarget ? 'text-red' : 'text-primary'}`}>
-            {Math.round(progressPercentage)}% Complete
+          <span className={`text-base sm:text-lg font-bold ${isOverTarget ? 'text-[var(--color-danger-text)]' : 'text-[var(--color-primary)]'}`}>
+            <AnimatedNumber value={progressPercentage} />% Complete
           </span>
         </div>
 
-        {/* Improved Status/Warning Message */}
-        <div className="text-center text-body text-sm sm:text-base">
+        <div className="text-center text-[var(--color-text-default)] text-sm sm:text-base">
           {isOverTarget ? (
-            <div className="flex items-center justify-center gap-2 text-red font-medium">
-              <AlertTriangle className="w-4 h-4 text-red flex-shrink-0" />
+            <div className="flex items-center justify-center gap-2 text-[var(--color-danger-text)] font-medium">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>
-                <span className="font-semibold">{formatNumber(currentCalories - targetCalories)}</span> calories over target
+                <span className="font-semibold"><AnimatedNumber value={currentCalories - targetCalories} /></span> calories over target
               </span>
             </div>
           ) : (
             <span>
-              <span className="font-semibold text-heading">{formatNumber(remainingCalories)}</span> calories remaining
+              <span className="font-semibold text-[var(--color-text-strong)]"><AnimatedNumber value={remainingCalories} /></span> calories remaining
             </span>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
-// --- Parent Demo Component (also themed) ---
+// --- Parent Demo Component ---
 const CalorieProgress = () => {
   const [calorieData, setCalorieData] = useState({
     current: 1200,
     target: 1995
   });
 
-  // Example data scenarios to cycle through
   const simulateDataUpdate = () => {
     const scenarios = [
       { current: 800, target: 1995 },
       { current: 1995, target: 1995 },
       { current: 2500, target: 1995 },
       { current: 434, target: 1995 },
+      { current: 0, target: 1995 },
     ];
     const currentIndex = scenarios.findIndex(s => s.current === calorieData.current);
     const nextIndex = (currentIndex + 1) % scenarios.length;
@@ -103,14 +111,14 @@ const CalorieProgress = () => {
   };
 
   return (
-    <div className="min-h-screen bg-main p-4 sm:p-8 font-['Poppins']">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <div className="text-center">
-          <h1 className="text-2xl sm:text-3xl font-['Lora'] font-bold text-heading mb-2">
+    <div className="min-h-screen bg-[var(--color-bg-app)] p-4 sm:p-8 font-[var(--font-secondary)] flex items-center justify-center">
+      <div className="max-w-2xl mx-auto space-y-8 w-full">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center">
+          <h1 className="text-2xl sm:text-3xl font-[var(--font-primary)] font-bold text-[var(--color-text-strong)] mb-2">
             Daily Calorie Progress
           </h1>
-          <p className="text-body mb-6">A visual summary of your energy intake.</p>
-        </div>
+          <p className="text-[var(--color-text-default)] mb-6">A visual summary of your energy intake.</p>
+        </motion.div>
 
         <CalorieProgressBar 
           currentCalories={calorieData.current}
@@ -118,14 +126,16 @@ const CalorieProgress = () => {
           title="Today's Calories"
         />
 
-        {/* Added a button to demonstrate the component's different states */}
         <div className="text-center">
-          <button
+          <motion.button
             onClick={simulateDataUpdate}
-            className="bg-primary text-light font-semibold px-6 py-2 rounded-lg shadow-soft hover:bg-primary-hover transition-all transform hover:scale-105"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] font-semibold px-6 py-2 rounded-lg shadow-lg hover:bg-[var(--color-primary-hover)] transition-all flex items-center gap-2 mx-auto"
           >
+            <TrendingUp size={18} />
             Simulate Update
-          </button>
+          </motion.button>
         </div>
       </div>
     </div>

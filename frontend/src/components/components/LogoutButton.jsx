@@ -1,5 +1,9 @@
+// src/components/auth/LogoutButton.jsx
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
+import { motion } from "framer-motion";
 
 function LogoutButton() {
   const navigate = useNavigate();
@@ -19,15 +23,30 @@ function LogoutButton() {
   };
 
   return (
-    <button
+    <motion.button
       onClick={handleLogout}
-      className="px-6 py-2 font-['Poppins'] font-bold rounded-full transition-all duration-300 ease-in-out
-                 text-primary border border-primary bg-transparent
-                 hover:bg-primary hover:text-light hover:shadow-soft hover:scale-105
-                 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      whileHover={{ scale: 1.05, y: -2 }}
+      whileTap={{ scale: 0.95 }}
+      className="
+        group
+        flex items-center justify-center gap-2
+        px-5 py-2
+        font-[var(--font-primary)] font-semibold rounded-full 
+        transition-all duration-300 ease-in-out
+        text-[var(--color-primary)] 
+        border-2 border-[var(--color-primary)] 
+        bg-transparent
+        hover:bg-[var(--color-primary)] 
+        hover:text-[var(--color-text-on-primary)] 
+        hover:shadow-lg hover:shadow-[var(--color-primary)]/20
+        focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-app)]
+      "
     >
+      <LogOut 
+        className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" 
+      />
       Logout
-    </button>
+    </motion.button>
   );
 }
 

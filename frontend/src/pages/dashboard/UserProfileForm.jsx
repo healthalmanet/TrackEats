@@ -1,3 +1,5 @@
+// src/pages/user/UserProfileForm.jsx
+
 import React, { useState, useEffect } from "react";
 import {
   createUserProfile,
@@ -6,52 +8,40 @@ import {
 } from "../../api/userProfile";
 import { Toaster, toast } from "react-hot-toast";
 import Select from "react-select";
+import { motion } from "framer-motion";
 
-// --- OPTIONS FOR DROPDOWNS (Unchanged) ---
+// --- OPTIONS FOR DROPDOWNS ---
 const countryOptions = [ { value: "India", label: "India" }, /* ... other countries */ ];
-const activityLevels = [ { value: "sedentary", label: "Sedentary (little or no exercise)" }, /* ... other levels */ ];
-const goals = [ { value: "lose_weight", label: "Lose Weight" }, /* ... other goals */ ];
-const dietTypeOptions = [ { value: "vegetarian", label: "Vegetarian" }, /* ... other types */ ];
+const activityLevels = [ { value: "sedentary", label: "Sedentary (little or no exercise)" }, { value: 'lightly_active', label: 'Lightly Active (1-3 days/week)' }, { value: 'moderately_active', label: 'Moderately Active (3-5 days/week)' }, { value: 'very_active', label: 'Very Active (6-7 days/week)' }, { value: 'extra_active', label: 'Extra Active (physical job/training)' }];
+const goals = [ { value: "lose_weight", label: "Lose Weight" }, { value: 'maintain_weight', label: 'Maintain Weight' }, { value: 'gain_weight', 'label': 'Gain Weight'}, { value: 'build_muscle', label: 'Build Muscle' }, { value: 'improve_health', label: 'Improve General Health' } ];
+const dietTypeOptions = [ { value: "vegetarian", label: "Vegetarian" }, { value: 'non_vegetarian', label: 'Non-Vegetarian' }, { value: 'vegan', label: 'Vegan' }, { value: 'eggetarian', label: 'Eggetarian' } ];
 const genderOptions = [ { value: "male", label: "Male" }, { value: "female", label: "Female" }, { value: "other", label: "Other" } ];
 
-// --- TRULY DYNAMIC & THEMED STYLES FOR REACT-SELECT ---
-// This object uses CSS variables to pull colors directly from your index.css file.
+// --- THEMED STYLES FOR REACT-SELECT ---
 const themedSelectStyles = {
   control: (provided, state) => ({
     ...provided,
-    backgroundColor: 'var(--color-bg-main)',
-    borderColor: state.isFocused ? 'var(--color-primary-accent)' : 'var(--color-border)',
-    boxShadow: state.isFocused ? '0 0 0 1px var(--color-primary-accent)' : 'none',
-    '&:hover': {
-      borderColor: state.isFocused ? 'var(--color-primary-accent)' : 'var(--color-primary-hover)',
-    },
-    borderRadius: '0.5rem',
-    padding: '0.2rem',
-    minHeight: '48px',
+    backgroundColor: 'var(--color-bg-app)',
+    borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border-default)',
+    borderWidth: '2px',
+    boxShadow: 'none',
+    '&:hover': { borderColor: 'var(--color-primary)' },
+    borderRadius: '0.75rem',
+    padding: '0.3rem',
+    minHeight: '52px',
+    transition: 'border-color 0.2s ease-in-out',
   }),
   option: (provided, state) => ({
     ...provided,
-    backgroundColor: state.isSelected ? 'var(--color-primary-accent)' : state.isFocused ? 'var(--color-bg-light)' : 'var(--color-bg-section)',
-    color: state.isSelected ? 'var(--color-text-light)' : 'var(--color-text-heading)',
-    '&:active': {
-        backgroundColor: 'var(--color-primary-hover)',
-    },
+    backgroundColor: state.isSelected ? 'var(--color-primary)' : state.isFocused ? 'var(--color-bg-interactive-subtle)' : 'var(--color-bg-surface)',
+    color: state.isSelected ? 'var(--color-text-on-primary)' : 'var(--color-text-strong)',
+    '&:active': { backgroundColor: 'var(--color-primary-hover)' },
     cursor: 'pointer',
+    fontWeight: '500',
   }),
-  placeholder: (provided) => ({
-    ...provided,
-    color: 'var(--color-text-body)',
-    opacity: 0.6,
-  }),
-  singleValue: (provided) => ({
-      ...provided,
-      color: 'var(--color-text-heading)',
-  }),
-  menu: (provided) => ({
-    ...provided,
-    backgroundColor: 'var(--color-bg-section)',
-    border: '1px solid var(--color-border)',
-  }),
+  placeholder: (provided) => ({ ...provided, color: 'var(--color-text-muted)' }),
+  singleValue: (provided) => ({ ...provided, color: 'var(--color-text-strong)', fontWeight: '500' }),
+  menu: (provided) => ({ ...provided, backgroundColor: 'var(--color-bg-surface)', border: '2px solid var(--color-border-default)', zIndex: 50 }),
 };
 
 const UserProfileForm = () => {
@@ -62,14 +52,14 @@ const UserProfileForm = () => {
     has_thyroid_disorder: false, has_arthritis: false, has_gastric_issues: false,
     other_chronic_condition: "", family_history: "",
   });
-
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const data = await getUserProfile();
-        if (data) {
+        if (data && Object.keys(data).length > 1) { // Check if profile is not empty
           const sanitizedData = { ...data, is_diabetic: !!data.is_diabetic, is_hypertensive: !!data.is_hypertensive, has_heart_condition: !!data.has_heart_condition, has_thyroid_disorder: !!data.has_thyroid_disorder, has_arthritis: !!data.has_arthritis, has_gastric_issues: !!data.has_gastric_issues };
           setFormData(sanitizedData);
           setIsEditing(true);
@@ -89,6 +79,7 @@ const UserProfileForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       if (isEditing) {
         await updateUserProfile(formData);
@@ -101,10 +92,12 @@ const UserProfileForm = () => {
     } catch (err) {
       console.error("Error:", err);
       toast.error("❌ Something went wrong. Please check your inputs.");
+    } finally {
+        setLoading(false);
     }
   };
   
-  const baseInputStyles = "w-full px-4 py-3 bg-main border border-custom rounded-lg focus:ring-1 focus:ring-primary focus:outline-none transition duration-200 placeholder:text-body/60 text-heading";
+  const baseInputStyles = "w-full px-4 py-3 bg-[var(--color-bg-app)] border-2 border-[var(--color-border-default)] rounded-xl focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all duration-300 placeholder:text-[var(--color-text-muted)] text-[var(--color-text-strong)]";
   
   const medicalConditions = [
       { field: "is_diabetic", label: "Diabetic" },
@@ -116,66 +109,68 @@ const UserProfileForm = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto my-10 bg-section py-10 px-6 sm:px-10 rounded-2xl shadow-lg border border-custom font-['Poppins'] text-heading">
+    <div className="max-w-4xl mx-auto my-10 bg-[var(--color-bg-surface)] py-10 px-6 sm:px-10 rounded-2xl shadow-2xl border-2 border-[var(--color-border-default)] font-[var(--font-secondary)] text-[var(--color-text-strong)]">
       <Toaster position="top-center" />
-      <div className="text-center mb-12">
-        <h2 className="text-3xl sm:text-4xl font-['Lora'] font-bold text-primary">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center mb-12">
+        <h2 className="text-3xl sm:text-4xl font-[var(--font-primary)] font-bold text-[var(--color-primary)]">
           Personalize Your Profile
         </h2>
-        <p className="text-md text-body mt-2">
+        <p className="text-md text-[var(--color-text-default)] mt-2">
           Help us understand your health and nutrition needs better.
         </p>
-      </div>
+      </motion.div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
         
-        <section className="space-y-6">
-            <h3 className="text-xl font-['Lora'] font-semibold text-heading border-b-2 border-primary/20 pb-3">Personal Details</h3>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="space-y-6">
+            <h3 className="text-xl font-[var(--font-primary)] font-semibold text-[var(--color-text-strong)] border-b-2 border-dashed border-[var(--color-primary)]/20 pb-3">Personal Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className={baseInputStyles}/>
+              <input type="date" name="date_of_birth" value={formData.date_of_birth || ''} onChange={handleChange} className={baseInputStyles}/>
               <Select styles={themedSelectStyles} options={genderOptions} value={genderOptions.find((opt) => opt.value === formData.gender)} onChange={(selected) => setFormData({ ...formData, gender: selected.value })} placeholder="Select Gender..." />
-              <input type="number" name="height_cm" value={formData.height_cm} onChange={handleChange} placeholder="Height (cm)" className={baseInputStyles}/>
-              <input type="number" name="weight_kg" value={formData.weight_kg} onChange={handleChange} placeholder="Weight (kg)" className={baseInputStyles}/>
-              <input type="tel" name="mobile_number" value={formData.mobile_number} onChange={handleChange} placeholder="Mobile Number" className={baseInputStyles}/>
-              <input name="occupation" value={formData.occupation} onChange={handleChange} placeholder="Occupation" className={baseInputStyles}/>
+              <input type="number" name="height_cm" value={formData.height_cm || ''} onChange={handleChange} placeholder="Height (cm)" className={baseInputStyles}/>
+              <input type="number" name="weight_kg" value={formData.weight_kg || ''} onChange={handleChange} placeholder="Weight (kg)" className={baseInputStyles}/>
+              <input type="tel" name="mobile_number" value={formData.mobile_number || ''} onChange={handleChange} placeholder="Mobile Number" className={baseInputStyles}/>
+              <input name="occupation" value={formData.occupation || ''} onChange={handleChange} placeholder="Occupation" className={baseInputStyles}/>
             </div>
-        </section>
+        </motion.section>
 
-        <section className="space-y-6">
-            <h3 className="text-xl font-['Lora'] font-semibold text-heading border-b-2 border-primary/20 pb-3">Lifestyle & Goals</h3>
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="space-y-6">
+            <h3 className="text-xl font-[var(--font-primary)] font-semibold text-[var(--color-text-strong)] border-b-2 border-dashed border-[var(--color-primary)]/20 pb-3">Lifestyle & Goals</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <Select styles={themedSelectStyles} options={activityLevels} value={activityLevels.find((opt) => opt.value === formData.activity_level)} onChange={(selected) => setFormData({ ...formData, activity_level: selected.value })} placeholder="Select Activity Level..."/>
               <Select styles={themedSelectStyles} options={goals} value={goals.find((opt) => opt.value === formData.goal)} onChange={(selected) => setFormData({ ...formData, goal: selected.value })} placeholder="Select Your Goal..." />
               <Select styles={themedSelectStyles} options={countryOptions} value={countryOptions.find((opt) => opt.value === formData.country)} onChange={(selected) => setFormData({ ...formData, country: selected.value })} placeholder="Select Country..." />
               <Select styles={themedSelectStyles} options={dietTypeOptions} value={dietTypeOptions.find((opt) => opt.value.toLowerCase() === formData.diet_type?.toLowerCase())} onChange={(selected) => setFormData({ ...formData, diet_type: selected.value })} placeholder="Select Diet Type..." />
               <div className="sm:col-span-2">
-                  <input name="allergies" value={formData.allergies} onChange={handleChange} placeholder="Any food allergies? (e.g., peanuts, gluten, shellfish)" className={baseInputStyles} />
+                  <input name="allergies" value={formData.allergies || ''} onChange={handleChange} placeholder="Any food allergies? (e.g., peanuts, gluten, shellfish)" className={baseInputStyles} />
               </div>
             </div>
-        </section>
+        </motion.section>
 
-        <section className="space-y-6">
-            <h3 className="text-xl font-['Lora'] font-semibold text-heading border-b-2 border-primary/20 pb-3">Medical History</h3>
-            <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-sm text-body font-medium">
+        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="space-y-6">
+            <h3 className="text-xl font-[var(--font-primary)] font-semibold text-[var(--color-text-strong)] border-b-2 border-dashed border-[var(--color-primary)]/20 pb-3">Medical History</h3>
+            <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-sm text-[var(--color-text-default)] font-medium">
               {medicalConditions.map(({field, label}) => (
-                <label key={field} className="flex items-center space-x-3 cursor-pointer p-2 rounded-md hover:bg-light transition-colors">
-                  <input type="checkbox" name={field} checked={!!formData[field]} onChange={handleChange} className="h-4 w-4 rounded border-custom text-primary focus:ring-primary"/>
+                <label key={field} className="flex items-center space-x-3 cursor-pointer p-2 rounded-md">
+                  <input type="checkbox" name={field} checked={!!formData[field]} onChange={handleChange} className="h-4 w-4 rounded border-[var(--color-border-default)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"/>
                   <span>{label}</span>
                 </label>
               ))}
             </div>
             <div className="grid grid-cols-1 gap-6 pt-2">
-                <input name="other_chronic_condition" value={formData.other_chronic_condition} onChange={handleChange} placeholder="Other chronic conditions (if any)" className={baseInputStyles} />
-                <input name="family_history" value={formData.family_history} onChange={handleChange} placeholder="Any relevant family medical history?" className={baseInputStyles} />
+                <input name="other_chronic_condition" value={formData.other_chronic_condition || ''} onChange={handleChange} placeholder="Other chronic conditions (if any)" className={baseInputStyles} />
+                <input name="family_history" value={formData.family_history || ''} onChange={handleChange} placeholder="Any relevant family medical history?" className={baseInputStyles} />
             </div>
-        </section>
+        </motion.section>
 
-        <button
+        <motion.button
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
           type="submit"
-          className="w-full py-3.5 px-6 rounded-lg text-light font-semibold bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-300 transform hover:-translate-y-1 shadow-soft hover:shadow-lg"
+          disabled={loading}
+          className="w-full py-3.5 px-6 rounded-lg text-[var(--color-text-on-primary)] font-semibold bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:transform-none"
         >
-          {isEditing ? "Save Changes" : "Create My Profile"}
-        </button>
+          {loading ? "Saving..." : (isEditing ? "Save Changes" : "Create My Profile")}
+        </motion.button>
       </form>
     </div>
   );

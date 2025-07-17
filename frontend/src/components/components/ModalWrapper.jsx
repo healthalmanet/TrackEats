@@ -1,43 +1,79 @@
-import React, { useEffect } from "react";
-import { X } from 'lucide-react'; // Replaced text 'x' with a clean icon
+// src/components/layout/ModalWrapper.jsx
 
-const ModalWrapper = ({ isOpen, onClose, children }) => {
+import React, { useEffect, useState } from "react";
+import { X } from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion";
+
+const ModalWrapper = ({ isOpen, onClose, children, size = 'md' }) => {
+  const [isClosing, setIsClosing] = useState(false);
+
+  // This logic handles the Escape key press for accessibility
   useEffect(() => {
-    // This logic is perfect for accessibility, no changes needed.
     const handleEsc = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") handleClose();
     };
     document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
-  if (!isOpen) return null;
+  // This handles the exit animation before unmounting
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 300); // Duration should match the exit animation
+  };
+
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+  };
+
+  const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
+    exit: { opacity: 0, transition: { duration: 0.3, ease: 'easeIn' } },
+  };
+  
+  const modalVariants = {
+    hidden: { opacity: 0, y: 50, scale: 0.95 },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 200, damping: 25 } },
+    exit: { opacity: 0, y: 50, scale: 0.95, transition: { duration: 0.2, ease: 'easeIn' } },
+  };
 
   return (
-    // Backdrop with a subtle fade-in animation
-    <div
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 overflow-y-auto animate-fade-in"
-      onClick={onClose} // Allow closing by clicking the backdrop
-    >
-      {/* 
-        Modal container is now fully themed with section colors, borders, shadows, and animations.
-        It also has a themed scrollbar for long content.
-      */}
-      <div
-        className="relative w-full max-w-sm bg-section rounded-xl shadow-xl p-6 max-h-[90vh] overflow-y-auto my-4 border border-custom custom-scrollbar animate-fade-up"
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-      >
-        {/* Themed close button with a proper icon */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-body/70 hover:text-red p-1.5 rounded-full hover:bg-light transition-colors duration-200"
-          aria-label="Close modal"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="fixed inset-0 z-50 bg-[var(--color-bg-backdrop)] backdrop-blur-sm flex items-center justify-center px-4 overflow-y-auto"
+          onClick={handleClose}
         >
-          <X size={24} />
-        </button>
-        {children}
-      </div>
-    </div>
+          <motion.div
+            variants={modalVariants}
+            className={`relative w-full ${sizeClasses[size]} bg-[var(--color-bg-surface)] rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto my-4 border-2 border-[var(--color-border-default)] custom-scrollbar`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.button
+              onClick={handleClose}
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              className="absolute top-3 right-3 text-[var(--color-text-muted)] p-1.5 rounded-full hover:bg-[var(--color-bg-interactive-subtle)] hover:text-[var(--color-danger-text)] transition-colors duration-200"
+              aria-label="Close modal"
+            >
+              <X size={24} />
+            </motion.button>
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

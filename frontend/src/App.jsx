@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./components/context/AuthContext";
+import { Loader } from "lucide-react";
 
 // Public pages (imports are unchanged)
 import Home from "./pages/Home";
@@ -31,12 +32,12 @@ import "react-toastify/dist/ReactToastify.css";
 function App() {
   const { isAuthenticated, user, loading } = useAuth();
 
-  // ✅ Themed loading state
+  // Themed loading state
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-main font-['Poppins']">
-        <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-primary"></div>
-        <p className="text-xl text-heading font-['Lora'] mt-4">
+      <div className="flex flex-col justify-center items-center min-h-screen bg-[var(--color-bg-app)] font-[var(--font-secondary)]">
+        <Loader className="w-16 h-16 animate-spin text-[var(--color-primary)]" />
+        <p className="text-xl text-[var(--color-text-strong)] font-[var(--font-primary)] mt-4">
           Loading Application...
         </p>
       </div>

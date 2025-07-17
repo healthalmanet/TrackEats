@@ -1,3 +1,5 @@
+// src/components/dashboard/CalendarCard.jsx
+
 import React, { useState } from 'react';
 import {
   format,
@@ -8,33 +10,35 @@ import {
   startOfWeek,
   endOfWeek,
   addDays,
+  isToday,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react'; // Better icons for navigation
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const CalendarCard = ({ selectedDate, setSelectedDate }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const renderHeader = () => (
     <div className="flex justify-between items-center mb-4">
-      <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1.5 rounded-full text-body hover:bg-light transition-colors">
+      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1.5 rounded-full text-[var(--color-text-default)] hover:bg-[var(--color-bg-interactive-subtle)] transition-colors">
         <ChevronLeft size={20} />
-      </button>
-      <h2 className="text-lg font-['Poppins'] font-semibold text-heading">
+      </motion.button>
+      <h2 className="text-lg font-[var(--font-primary)] font-semibold text-[var(--color-text-strong)]">
         {format(currentMonth, 'MMMM yyyy')}
       </h2>
-      <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1.5 rounded-full text-body hover:bg-light transition-colors">
+      <motion.button whileTap={{ scale: 0.9 }} onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1.5 rounded-full text-[var(--color-text-default)] hover:bg-[var(--color-bg-interactive-subtle)] transition-colors">
         <ChevronRight size={20} />
-      </button>
+      </motion.button>
     </div>
   );
 
   const renderDays = () => {
     const days = [];
-    const weekStart = startOfWeek(currentMonth, { weekStartsOn: 0 }); // Assuming Sunday start
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 }); // Sunday start
 
     for (let i = 0; i < 7; i++) {
       days.push(
-        <div key={i} className="text-xs font-semibold text-center text-body/70 uppercase">
+        <div key={i} className="text-xs font-semibold text-center text-[var(--color-text-muted)] uppercase">
           {format(addDays(weekStart, i), 'EEE')}
         </div>
       );
@@ -48,26 +52,25 @@ const CalendarCard = ({ selectedDate, setSelectedDate }) => {
     const startDate = startOfWeek(monthStart, { weekStartsOn: 0 });
     const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-    const dateFormat = 'd';
     const rows = [];
     let days = [];
     let day = startDate;
 
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
-        const formattedDate = format(day, dateFormat);
-        const dayClone = day; // Clone day for the onClick handler
+        const dayClone = day;
         const isCurrentMonth = day.getMonth() === monthStart.getMonth();
-        const isSelected = format(day, 'yyyy-MM-dd') === selectedDate;
+        const isSelectedDate = format(day, 'yyyy-MM-dd') === selectedDate;
+        const isCurrentDay = isToday(day);
         
-        let cellClasses = 'text-sm h-9 w-9 flex items-center justify-center rounded-full transition-colors duration-200';
+        let cellClasses = 'relative text-sm h-9 w-9 flex items-center justify-center rounded-full transition-all duration-200';
 
-        if (isSelected) {
-          cellClasses += ' bg-primary text-light font-bold';
-        } else if (isCurrentMonth) {
-          cellClasses += ' text-heading hover:bg-primary/10 cursor-pointer';
+        if (isCurrentMonth) {
+            cellClasses += isSelectedDate 
+                ? ' bg-[var(--color-primary)] text-[var(--color-text-on-primary)] font-bold shadow-lg' 
+                : ' text-[var(--color-text-strong)] hover:bg-[var(--color-primary-bg-subtle)] cursor-pointer';
         } else {
-          cellClasses += ' text-body/40 cursor-not-allowed';
+            cellClasses += ' text-[var(--color-text-subtle)] cursor-not-allowed';
         }
 
         days.push(
@@ -76,26 +79,32 @@ const CalendarCard = ({ selectedDate, setSelectedDate }) => {
             onClick={() => isCurrentMonth && setSelectedDate(format(dayClone, 'yyyy-MM-dd'))}
             className={cellClasses}
           >
-            {formattedDate}
+            {isCurrentDay && !isSelectedDate && (
+                <span className="absolute w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full -bottom-1"></span>
+            )}
+            {format(day, 'd')}
           </div>
         );
         day = addDays(day, 1);
       }
-
       rows.push(<div className="grid grid-cols-7 place-items-center" key={day.toString()}>{days}</div>);
       days = [];
     }
-
     return <div>{rows}</div>;
   };
 
   return (
-    <div className="bg-section rounded-xl shadow-soft border border-custom p-6 font-['Poppins']">
-      <h3 className="text-lg font-['Lora'] font-semibold text-heading mb-3">Select Date</h3>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+      className="bg-[var(--color-bg-surface)] rounded-2xl shadow-xl border-2 border-[var(--color-border-default)] p-6 font-[var(--font-secondary)]"
+    >
+      <h3 className="text-lg font-[var(--font-primary)] font-semibold text-[var(--color-text-strong)] mb-3">Select Date</h3>
       {renderHeader()}
       {renderDays()}
       {renderCells()}
-    </div>
+    </motion.div>
   );
 };
 

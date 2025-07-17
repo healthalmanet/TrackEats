@@ -33,11 +33,8 @@ import {
   submitFeedbackForML,
   generateDietPlan,
   getPatientMealsByDate,
-  getLabReportByDate
-  
+  getLabReportByDate,
 } from "../../../api/nutritionistApi";
-
-
 
 const PatientDetailsPage = () => {
   const { id } = useParams();
@@ -52,9 +49,7 @@ const PatientDetailsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchingReports, setIsSearchingReports] = useState(false);
   const [labReportDates, setLabReportDates] = useState([]);
-const [selectedLabDate, setSelectedLabDate] = useState("");
-
-
+  const [selectedLabDate, setSelectedLabDate] = useState("");
 
   const [filteredMeals, setFilteredMeals] = useState([]);
   const [selectedMealDate, setSelectedMealDate] = useState("");
@@ -106,29 +101,32 @@ const [selectedLabDate, setSelectedLabDate] = useState("");
         ]);
         console.log("Profile API Response:", profileRes.data); // 🔍 Debug here
 
-setProfile(profileRes.data.profile);
+        setProfile(profileRes.data.profile);
 
-      setProfile(profileRes.data.profile);
+        setProfile(profileRes.data.profile);
         // Ensure labReports is an array, containing the latest report initially
         const latestReport = profileRes.data.latest_lab_report;
 
-// Set latest lab report if available
-if (latestReport) {
-  setLabReports([latestReport]);
-  setSelectedLabDate(latestReport.report_date); // <- Set as selected in dropdown
-}
+        // Set latest lab report if available
+        if (latestReport) {
+          setLabReports([latestReport]);
+          setSelectedLabDate(latestReport.report_date); // <- Set as selected in dropdown
+        }
 
-// Get all report dates if available
-// ✅ New – fallback to [latest_lab_report] if lab_reports isn't present
-const allLabReports = profileRes.data.lab_reports || (profileRes.data.latest_lab_report ? [profileRes.data.latest_lab_report] : []);
- // <-- Your backend must provide this
-const reportDates = allLabReports
-  .map((r) => r.report_date)
-  .filter(Boolean)
-  .sort((a, b) => new Date(b) - new Date(a)); // Newest first
+        // Get all report dates if available
+        // ✅ New – fallback to [latest_lab_report] if lab_reports isn't present
+        const allLabReports =
+          profileRes.data.lab_reports ||
+          (profileRes.data.latest_lab_report
+            ? [profileRes.data.latest_lab_report]
+            : []);
+        // <-- Your backend must provide this
+        const reportDates = allLabReports
+          .map((r) => r.report_date)
+          .filter(Boolean)
+          .sort((a, b) => new Date(b) - new Date(a)); // Newest first
 
-setLabReportDates(reportDates); // <- populate dropdown
-
+        setLabReportDates(reportDates); // <- populate dropdown
 
         const allMeals = mealsRes.data.results || [];
         setMeals(allMeals);
@@ -207,45 +205,43 @@ setLabReportDates(reportDates); // <- populate dropdown
   };
 
   const handleMealSearchByDate = async (e) => {
-  const input = e.target.value;
-  setSelectedMealDate(input);
-  setMealCurrentPage(1);
+    const input = e.target.value;
+    setSelectedMealDate(input);
+    setMealCurrentPage(1);
 
-  if (!input) {
-    setFilteredMeals([]);
-    setActiveLogDate(null);
-    return;
-  }
-
-  const token = localStorage.getItem("token");
-  if (!token) {
-    console.error("❌ No token found in localStorage.");
-    toast.error("Authentication token not found. Please log in again.");
-    return;
-  }
-
-  setIsSearchingMeals(true);
-  setActiveLogDate(null);
-
-  try {
-    const res = await getPatientMealsByDate(id, input); // ✅ Use `id` directly here
-    const results = res.data?.results || [];
-    setFilteredMeals(results);
-
-    if (results.length > 0) {
-      setActiveLogDate(new Date(results[0].date).toDateString());
-    } else {
-      toast.info(`No meals found for ${input}.`);
+    if (!input) {
+      setFilteredMeals([]);
+      setActiveLogDate(null);
+      return;
     }
-  } catch (err) {
-    console.error("❌ Error fetching meals by date:", err);
-    toast.error("Failed to fetch meals for the selected date.");
-  } finally {
-    setIsSearchingMeals(false);
-  }
-};
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("❌ No token found in localStorage.");
+      toast.error("Authentication token not found. Please log in again.");
+      return;
+    }
 
+    setIsSearchingMeals(true);
+    setActiveLogDate(null);
+
+    try {
+      const res = await getPatientMealsByDate(id, input); // ✅ Use `id` directly here
+      const results = res.data?.results || [];
+      setFilteredMeals(results);
+
+      if (results.length > 0) {
+        setActiveLogDate(new Date(results[0].date).toDateString());
+      } else {
+        toast.info(`No meals found for ${input}.`);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching meals by date:", err);
+      toast.error("Failed to fetch meals for the selected date.");
+    } finally {
+      setIsSearchingMeals(false);
+    }
+  };
 
   const handleLogDateClick = (date) => {
     setActiveLogDate((prevDate) => (prevDate === date ? null : date));
@@ -298,34 +294,33 @@ setLabReportDates(reportDates); // <- populate dropdown
   };
 
   const handleLabReportSearchByDate = async (e) => {
-  const inputDate = e.target.value;
-  setReportDate(inputDate);
+    const inputDate = e.target.value;
+    setReportDate(inputDate);
 
-  if (!inputDate) {
-    setLabReports([]);
-    return;
-  }
-
-  setIsSearchingReports(true);
-
-  try {
-    const res = await getLabReportByDate(id, inputDate);
-    const results = res.data?.results || [];
-
-    if (results.length > 0) {
-      setLabReports(results);
-      toast.success(`Report for ${inputDate} loaded.`);
-    } else {
-      toast.info(`No lab reports found for ${inputDate}.`);
+    if (!inputDate) {
+      setLabReports([]);
+      return;
     }
-  } catch (err) {
-    console.error("❌ Error fetching lab report by date:", err);
-    toast.error("Failed to fetch lab report.");
-  } finally {
-    setIsSearchingReports(false);
-  }
-};
 
+    setIsSearchingReports(true);
+
+    try {
+      const res = await getLabReportByDate(id, inputDate);
+      const results = res.data?.results || [];
+
+      if (results.length > 0) {
+        setLabReports(results);
+        toast.success(`Report for ${inputDate} loaded.`);
+      } else {
+        toast.info(`No lab reports found for ${inputDate}.`);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching lab report by date:", err);
+      toast.error("Failed to fetch lab report.");
+    } finally {
+      setIsSearchingReports(false);
+    }
+  };
 
   // const handleFetchByMonth = () => {
   //   if (!reportMonth) return toast.warn("Please select a month.");
@@ -662,51 +657,45 @@ setLabReportDates(reportDates); // <- populate dropdown
                 <h2 className="text-2xl font-bold font-['Poppins'] text-[#263238] mb-4">
                   Lab Reports
                 </h2>
-                
 
- <div className="mb-6">
-  <label htmlFor="labDateDropdown" className="block mb-2 text-sm font-semibold text-[#546E7A]">
-    Select Lab Report Date:
-  </label>
-  <select
-    id="labDateDropdown"
-    value={selectedLabDate}
-    onChange={async (e) => {
-      const selectedDate = e.target.value;
-      setSelectedLabDate(selectedDate);
-      setLoadingReport(true);
-      try {
-        const res = await getLabReportByDate(id, selectedDate);
-        const results = res.data?.results || [];
-        setLabReports(results);
-      } catch (err) {
-        toast.error("Failed to load report for selected date.");
-      } finally {
-        setLoadingReport(false);
-      }
-    }}
-    className="border border-gray-300 rounded-md p-2"
-  >
-    {labReportDates.length === 0 ? (
-      <option disabled>No report dates available</option>
-    ) : (
-      labReportDates.map((date) => (
-        <option key={date} value={date}>
-          {new Date(date).toLocaleDateString()}
-        </option>
-      ))
-    )}
-  </select>
-</div>
+                <div className="mb-6">
+                  <label
+                    htmlFor="labDateDropdown"
+                    className="block mb-2 text-sm font-semibold text-[#546E7A]"
+                  >
+                    Select Lab Report Date:
+                  </label>
+                  <select
+                    id="labDateDropdown"
+                    value={selectedLabDate}
+                    onChange={async (e) => {
+                      const selectedDate = e.target.value;
+                      setSelectedLabDate(selectedDate);
+                      setLoadingReport(true);
+                      try {
+                        const res = await getLabReportByDate(id, selectedDate);
+                        const results = res.data?.results || [];
+                        setLabReports(results);
+                      } catch (err) {
+                        toast.error("Failed to load report for selected date.");
+                      } finally {
+                        setLoadingReport(false);
+                      }
+                    }}
+                    className="border border-gray-300 rounded-md p-2"
+                  >
+                    {labReportDates.length === 0 ? (
+                      <option disabled>No report dates available</option>
+                    ) : (
+                      labReportDates.map((date) => (
+                        <option key={date} value={date}>
+                          {new Date(date).toLocaleDateString()}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
 
-
-
-
-
-                    
-                 
-                   
-                   
                 {loadingReport ? (
                   <div className="flex justify-center items-center py-10">
                     <FaSpinner className="animate-spin text-4xl text-[#FF7043]" />
@@ -753,10 +742,9 @@ setLabReportDates(reportDates); // <- populate dropdown
                     </p>
                   </div>
                 )}
-              
               </>
             )}
-            
+
             {activeTab === "meals" && (
               <div>
                 <h2 className="text-2xl font-bold font-['Poppins'] text-[#263238] mb-6">
@@ -878,10 +866,9 @@ setLabReportDates(reportDates); // <- populate dropdown
                                         )
                                         .map((item) => (
                                           <tr
-  key={item.id}
-  className="transition-all duration-300 ease-in-out hover:bg-[#FFEDD5] hover:scale-[1.01] hover:shadow-md cursor-pointer"
->
-
+                                            key={item.id}
+                                            className="transition-all duration-300 ease-in-out hover:bg-[#FFEDD5] hover:scale-[1.01] hover:shadow-md cursor-pointer"
+                                          >
                                             <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
                                               <span
                                                 className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full capitalize border ${
@@ -1242,7 +1229,6 @@ setLabReportDates(reportDates); // <- populate dropdown
               </div>
             )}
           </div>
-        
         </div>
       </main>
     </div>

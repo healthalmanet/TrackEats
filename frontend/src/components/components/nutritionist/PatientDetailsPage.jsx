@@ -942,7 +942,7 @@ const PatientDetailsPage = () => {
                 ) : (
                   <div className="text-center py-16 bg-[#FFFDF9] rounded-xl border-2 border-dashed border-[#ECEFF1]">
                     <p className="text-[#546E7A]">
-                      No meal logs have been recorded for this patient.
+                      No meal logs have been recorded for this patient yet.
                     </p>
                   </div>
                 )}

@@ -7,7 +7,9 @@ import clsx from 'clsx';
 // Import the API function
 import { getOwner } from '../api/owner';
 
-// The static 'apiResponse' object has been removed and will be fetched dynamically.
+// 1. Import your custom LogoutButton component
+//    (Adjust the path if your file structure is different)
+import LogoutButton from '../components/LogoutButton';
 
 // Animation Variants for Framer Motion
 const containerVariants = {
@@ -125,7 +127,6 @@ const Dashboard = () => {
         const responseData = await getOwner();
         
         // Assuming the API returns the data object directly.
-        // If it's nested (e.g., response.data), adjust accordingly.
         if (responseData && responseData.user_stats) {
             setData(responseData);
         } else {
@@ -207,7 +208,6 @@ const Dashboard = () => {
     return <div className="min-h-screen bg-slate-900 text-center text-red-400 p-8">{error || "Failed to load dashboard data."}</div>;
   }
   
-  // The rest of the component remains the same, as it dynamically reads from the `data` and `processedData` variables.
   const { user_stats, revenue } = data;
   const { userStatsChartData, mealsChartData, usersByCountry, averageRating, totalReviews, ratingDistribution } = processedData;
 
@@ -234,6 +234,8 @@ const Dashboard = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input type="text" placeholder="Search..." className="bg-slate-800 border border-slate-700 rounded-full w-full sm:w-64 pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
+              {/* 2. Add the imported LogoutButton component here */}
+              <LogoutButton />
             </div>
           </motion.div>
 

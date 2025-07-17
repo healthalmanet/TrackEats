@@ -51,6 +51,9 @@ const PatientDetailsPage = () => {
   const [editStates, setEditStates] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchingReports, setIsSearchingReports] = useState(false);
+  const [labReportDates, setLabReportDates] = useState([]);
+const [selectedLabDate, setSelectedLabDate] = useState("");
+
 
 
   const [filteredMeals, setFilteredMeals] = useState([]);
@@ -101,13 +104,31 @@ const PatientDetailsPage = () => {
           getPatientMeals(id),
           getDietByPatientId(id),
         ]);
-        setProfile(profileRes.data.profile);
+        console.log("Profile API Response:", profileRes.data); // 🔍 Debug here
+
+setProfile(profileRes.data.profile);
+
+      setProfile(profileRes.data.profile);
         // Ensure labReports is an array, containing the latest report initially
-        setLabReports(
-          profileRes.data.latest_lab_report
-            ? [profileRes.data.latest_lab_report]
-            : []
-        );
+        const latestReport = profileRes.data.latest_lab_report;
+
+// Set latest lab report if available
+if (latestReport) {
+  setLabReports([latestReport]);
+  setSelectedLabDate(latestReport.report_date); // <- Set as selected in dropdown
+}
+
+// Get all report dates if available
+// ✅ New – fallback to [latest_lab_report] if lab_reports isn't present
+const allLabReports = profileRes.data.lab_reports || (profileRes.data.latest_lab_report ? [profileRes.data.latest_lab_report] : []);
+ // <-- Your backend must provide this
+const reportDates = allLabReports
+  .map((r) => r.report_date)
+  .filter(Boolean)
+  .sort((a, b) => new Date(b) - new Date(a)); // Newest first
+
+setLabReportDates(reportDates); // <- populate dropdown
+
 
         const allMeals = mealsRes.data.results || [];
         setMeals(allMeals);
@@ -643,37 +664,42 @@ const PatientDetailsPage = () => {
                 </h2>
                 
 
-  <div className="mb-6 flex flex-wrap items-center gap-4">
-  <label
-    htmlFor="reportDate"
-    className="text-sm font-semibold text-[#546E7A] mr-2"
-  >
-    Filter by Report Date:
+ <div className="mb-6">
+  <label htmlFor="labDateDropdown" className="block mb-2 text-sm font-semibold text-[#546E7A]">
+    Select Lab Report Date:
   </label>
-  <input
-    type="date"
-    id="reportDate"
-    value={reportDate}
-    onChange={handleLabReportSearchByDate}
-    max={new Date().toISOString().split("T")[0]}
-    className="border border-gray-300 rounded-md p-2 mr-2"
-  />
-  {isSearchingReports && (
-    <FaSpinner className="animate-spin text-gray-500 text-lg mr-2" />
-  )}
-  {reportDate && !isSearchingReports && (
-    <button
-      onClick={() => {
-        setReportDate("");
-        setLabReports([]);
-        handleFetchLatest(); // reload latest reports
-      }}
-      className="text-xs text-red-500 hover:underline"
-    >
-      Clear
-    </button>
-  )}
+  <select
+    id="labDateDropdown"
+    value={selectedLabDate}
+    onChange={async (e) => {
+      const selectedDate = e.target.value;
+      setSelectedLabDate(selectedDate);
+      setLoadingReport(true);
+      try {
+        const res = await getLabReportByDate(id, selectedDate);
+        const results = res.data?.results || [];
+        setLabReports(results);
+      } catch (err) {
+        toast.error("Failed to load report for selected date.");
+      } finally {
+        setLoadingReport(false);
+      }
+    }}
+    className="border border-gray-300 rounded-md p-2"
+  >
+    {labReportDates.length === 0 ? (
+      <option disabled>No report dates available</option>
+    ) : (
+      labReportDates.map((date) => (
+        <option key={date} value={date}>
+          {new Date(date).toLocaleDateString()}
+        </option>
+      ))
+    )}
+  </select>
 </div>
+
+
 
 
 

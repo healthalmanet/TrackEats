@@ -11,8 +11,10 @@ import {
   Search,
   Loader,
 } from "lucide-react";
-// Import the new API function for fetching water data
+// Import the water API
 import { getTotalWaterForDate } from "../../../api/WaterTracker";
+// --- ADDED: Import the targetApi to get the dynamic calorie goal ---
+import { targetApi } from "../../../api/reportsApi";
 import {
   FaFireAlt,
   FaBreadSlice,
@@ -33,14 +35,12 @@ const MealLogger = () => {
     removeFoodField,
     mealType,
     setMealType,
-    logDate, // State for date from hook
-    setLogDate, // Setter for date from hook
-    logTime, // State for time from hook
-    setLogTime, // Setter for time from hook
+    logDate,
+    setLogDate,
+    logTime,
+    setLogTime,
     handleSubmit,
     unitOptions = [],
-    // dailySummary is now calculated locally, so we can remove it from destructuring if it's no longer needed from the hook
-    goals = { caloriesTarget: 2000, waterTarget: 8 },
     loggedMeals = [],
     handleNextPage,
     handlePrevPage,
@@ -54,7 +54,7 @@ const MealLogger = () => {
     isFetching,
   } = useMealLogger();
 
-  // START: Dynamic Calculation for Daily Summary
+  // Dynamic Calculation for Daily Summary
   const dailySummary = useMemo(() => {
     return loggedMeals.reduce(
       (acc, meal) => {
@@ -67,28 +67,42 @@ const MealLogger = () => {
       { calories: 0, carbs: 0, protein: 0, fat: 0 }
     );
   }, [loggedMeals]);
-  // END: Dynamic Calculation for Daily Summary
 
-  // START: Dynamic State and Fetching for Water Intake
   const [waterLogged, setWaterLogged] = useState(0);
-useEffect(() => {
-  const fetchWaterData = async () => {
-    try {
-      const data = await getTotalWaterForDate(searchDate);
-      const totalMl = data?.total_water_ml || 0;  // ✅ Correct key
-      setWaterLogged(totalMl);
-    } catch (error) {
-      console.error("Failed to fetch water data:", error);
-      setWaterLogged(0);
-    }
-  };
+  // --- ADDED: State for the dynamic calorie goal ---
+  const [calorieGoal, setCalorieGoal] = useState(2000); // Start with a default fallback
 
-  fetchWaterData();
-}, [searchDate, loggedMeals]);
-// Refetch when date changes or meals are updated
+  useEffect(() => {
+    const fetchWaterData = async () => {
+      try {
+        const data = await getTotalWaterForDate(searchDate);
+        const totalMl = data?.total_water_ml || 0;
+        setWaterLogged(totalMl);
+      } catch (error) {
+        console.error("Failed to fetch water data:", error);
+        setWaterLogged(0);
+      }
+    };
+    fetchWaterData();
+  }, [searchDate, loggedMeals]);
+
+  // --- ADDED: useEffect to fetch the dynamic calorie goal on component mount ---
+  useEffect(() => {
+    const fetchCalorieGoal = async () => {
+      try {
+        const data = await targetApi();
+        if (data && data.recommended_calories) {
+          setCalorieGoal(data.recommended_calories);
+        }
+      } catch (error) {
+        console.error("Failed to fetch calorie goal:", error);
+        // On error, the component will gracefully use the default state of 2000
+      }
+    };
+    fetchCalorieGoal();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const waterGlasses = Math.floor((waterLogged || 0) / 250);
-  // END: Dynamic State and Fetching for Water Intake
 
   const macroTargets = {
     carbs: 250,
@@ -492,7 +506,8 @@ useEffect(() => {
                     {dailySummary.calories?.toFixed(0) || 0} kcal
                   </p>
                   <p className="text-sm text-[var(--color-text-default)]">
-                    of {goals.caloriesTarget?.toFixed(0) || 2000} goal
+                    {/* --- UPDATED: Using the new dynamic calorieGoal state --- */}
+                    of {calorieGoal?.toFixed(0) || 2000} goal
                   </p>
                 </div>
               </div>
@@ -561,7 +576,7 @@ useEffect(() => {
                     Water Intake
                   </span>
                   <span>
-                    {waterGlasses} / {goals.waterTarget || 8} glasses
+                    {waterGlasses} glasses
                   </span>
                 </div>
               </div>

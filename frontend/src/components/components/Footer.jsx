@@ -3,6 +3,14 @@
 import React from 'react';
 import { Facebook, Twitter, Instagram, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+
+const quickLinks = [
+  { label: "Dashboard", path: "/dashboard" },
+  { label: "Tools", path: "/dashboard/tools" },
+  { label: "Profile", path: "/dashboard/user-profile" },
+  { label: "Health", path: "/dashboard/health-section" },
+];
 
 const Footer = () => {
   return (
@@ -41,17 +49,17 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold text-[var(--color-text-strong)] font-[var(--font-primary)] mb-4">Quick Links</h4>
             <ul className="space-y-3">
-              {['Dashboard', 'Tools', 'Profile', 'Support'].map((label, i) => (
-                <li key={i}>
-                  <a
-                    href="#"
-                    className="text-[var(--color-text-default)] hover:text-[var(--color-primary)] transition-colors duration-200 block py-1 font-medium"
-                  >
-                    {label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+    {quickLinks.map((item, i) => (
+      <li key={i}>
+        <Link
+          to={item.path}
+          className="text-[var(--color-text-default)] hover:text-[var(--color-primary)] transition-colors duration-200 block py-1 font-medium"
+        >
+          {item.label}
+        </Link>
+      </li>
+    ))}
+  </ul>
           </div>
 
           {/* Legal */}

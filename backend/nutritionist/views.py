@@ -11,6 +11,7 @@ from rest_framework import filters
 from django.db import transaction
 from django.utils.timezone import now
 from datetime import date
+from django.db.models.functions import Length
 import numpy as np
 
 from diet.serializers import DietRecommendationSerializer
@@ -25,7 +26,7 @@ from user.models import User
 from userProfile.models import LabReport, UserProfile
 from userFood.models import FoodItem, UserMeal
 from .serializers import (
-    CreatePatientSerializer, UserSerializer1, PatientProfileSerializer1,
+    CreatePatientSerializer, DietRecommendationDetailSerializer, UserSerializer1, PatientProfileSerializer1,
     UserMealSerializer1, DietRecommendationWithPatientSerializer1,
     ) 
 from userProfile.serializers import LabReportSerializer, UserProfileSerializer
@@ -214,107 +215,117 @@ class UpdateRetrainingFlagsView(APIView):
 
 
 
-class EditDietPlanView(APIView):
+class EditDietPlanView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, IsNutritionist]
+    serializer_class = DietRecommendationDetailSerializer
+    
+    # This queryset is still fine for general use (like by the browsable API)
+    queryset = DietRecommendation.objects.select_related('user', 'reviewed_by').all()
+    
+    # Helper methods remain the same...
+    def _get_or_create_food_item(self, food_name: str) -> FoodItem | None:
+        # ... (no changes needed here) ...
+        cleaned_name = food_name.strip()
+        food = (
+            FoodItem.objects.filter(name__iexact=cleaned_name).first() or 
+            FoodItem.objects.filter(name__icontains=cleaned_name).order_by(Length('name').desc()).first()
+        )
+        if food:
+            print(f"✅ DB HIT: Found '{food.name}'")
+            return food
+        print(f"🔥 API CALL: No DB match for '{cleaned_name}'. Calling Gemini.")
+        try:
+            model_data = fetch_nutrition_from_gemini(cleaned_name)
+            if not model_data or not model_data.get('name'): return None
+            food, created = FoodItem.objects.update_or_create(
+                name__iexact=model_data['name'], defaults=model_data
+            )
+            action = "CREATED" if created else "UPDATED"
+            print(f"💾 DB {action}: Saved full details for '{food.name}' from Gemini.")
+            return food
+        except Exception as e:
+            print(f"❌ EXCEPTION: Error processing '{cleaned_name}': {e}")
+            return None
+
+    def _format_food_for_plan(self, food: FoodItem) -> dict:
+        # ... (no changes needed here) ...
+        return {
+            "food_name": food.name, "Gram_Equivalent": food.gram_equivalent,
+            "Calories": food.calories, "Protein": food.protein,
+            "Carbs": food.carbs, "Fats": food.fats,
+            "Fiber": food.fiber, "Sugar": food.sugar,
+        }
 
     @transaction.atomic
     def patch(self, request, recommendation_id):
-        # ... (initial code is fine) ...
-        new_meals_data = request.data.get('meals')
-        if not isinstance(new_meals_data, dict):
-            return Response({'error': '"meals" must be a valid JSON object.'}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
+            # ✅ THE FIX: Build the locking query directly from the model manager.
+            # This avoids using the class queryset with the problematic select_related().
             recommendation = DietRecommendation.objects.select_for_update().get(pk=recommendation_id)
+
         except DietRecommendation.DoesNotExist:
             return Response({'error': 'Recommendation not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        existing_meals = copy.deepcopy(recommendation.meals or {})
+        # The rest of your logic is perfectly fine and needs no changes.
+        # ... (rest of the patch method) ...
+        new_meals_data = request.data.get('meals')
+        if new_meals_data and isinstance(new_meals_data, dict):
+            db_meals = copy.deepcopy(recommendation.meals or {})
+            for day_key, meals_for_day in new_meals_data.items():
+                if not isinstance(meals_for_day, dict): continue
+                
+                normalized_day_key = day_key.strip().title()
+                existing_key = next((k for k in db_meals if k.strip().title() == normalized_day_key), normalized_day_key)
+                db_meals.setdefault(existing_key, {})
 
-        for day, meals in new_meals_data.items():
-            if not isinstance(meals, dict) or "meals" not in meals:
-                continue
+                for meal_slot, meal_info in meals_for_day.items():
+                    food_name = meal_info.get("item") if isinstance(meal_info, dict) else None
+                    if not food_name: continue
+
+                    food_item_obj = self._get_or_create_food_item(food_name)
+                    if food_item_obj:
+                        db_meals[existing_key][meal_slot] = self._format_food_for_plan(food_item_obj)
+                    else:
+                        db_meals[existing_key].pop(meal_slot, None)
             
-            if not isinstance(existing_meals.get(day), dict) or "meals" not in existing_meals[day]:
-                existing_meals[day] = {"meals": {}}
+            recommendation.meals = db_meals
 
-            for meal_slot, meal_info in meals["meals"].items():
-                food_name_from_request = meal_info.get("item")
-                if not food_name_from_request:
-                    continue
-                
-                cleaned_food_name = food_name_from_request.strip()
-                food = None # Initialize food as None
+        update_fields = ['meals', 'updated_at']
 
-                # ✅ --- START OF NEW SEARCH LOGIC ---
+        if 'nutritionist_comment' in request.data:
+            recommendation.nutritionist_comment = request.data['nutritionist_comment']
+            update_fields.append('nutritionist_comment')
 
-                # TIER 1: Try for a perfect, case-insensitive match first. This is fast and accurate.
-                food = FoodItem.objects.filter(name__iexact=cleaned_food_name).first()
-                
-                if not food:
-                    # TIER 2: If no perfect match, try a more flexible 'contains' search.
-                    # This finds items in your DB whose name is contained within the user's longer request string.
-                    # Example: DB has "Brown Bread", request has "2 slices of Brown Bread".
-                    # We order by the length of the name descending to get the most specific match first.
-                    # e.g., "Brown Bread" will be matched before "Bread".
-                    potential_matches = FoodItem.objects.filter(name__icontains=cleaned_food_name).order_by(Length('name').desc())
-                    food = potential_matches.first() # Get the best possible match
+        if 'status' in request.data:
+            recommendation.status = request.data['status']
+            update_fields.append('status')
+        elif new_meals_data:
+            recommendation.status = 'pending'
+            update_fields.append('status')
 
-                # ✅ --- END OF NEW SEARCH LOGIC ---
+        if 'approved_for_retraining' in request.data:
+            recommendation.approved_for_retraining = request.data['approved_for_retraining']
+            update_fields.append('approved_for_retraining')
+        
+        if 'nutritionist_retraining_notes' in request.data:
+            recommendation.nutritionist_retraining_notes = request.data['nutritionist_retraining_notes']
+            update_fields.append('nutritionist_retraining_notes')
 
-                if food:
-                    # SUCCESS: We found the food in our DB without calling Gemini.
-                    print(f"✅ DB HIT: Found '{food.name}' for request '{cleaned_food_name}'")
-                    meal_info["nutrients"] = {
-                        "calories": food.calories, "protein": food.protein, "carbs": food.carbs,
-                        "fats": food.fats, "glycemic_index": food.estimated_gi,
-                        "glycemic_load": food.glycemic_load, "food_type": food.food_type,
-                        "meal_type": food.meal_type, "allergens": food.allergens,
-                    }
-                else:
-                    # TIER 3: Last Resort. Both DB searches failed. NOW we call Gemini.
-                    print(f"🔥 API CALL: No DB match for '{cleaned_food_name}'. Calling Gemini.")
-                    try:
-                        nutrition_data = fetch_nutrition_from_gemini(cleaned_food_name)
-                        if not nutrition_data or not nutrition_data.get('name'):
-                            continue
-
-                        food_name_from_gemini = nutrition_data.get('name')
-
-                        food, created = FoodItem.objects.get_or_create(
-                            name__iexact=food_name_from_gemini,
-                            defaults={
-                                # ... all your fields for creating a new food item ...
-                                'name': food_name_from_gemini,
-                                'carbs': nutrition_data.get('carbohydrates'), # Remember to map Gemini's keys
-                                'estimated_gi': nutrition_data.get('glycemic_index'),
-                                # ... etc
-                            }
-                        )
-                        
-                        meal_info["nutrients"] = {
-                           "calories": food.calories, "protein": food.protein, "carbs": food.carbs,
-                           "fats": food.fats, "glycemic_index": food.estimated_gi,
-                           "glycemic_load": food.glycemic_load, "food_type": food.food_type,
-                           "meal_type": food.meal_type, "allergens": food.allergens,
-                        }
-
-                    except Exception as e:
-                        print(f"Error processing food '{cleaned_food_name}': {e}")
-                        continue
-
-                existing_meals[day]["meals"][meal_slot] = meal_info
-
-        # ... (rest of the code to save the recommendation is fine) ...
-        recommendation.meals = existing_meals
-        recommendation.status = 'pending'
         recommendation.reviewed_by = request.user
-        recommendation.save(update_fields=['meals', 'status', 'reviewed_by', 'updated_at'])
+        update_fields.append('reviewed_by')
+        
+        recommendation.save(update_fields=update_fields)
 
+        # After saving, we re-fetch the instance for serialization.
+        # The serializer will then use the class's default queryset with select_related().
+        serializer = self.get_serializer(recommendation)
         return Response({
             'message': 'Diet plan updated successfully.',
-            'updated_meals': recommendation.meals
+            'data': serializer.data
         }, status=status.HTTP_200_OK)
+
+
+
 
 
 

@@ -97,6 +97,7 @@ class LabReportSerializer(serializers.ModelSerializer):
 
 
 class CreatePatientSerializer(serializers.Serializer):
+
     # User fields
     email = serializers.EmailField()
     full_name = serializers.CharField()
@@ -163,3 +164,59 @@ class CreatePatientSerializer(serializers.Serializer):
             LabReport.objects.create(user=user, **lab_data)
 
         return user
+    
+
+
+
+class UserInfoSerializer(serializers.ModelSerializer):
+    """
+    A simple serializer to represent user information in nested responses.
+    """
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'full_name', 'role']
+
+class DietRecommendationDetailSerializer(serializers.ModelSerializer):
+    """
+    Provides a complete, detailed representation of a DietRecommendation,
+    including nested user information and human-readable choices.
+    """
+    # Use the nested serializer for the 'user' field
+    user = UserInfoSerializer(read_only=True)
+    
+    # Use a method field to show the display name of the status (e.g., "Pending Review")
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    # Use the nested serializer for the 'reviewed_by' field for clarity
+    reviewed_by = UserInfoSerializer(read_only=True)
+
+    class Meta:
+        model = DietRecommendation
+        fields = [
+            # Core Fields
+            'id',
+            'user',
+            'for_week_starting',
+            'meals',
+            
+            # Review & Workflow Fields
+            'status',
+            'status_display', # Human-readable status
+            'nutritionist_comment',
+            'reviewed_by',
+            
+            # Retraining Pipeline Fields
+            'user_profile_snapshot',
+            'original_ai_plan',
+            'approved_for_retraining',
+            'nutritionist_retraining_notes',
+            'was_used_for_retraining',
+            
+            # Timestamps
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'user', 'user_profile_snapshot', 'original_ai_plan',
+            'was_used_for_retraining', 'created_at', 'updated_at'
+        ]

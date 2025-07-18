@@ -187,7 +187,6 @@ const Home = () => {
       </section>
       
       {/* MERGED: Powerful Features Section */}
-// MERGED & FIXED: Powerful Features Section
 <section id="features" className="bg-[var(--color-bg-app)] py-20 lg:py-24 px-6 lg:px-8 space-y-16">
   <AnimatedSection className="text-center">
       <motion.h2 variants={itemFadeUp} className="text-4xl md:text-5xl font-bold mb-4 text-[var(--color-text-strong)]">

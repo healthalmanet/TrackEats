@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  FaUser, FaEnvelope, FaVenusMars, FaBirthdayCake, FaFileMedicalAlt, FaCheck, FaTimes, FaSave, FaPlus, FaThumbsUp, FaThumbsDown, FaBullseye, FaAllergies, FaChevronDown, FaSpinner, FaArrowLeft
+  FaUser, FaEnvelope, FaVenusMars, FaBirthdayCake, FaFileMedicalAlt, FaCheck, FaTimes, FaSave, FaPlus, FaThumbsUp, FaThumbsDown, FaBullseye, FaAllergies, FaChevronDown, FaSpinner, FaArrowLeft, FaPencilAlt
 } from "react-icons/fa";
 import { Utensils, CalendarCheck, Loader } from "lucide-react";
 import {
@@ -49,6 +49,7 @@ const PatientDetailsPage = () => {
   const [labReports, setLabReports] = useState([]);
   const [loadingReport, setLoadingReport] = useState(false);
   const [planOptions, setPlanOptions] = useState([]);
+  const [editingDay, setEditingDay] = useState(null); // State to track which day is being edited
 
   const findLatestValidPlan = (allPlans) => {
     if (!allPlans || allPlans.length === 0) return null;
@@ -141,24 +142,68 @@ const PatientDetailsPage = () => {
     if (planToDisplay) {
       setDiets([planToDisplay]);
       setComment("");
+      setEditingDay(null); // Reset editing mode when switching plans
     }
   };
 
   const handleReview = async (dietId, action) => {
-    if (action === 'rejected' && !comment) { toast.warn("A comment or instruction is required to reject a plan."); return; }
+    if (action === 'rejected' && !comment) { 
+      toast.warn("A comment or instruction is required to reject a plan."); 
+      return; 
+    }
     setIsReviewing(true);
     try {
+      // Step 1: Call the API
       await reviewDietPlan(dietId, action, comment);
-      const updated = await getDietByPatientId(id);
-      const allDietsData = (updated.data.results || []).sort((a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting));
-      setAllDietPlans(allDietsData);
-      const latestPlan = findLatestValidPlan(allDietsData);
-      setDiets(latestPlan ? [latestPlan] : []);
-      setSelectedPlanId(latestPlan ? latestPlan.id : null);
+
+      // Step 2: Perform an optimistic update on the local state
+      let updatedDiet = null;
+      const newAllDietPlans = allDietPlans.map(plan => {
+        if (plan.id === dietId) {
+          updatedDiet = { ...plan, status: action };
+          return updatedDiet;
+        }
+        return plan;
+      });
+
+      if (!updatedDiet) {
+        throw new Error("Could not find the diet to update in local state.");
+      }
+
+      // Step 3: Update the master list of plans and dropdown options
+      setAllDietPlans(newAllDietPlans);
+      
+      const latestPlanForOptions = findLatestValidPlan(newAllDietPlans);
+      const options = [];
+      if (latestPlanForOptions) {
+          options.push({ id: latestPlanForOptions.id, label: 'Current Active Plan' });
+          const historicalPlans = newAllDietPlans.filter(p => p.id !== latestPlanForOptions.id && p.status !== 'rejected');
+          historicalPlans.forEach(p => {
+              options.push({ id: p.id, label: `Plan: ${new Date(p.for_week_starting + 'T00:00:00').toLocaleDateString()} (${p.status})` });
+          });
+      }
+      setPlanOptions(options);
+
+      // Step 4: Update the view
+      if (action === 'rejected') {
+          // If a plan is rejected, show the new latest valid plan
+          const newLatestPlan = findLatestValidPlan(newAllDietPlans);
+          setDiets(newLatestPlan ? [newLatestPlan] : []);
+          setSelectedPlanId(newLatestPlan ? newLatestPlan.id : null);
+      } else { 
+          // If approved, keep it in view so it can be edited
+          setDiets([updatedDiet]);
+          setSelectedPlanId(updatedDiet.id);
+      }
+      
       setComment("");
       toast.success(`Diet plan ${action} successfully.`);
-    } catch (err) { toast.error("Review submission failed.");
-    } finally { setIsReviewing(false); }
+
+    } catch (err) { 
+      toast.error("Review submission failed. Please try again.");
+    } finally { 
+      setIsReviewing(false); 
+    }
   };
 
   const handleMealSearchByDate = async (e) => {
@@ -205,28 +250,96 @@ const PatientDetailsPage = () => {
   };
 
   const handleSave = async (dietId, day) => {
-    const updatedMeals = editStates[dietId]?.[day];
-    if (!updatedMeals) { toast.warn("No changes to save."); return; }
+    const updatedDayMeals = editStates[dietId]?.[day];
+    if (!updatedDayMeals) {
+      toast.warn("No changes to save.");
+      return;
+    }
     setIsSaving(true);
     try {
-      await editDiet(dietId, id, day, updatedMeals);
-      const updated = await getDietByPatientId(id);
-      const allDietsData = (updated.data.results || []).sort((a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting));
-      setAllDietPlans(allDietsData);
-      const currentlyViewedPlan = allDietsData.find(p => p.id === dietId);
-      if (currentlyViewedPlan) setDiets([currentlyViewedPlan]);
-      setEditStates((prev) => {
-        const newState = { ...prev };
-        if (newState[dietId]) delete newState[dietId][day];
-        return newState;
+      // The API call is made. We will not use its response or refetch.
+      await editDiet(dietId, id, day, updatedDayMeals);
+
+      // --- Optimistic UI Update ---
+      let updatedDiet = null;
+
+      const newAllDietPlans = allDietPlans.map(plan => {
+        if (plan.id === dietId) {
+          updatedDiet = {
+            ...plan,
+            meals: {
+              ...plan.meals,
+              [day]: updatedDayMeals,
+            },
+          };
+          return updatedDiet;
+        }
+        return plan;
       });
-      toast.success(`Diet for ${day.replace(/_/g, " ")} updated!`);
-    } catch (err) { toast.error("Failed to save changes.");
-    } finally { setIsSaving(false); }
+
+      if (!updatedDiet) throw new Error("Could not find diet in state to update.");
+      
+      setAllDietPlans(newAllDietPlans);
+      setDiets([updatedDiet]);
+
+      setEditStates(prev => {
+          const newEditStates = { ...prev };
+          if (newEditStates[dietId]) {
+            const newDietDayStates = { ...newEditStates[dietId] };
+            delete newDietDayStates[day];
+            if (Object.keys(newDietDayStates).length === 0) {
+              delete newEditStates[dietId];
+            } else {
+              newEditStates[dietId] = newDietDayStates;
+            }
+          }
+          return newEditStates;
+      });
+      setEditingDay(null); // Exit editing mode
+
+      toast.success(`Diet for ${day.replace(/_/g, " ")} updated successfully!`);
+
+    } catch (err) {
+      toast.error("Failed to save changes. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleInputChange = (dietId, day, mealType, field, value) => {
-    setEditStates((prev) => ({...prev, [dietId]: {...(prev[dietId] || {}), [day]: {...(prev[dietId]?.[day] || diet.meals[day]), [mealType]: {...(prev[dietId]?.[day]?.[mealType] || diet.meals[day][mealType]), [field]: value,},},},}));
+    const diet = allDietPlans.find(d => d.id === dietId);
+    if (!diet) return;
+
+    setEditStates((prev) => ({
+        ...prev,
+        [dietId]: {
+            ...(prev[dietId] || {}),
+            [day]: {
+                ...(prev[dietId]?.[day] || diet.meals[day]),
+                [mealType]: {
+                    ...(prev[dietId]?.[day]?.[mealType] || diet.meals[day][mealType]),
+                    [field]: value,
+                },
+            },
+        },
+    }));
+  };
+
+  const handleCancelEdit = (dietId, day) => {
+    setEditingDay(null);
+    setEditStates(prev => {
+      const newEditStates = { ...prev };
+      if (newEditStates[dietId]) {
+        const newDietDayStates = { ...newEditStates[dietId] };
+        delete newDietDayStates[day];
+        if (Object.keys(newDietDayStates).length === 0) {
+          delete newEditStates[dietId];
+        } else {
+          newEditStates[dietId] = newDietDayStates;
+        }
+      }
+      return newEditStates;
+    });
   };
   
   const TABS = [{ key: "profile", label: "Profile", icon: <FaUser /> }, { key: "reports", label: "Lab Reports", icon: <FaFileMedicalAlt /> }, { key: "meals", label: "Meal Log", icon: <Utensils /> }, { key: "diet", label: "Diet Plans", icon: <CalendarCheck /> }];
@@ -382,24 +495,54 @@ const PatientDetailsPage = () => {
                                 <div className="flex items-center gap-4"><CalendarCheck className={`text-xl ${isActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-muted)]"}`} /><h3 className="font-bold font-[var(--font-primary)] text-lg text-left text-[var(--color-text-strong)]">{date}</h3></div>
                                 <div className="flex items-center gap-4"><span className="hidden sm:inline-block bg-[var(--color-primary-bg-subtle)] text-[var(--color-primary)] text-xs font-bold px-2.5 py-1 rounded-full">{mealsForDay.length} items logged</span><FaChevronDown className={`transform transition-transform duration-300 text-[var(--color-text-muted)] ${isActive ? "rotate-180 text-[var(--color-primary)]" : ""}`} /></div>
                                 </button>
-                                <div className={`transition-[max-height,padding] duration-500 ease-in-out overflow-hidden ${isActive ? "max-h-screen" : "max-h-0"}`}>
+                                <div className={`${isActive ? "max-h-full" : "max-h-0"} overflow-hidden transition-[max-height,padding] duration-500 ease-in-out`}>
+
                                 <div className="pb-4 px-4"><div className="border-t-2 border-dashed border-[var(--color-border-default)] pt-4">
                                     <table className="min-w-full text-sm align-middle">
-                                    <thead className="bg-[var(--color-bg-app)]"><tr>
-                                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold uppercase text-[var(--color-text-muted)] sm:pl-6">Meal Type</th>
-                                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold uppercase text-[var(--color-text-muted)]">Food Item</th>
-                                        <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold uppercase text-[var(--color-text-muted)]">Quantity</th>
-                                    </tr></thead>
-                                    <tbody>
-                                        {mealsForDay.map((item) => (
-                                        <tr key={item.id} className="transition-colors duration-200 hover:bg-[var(--color-bg-app)]">
-                                            <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6"><span className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full capitalize border-2 ${mealTypeStyles[item.meal_type?.toLowerCase() || "uncategorized"]}`}>{item.meal_type?.replace(/-/g, " ") || "Uncategorized"}</span></td>
-                                            <td className="whitespace-nowrap px-3 py-4 font-semibold text-[var(--color-text-strong)]">{item.food_name}</td>
-                                            <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.quantity} {item.unit}</td>
-                                        </tr>
-                                        ))}
-                                    </tbody>
-                                    </table>
+  <thead className="bg-[var(--color-bg-app)]">
+    <tr>
+      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold  text-[var(--color-text-muted)] sm:pl-6">Meal Type</th>
+      <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold  text-[var(--color-text-muted)]">Food Item</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Quantity</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Unit</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Calories</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Protein (g)</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Carbs (g)</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Fats (g)</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Date</th>
+      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold text-[var(--color-text-muted)]">Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    {[...mealsForDay]
+      .sort((a, b) => new Date(a.consumed_at) - new Date(b.consumed_at))
+      .map((item) => (
+        <tr key={item.id} className="transition-colors duration-200 hover:bg-[var(--color-bg-app)]">
+          <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
+            <span className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full capitalize border-2 ${mealTypeStyles[item.meal_type?.toLowerCase() || "uncategorized"]}`}>
+              {item.meal_type?.replace(/-/g, " ") || "Uncategorized"}
+            </span>
+          </td>
+          <td className="whitespace-nowrap px-3 py-4 font-semibold text-[var(--color-text-strong)]">{item.food_name}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.quantity}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.unit}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.calories}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.protein}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.carbs}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.fats}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.date}</td>
+          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">
+            {new Date(item.consumed_at).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })}
+          </td>
+        </tr>
+      ))}
+  </tbody>
+</table>
+
                                 </div></div>
                                 </div>
                             </div>
@@ -437,6 +580,8 @@ const PatientDetailsPage = () => {
                     {diets.length > 0 ? (diets.map((diet) => {
                         const planDays = Object.keys(diet.meals || {});
                         const activeDay = activeDayPerDiet[diet.id] || (planDays.length > 0 ? planDays[0] : null);
+                        const isEditingThisDay = editingDay?.dietId === diet.id && editingDay?.day === activeDay;
+
                         return (
                         <div key={diet.id} className="bg-[var(--color-bg-surface)] p-6 rounded-xl border-2 border-[var(--color-border-default)] space-y-4 shadow-sm">
                             <div className="flex flex-col sm:flex-row justify-between items-start gap-3 pb-4 border-b-2 border-dashed border-[var(--color-border-default)]">
@@ -454,7 +599,7 @@ const PatientDetailsPage = () => {
                             {planDays.length > 0 && (
                                 <div className="flex flex-wrap gap-2 border-b-2 border-[var(--color-border-default)] pb-4">
                                     {planDays.map(day => (
-                                        <button key={day} onClick={() => setActiveDayPerDiet(prev => ({ ...prev, [diet.id]: day }))}
+                                        <button key={day} onClick={() => { setActiveDayPerDiet(prev => ({ ...prev, [diet.id]: day })); setEditingDay(null); }}
                                             className={`px-4 py-2 text-sm font-semibold rounded-md transition-all capitalize ${activeDay === day ? 'bg-[var(--color-primary)] text-[var(--color-text-on-primary)] shadow-md' : 'bg-[var(--color-bg-app)] text-[var(--color-text-default)] hover:bg-[var(--color-bg-interactive-subtle)]'}`}>
                                             {day.replace(/_/g, ' ')}
                                         </button>
@@ -462,44 +607,56 @@ const PatientDetailsPage = () => {
                                 </div>
                             )}
                             
-                            {activeDay && diet.meals[activeDay] && (
-                                <AnimatePresence mode="wait">
-                                    <motion.div key={activeDay} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="overflow-x-auto">
-                                        <table className="min-w-full text-sm">
-                                            <thead className="bg-[var(--color-bg-app)]">
-                                                <tr>
-                                                    <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Meal Time</th>
-                                                    <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Food Item</th>
-                                                    <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Quantity</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {Object.entries(diet.meals[activeDay]).map(([mealType, meal]) => {
-                                                    const currentMeal = editStates[diet.id]?.[activeDay]?.[mealType] || meal;
-                                                    const isEditingThisMeal = !!editStates[diet.id]?.[activeDay]?.[mealType];
-                                                    return (
-                                                        <tr key={mealType} className={`border-b border-[var(--color-border-default)] ${isEditingThisMeal ? 'bg-[var(--color-primary-bg-subtle)]/50' : ''}`}>
-                                                            <td className="py-3 px-3 capitalize font-semibold text-[var(--color-text-strong)]">{mealType.replace(/-/g, " ")}</td>
-                                                            <td className="py-3 px-3"><input type="text" value={currentMeal.food || ''} onChange={(e) => handleInputChange(diet.id, activeDay, mealType, 'food', e.target.value)} className="w-full bg-transparent p-1 rounded-md border-2 border-transparent focus:bg-[var(--color-bg-surface)] focus:border-[var(--color-primary)] outline-none"/></td>
-                                                            <td className="py-3 px-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <input type="text" value={currentMeal.quantity || ''} onChange={(e) => handleInputChange(diet.id, activeDay, mealType, 'quantity', e.target.value)} className="w-20 bg-transparent p-1 rounded-md border-2 border-transparent focus:bg-[var(--color-bg-surface)] focus:border-[var(--color-primary)] outline-none"/>
-                                                                    <input type="text" value={currentMeal.unit || ''} onChange={(e) => handleInputChange(diet.id, activeDay, mealType, 'unit', e.target.value)} className="w-24 bg-transparent p-1 rounded-md border-2 border-transparent focus:bg-[var(--color-bg-surface)] focus:border-[var(--color-primary)] outline-none"/>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </motion.div>
-                                </AnimatePresence>
-                            )}
-                            
+                           {activeDay && diet.meals[activeDay] && (
+                            <AnimatePresence mode="wait">
+                                <motion.div key={activeDay} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="overflow-x-auto">
+                                    <table className="min-w-full text-sm">
+                                        <thead className="bg-[var(--color-bg-app)]">
+                                            <tr>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Meal Time</th>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Food Item</th>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Calories(g)</th>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Carbs(g)</th>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Fiber(g)</th>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Protein(g)</th>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Sugar(g)</th>
+                                                <th className="py-2 px-3 text-left font-semibold text-[var(--color-text-muted)]">Fats(g)</th>
+                                                <th className="py-2 px-3 text-center font-semibold text-[var(--color-text-muted)] w-20">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(diet.meals[activeDay]).map(([mealType, meal]) => {
+                                                const inputClass = "w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded px-2 py-1 text-sm focus:ring-1 focus:ring-[var(--color-primary)] focus:outline-none";
+                                                return (
+                                                    <tr key={mealType} className="border-b border-[var(--color-border-default)] hover:bg-[var(--color-bg-app)]/50">
+                                                        <td className="py-3 px-3 capitalize font-semibold text-[var(--color-text-strong)]">{mealType.replace(/-/g, " ")}</td>
+                                                        <td className="py-3 px-3">{isEditingThisDay ? <input type="text" value={editStates[diet.id]?.[activeDay]?.[mealType]?.food_name ?? meal.food_name ?? ''} onChange={e => handleInputChange(diet.id, activeDay, mealType, 'food_name', e.target.value)} className={inputClass} /> : (meal.food_name || '')}</td>
+                                                        <td className="py-3 px-3">{isEditingThisDay ? <input type="number" min="0" value={editStates[diet.id]?.[activeDay]?.[mealType]?.Calories ?? meal.Calories ?? ''} onChange={e => handleInputChange(diet.id, activeDay, mealType, 'Calories', e.target.value)} className={`${inputClass} w-20`} /> : (meal.Calories ?? '-')}</td>
+                                                        <td className="py-3 px-3">{isEditingThisDay ? <input type="number" min="0" value={editStates[diet.id]?.[activeDay]?.[mealType]?.Carbs ?? meal.Carbs ?? ''} onChange={e => handleInputChange(diet.id, activeDay, mealType, 'Carbs', e.target.value)} className={`${inputClass} w-20`} /> : (meal.Carbs ?? '-')}</td>
+                                                        <td className="py-3 px-3">{isEditingThisDay ? <input type="number" min="0" value={editStates[diet.id]?.[activeDay]?.[mealType]?.Fiber ?? meal.Fiber ?? ''} onChange={e => handleInputChange(diet.id, activeDay, mealType, 'Fiber', e.target.value)} className={`${inputClass} w-20`} /> : (meal.Fiber ?? '-')}</td>
+                                                        <td className="py-3 px-3">{isEditingThisDay ? <input type="number" min="0" value={editStates[diet.id]?.[activeDay]?.[mealType]?.Protein ?? meal.Protein ?? ''} onChange={e => handleInputChange(diet.id, activeDay, mealType, 'Protein', e.target.value)} className={`${inputClass} w-20`} /> : (meal.Protein ?? '-')}</td>
+                                                        <td className="py-3 px-3">{isEditingThisDay ? <input type="number" min="0" value={editStates[diet.id]?.[activeDay]?.[mealType]?.Sugar ?? meal.Sugar ?? ''} onChange={e => handleInputChange(diet.id, activeDay, mealType, 'Sugar', e.target.value)} className={`${inputClass} w-20`} /> : (meal.Sugar ?? '-')}</td>
+                                                        <td className="py-3 px-3">{isEditingThisDay ? <input type="number" min="0" value={editStates[diet.id]?.[activeDay]?.[mealType]?.Fats ?? meal.Fats ?? ''} onChange={e => handleInputChange(diet.id, activeDay, mealType, 'Fats', e.target.value)} className={`${inputClass} w-20`} /> : (meal.Fats ?? '-')}</td>
+                                                        <td className="py-3 px-3 text-center">
+                                                          {!isEditingThisDay && diet.status !== 'rejected' && (
+                                                              <button onClick={() => setEditingDay({ dietId: diet.id, day: activeDay })} className="text-[var(--color-text-default)] hover:text-[var(--color-primary)] transition-colors" title={`Edit ${activeDay.charAt(0).toUpperCase() + activeDay.slice(1)}'s Plan`}>
+                                                                  <FaPencilAlt />
+                                                              </button>
+                                                          )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </motion.div>
+                            </AnimatePresence>
+                        )}
+
                             <div className="pt-4 space-y-4">
-                                {editStates[diet.id]?.[activeDay] && (
-                                    <div className="flex items-center gap-4 p-4 bg-[var(--color-bg-app)] rounded-lg"><p className="text-sm font-semibold text-[var(--color-text-strong)] flex-grow">You have unsaved changes for <span className="capitalize">{activeDay?.replace(/_/g, ' ')}</span>.</p>
-                                        <button onClick={() => setEditStates(prev => { const newState = { ...prev }; if (newState[diet.id]) delete newState[diet.id][activeDay]; if (Object.keys(newState[diet.id] || {}).length === 0) delete newState[diet.id]; return newState;})} className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm bg-[var(--color-bg-interactive-subtle)] text-[var(--color-text-default)] hover:bg-opacity-80"><FaTimes /> Cancel</button>
+                                {isEditingThisDay && (
+                                    <div className="flex items-center gap-4 p-4 bg-[var(--color-bg-app)] rounded-lg"><p className="text-sm font-semibold text-[var(--color-text-strong)] flex-grow">Editing plan for <span className="capitalize">{activeDay?.replace(/_/g, ' ')}</span>.</p>
+                                        <button onClick={() => handleCancelEdit(diet.id, activeDay)} className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm bg-[var(--color-bg-interactive-subtle)] text-[var(--color-text-default)] hover:bg-opacity-80"><FaTimes /> Cancel</button>
                                         <button onClick={() => handleSave(diet.id, activeDay)} disabled={isSaving} className="flex items-center justify-center gap-2 px-4 py-2 w-28 rounded-lg font-semibold text-sm bg-[var(--color-success-bg)] text-[var(--color-success-text)] hover:bg-[var(--color-success-bg-hover)] disabled:opacity-50">{isSaving ? <FaSpinner className="animate-spin" /> : <FaSave />} Save</button>
                                     </div>
                                 )}

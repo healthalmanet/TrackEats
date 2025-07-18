@@ -86,7 +86,6 @@ const Home = () => {
     { img: lunch, title: 'Pre-Workout Nutrition', desc: 'Fuel your workout with this simple yet powerful pre-workout meal.', time: '5 min', cal: '300 cal' },
   ];
   
-  // MERGED: This data now reflects the full "Powerful Features" section from your old code, but with the new styling system.
   const features = [
     { 
         img: healthy,

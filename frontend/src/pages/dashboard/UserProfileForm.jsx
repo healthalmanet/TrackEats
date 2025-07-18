@@ -142,18 +142,23 @@ const UserProfileForm = () => {
     setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isEditing) {
-        await updateUserProfile(formData);
-        toast.success("✅ Profile updated successfully!");
-      } else {
-        await createUserProfile(formData);
-        toast.success("🎉 Profile created successfully!");
-        setIsEditing(true);
-      }
+     
+
+if (isEditing) {
+  await updateUserProfile(mappedData);
+  toast.success("✅ Profile updated successfully!");
+} else {
+  await createUserProfile(mappedData);
+  toast.success("🎉 Profile created successfully!");
+  setIsEditing(true);
+}
+
     } catch (err) {
       console.error("Error:", err);
       toast.error("❌ Something went wrong. Please check your inputs.");

@@ -24,25 +24,25 @@ const countryOptions = [
   { value: "United Arab Emirates", label: "United Arab Emirates" },
 ];
 const activityLevels = [
-  { value: "sedentary", label: "Sedentary (little or no exercise)" },
-  { value: 'lightly_active', label: 'Lightly Active (light exercise/sports 1-3 days/week)' },
-  { value: 'moderately_active', label: 'Moderately Active (moderate exercise/sports 3-5 days/week)' },
-  { value: 'very_active', label: 'Very Active (hard exercise/sports 6-7 days a week)' },
-  { value: 'extra_active', label: 'Extra Active (very hard exercise/physical job)' }
+  { value: "Sedentary", label: "Sedentary (little or no exercise)" },
+  { value: 'Lightly Active', label: 'Lightly Active (light exercise/sports 1-3 days/week)' },
+  { value: 'Moderately Active', label: 'Moderately Active (moderate exercise/sports 3-5 days/week)' },
+  { value: 'Very Active', label: 'Very Active (hard exercise/sports 6-7 days a week)' },
+  { value: 'Extra Active', label: 'Extra Active (very hard exercise/physical job)' }
 ];
 // FIX: Corrected the 'value' for "Maintain Weight" to match the backend model ("maintain")
 const goals = [
-  { value: "lose_weight", label: "Lose Weight" },
-  { value: "maintain", label: "Maintain Weight" },
-  { value: "gain_weight", label: "Gain Weight" }
+  { value: "Lose Weight", label: "Lose Weight" },
+  { value: "Maintain Weight", label: "Maintain Weight" },
+  { value: "Gain Weight", label: "Gain Weight" }
 ];
 const dietTypeOptions = [
-  { value: "vegetarian", label: "Vegetarian" },
-  { value: 'non_vegetarian', label: 'Non-Vegetarian' },
-  { value: 'vegan', label: 'Vegan' },
-  { value: 'eggetarian', label: 'Eggetarian' },
-  { value: 'keto', label: 'Keto' },
-  { value: 'other', label: 'Other' }
+  { value: "Vegetarian", label: "Vegetarian" },
+  { value: 'Non_Vegetarian', label: 'Non-Vegetarian' },
+  { value: 'Vegan', label: 'Vegan' },
+  { value: 'Eggetarian', label: 'Eggetarian' },
+  { value: 'Keto', label: 'Keto' },
+  { value: 'Other', label: 'Other' }
 ];
 const genderOptions = [ { value: "male", label: "Male" }, { value: "female", label: "Female" }, { value: "other", label: "Other" } ];
 

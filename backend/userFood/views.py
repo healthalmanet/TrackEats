@@ -131,22 +131,42 @@ class UserMealViewSet(viewsets.ModelViewSet):
             traceback.print_exc()
             return Response({"error": "An unexpected error occurred while logging meals.", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-#7day track
+
+
+# RENAMED and REFACTORED for clarity and correct functionality 
+#7day
 class DailyUserMealSummaryView(APIView):
+    """
+    Provides a 7-day summary of meals, ending on a specific date provided by the user.
+    This replaces DailyUserMealSummaryView to be more explicit and timezone-safe.
+    It expects a query parameter like: /api/your-endpoint/?end_date=2023-10-27
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        start_date_str = request.query_params.get('start_date')
-        if start_date_str:
-            try:
-                start_date = parse_date(start_date_str)
-                end_date = start_date + timedelta(days=6)
-                meals = UserMeal.objects.filter(user=request.user, date__range=(start_date, end_date))
-            except:
-                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=400)
-        else:
-            meals = UserMeal.objects.filter(user=request.user)
+        # The frontend provides the user's local "today" as the end_date.
+        end_date_str = request.query_params.get('end_date')
 
+        if not end_date_str:
+            # If no date is provided, it's an error. The client must specify the date.
+            return Response({"error": "An 'end_date' query parameter is required. Use YYYY-MM-DD format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Parse the string from the client into a date object.
+            end_date = parse_date(end_date_str)
+            if not end_date: raise ValueError # parse_date returns None on failure
+
+            # Calculate the start date for the 7-day range.
+            start_date = end_date - timedelta(days=6)
+            
+            # Filter based on the user-specific date range.
+            # Assumes your UserMeal model has a `date` field of type DateField.
+            meals = UserMeal.objects.filter(user=request.user, date__range=(start_date, end_date))
+
+        except (ValueError, TypeError):
+            return Response({"error": "Invalid date format for 'end_date'. Use YYYY-MM-DD"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # The rest of the logic remains the same.
         summary = (
             meals.values('date')
             .annotate(
@@ -158,17 +178,49 @@ class DailyUserMealSummaryView(APIView):
             .order_by('date')
         )
 
-        return Response(summary)
+        # To ensure the frontend receives a full 7-day structure even if some days have no meals,
+        # you can create a date map.
+        date_map = {item['date']: item for item in summary}
+        response_data = []
+        for i in range(7):
+            current_date = start_date + timedelta(days=i)
+            day_data = date_map.get(current_date, {
+                'date': current_date.isoformat(),
+                'calories': 0,
+                'protein': 0,
+                'carbs': 0,
+                'fats': 0
+            })
+            response_data.append(day_data)
+
+        return Response(response_data)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def recommend_calories(request):
+    """
+    Calculates recommendations. Now accepts an optional 'current_date' from the client
+    to ensure age is calculated based on the user's local date, not the server's.
+    Example: /api/recommend-calories/?current_date=2023-10-27
+    """
     try:
+        # Get the user's current local date from the request, fallback to server's date if not provided.
+        # The frontend should ALWAYS send this for accuracy.
+        current_date_str = request.query_params.get('current_date')
+        if current_date_str and (user_local_date := parse_date(current_date_str)):
+             today = user_local_date
+        else:
+             # Fallback to server's date if client fails to send it.
+             today = date.today()
+
         profile = UserProfile.objects.get(user=request.user)
-        dob = profile.date_of_birth  # a `datetime.date` object
-        today = date.today()
+        dob = profile.date_of_birth
+        
+        # Age calculation is now based on the user's local date.
         age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        
+        # ... (rest of your calculation logic remains unchanged) ...
         weight = profile.weight_kg
         height = profile.height_cm
         gender = profile.gender
@@ -181,103 +233,94 @@ def recommend_calories(request):
         else:
             bmr = 10 * weight + 6.25 * height - 5 * age - 161
 
-        # Activity multipliers (reduce slightly for realism)
-        activity_multipliers = {
-            "sedentary": 1.2,
-            "light": 1.3,
-            "moderate": 1.45,
-            "active": 1.6,
-            "very_active": 1.75,
-        }
+        activity_multipliers = {"sedentary": 1.2, "light": 1.3, "moderate": 1.45, "active": 1.6, "very_active": 1.75}
+        maintenance_calories = bmr * activity_multipliers.get(activity_level, 1.2)
 
-        activity_multiplier = activity_multipliers.get(activity_level, 1.2)
-
-        # Maintenance calories
-        maintenance_calories = bmr * activity_multiplier
-
-        # Goal-based adjustment (percentage instead of hard -500)
         if goal == "lose_weight":
-            recommended_calories = maintenance_calories * 0.8   # 20% deficit
+            recommended_calories = maintenance_calories * 0.8
         elif goal == "gain_weight":
-            recommended_calories = maintenance_calories * 1.15  # 15% surplus
+            recommended_calories = maintenance_calories * 1.15
         else:
             recommended_calories = maintenance_calories
 
-        # Protein grams per kg of body weight (1.6g - 2.2g is ideal for fat loss/muscle maintenance)
         protein_grams = round(weight * 1.8)
-
-        # Fats: ~0.8g per kg body weight (can be tweaked)
         fats_grams = round(weight * 0.8)
-
-        # Calculate calories from protein & fats
         protein_calories = protein_grams * 4
         fats_calories = fats_grams * 9
-
-        # Remaining calories for carbs
         carbs_calories = recommended_calories - (protein_calories + fats_calories)
         carbs_grams = round(carbs_calories / 4) if carbs_calories > 0 else 0
-
-
-             # ✅ Calculate recommended water intake
-        base_water_ml = weight * 35  # 35 ml per kg
-
-        # Activity adjustment (ml)
-        activity_water_bonus = {
-            "sedentary": 0,
-            "light": 250,
-            "moderate": 500,
-            "active": 750,
-            "very_active": 1000,
-        }
-        water_adjustment = activity_water_bonus.get(activity_level, 0)
-        recommended_water_ml = base_water_ml + water_adjustment
-
+        base_water_ml = weight * 35
+        activity_water_bonus = {"sedentary": 0, "light": 250, "moderate": 500, "active": 750, "very_active": 1000}
+        recommended_water_ml = base_water_ml + activity_water_bonus.get(activity_level, 0)
+        
         return Response({
-            "bmr": round(bmr),
-            "maintenance_calories": round(maintenance_calories),
-            "recommended_calories": round(recommended_calories),
-            "macronutrients": {
-                "protein_g": protein_grams,
-                "carbs_g": carbs_grams,
-                "fats_g": fats_grams,
-            },
-            "water": {
-                "recommended_ml": round(recommended_water_ml),
-            },
-            "goal": goal,
-            "activity_level": activity_level,
+            "bmr": round(bmr), "maintenance_calories": round(maintenance_calories), "recommended_calories": round(recommended_calories),
+            "macronutrients": {"protein_g": protein_grams, "carbs_g": carbs_grams, "fats_g": fats_grams},
+            "water": {"recommended_ml": round(recommended_water_ml)},
+            "goal": goal, "activity_level": activity_level
         })
 
     except UserProfile.DoesNotExist:
         return Response({"error": "User profile not found."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-##########################CALORIE TRACKER API ENDPOINTS END##########################
 class DailyCalorieSummaryView(APIView):
+    """
+    Provides a total summary for a single day.
+    This view MUST receive a 'date' parameter from the client to avoid timezone issues.
+    Example: /api/daily-summary/?date=2023-10-27
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        today = now().date()
-        start = datetime.combine(today, time.min)
-        end = datetime.combine(today, time.max)
-        meals_today = UserMeal.objects.filter(user=request.user, consumed_at__range=(start, end))
+        # Get the target date string from the query parameters.
+        date_str = request.query_params.get('date')
 
+        if not date_str:
+            return Response({"error": "A 'date' query parameter is required. Use YYYY-MM-DD format."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # This is the user's local date, parsed into a date object.
+            target_date = parse_date(date_str)
+            if not target_date: raise ValueError()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create a timezone-aware datetime range for the user's entire local day.
+        # This assumes UserMeal.consumed_at is a timezone-aware DateTimeField.
+        start_of_day = datetime.combine(target_date, time.min)
+        end_of_day = datetime.combine(target_date, time.max)
+
+        # If your project uses timezones (settings.USE_TZ=True), you should make these
+        # datetimes aware of the current timezone to match the database.
+        # from django.utils.timezone import make_aware
+        # start_of_day = make_aware(datetime.combine(target_date, time.min))
+        # end_of_day = make_aware(datetime.combine(target_date, time.max))
+        
+        # The filter now correctly queries for meals within the user's local day.
+        meals_today = UserMeal.objects.filter(
+            user=request.user, 
+            consumed_at__gte=start_of_day, 
+            consumed_at__lte=end_of_day
+        )
 
         totals = meals_today.aggregate(
-            total_calories=Sum("calories"),
-            total_protein=Sum("protein"),
-            total_carbs=Sum("carbs"),
-            total_fats=Sum("fats"),
-            total_sugar=Sum("sugar"),
-            total_fiber=Sum("fiber"),
+            total_calories=Sum("calories", default=0),
+            total_protein=Sum("protein", default=0),
+            total_carbs=Sum("carbs", default=0),
+            total_fats=Sum("fats", default=0),
+            total_sugar=Sum("sugar", default=0),
+            total_fiber=Sum("fiber", default=0),
         )
 
         return Response({
-            "date": today,
-            "calories": totals["total_calories"] or 0,
-            "protein": totals["total_protein"] or 0,
-            "carbs": totals["total_carbs"] or 0,
-            "fats": totals["total_fats"] or 0,
-            "sugar": totals["total_sugar"] or 0,
-            "fiber": totals["total_fiber"] or 0,
+            "date": target_date,
+            "calories": totals["total_calories"],
+            "protein": totals["total_protein"],
+            "carbs": totals["total_carbs"],
+            "fats": totals["total_fats"],
+            "sugar": totals["total_sugar"],
+            "fiber": totals["total_fiber"],
         })

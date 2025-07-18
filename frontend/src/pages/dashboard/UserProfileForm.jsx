@@ -11,10 +11,39 @@ import Select from "react-select";
 import { motion } from "framer-motion";
 
 // --- OPTIONS FOR DROPDOWNS ---
-const countryOptions = [ { value: "India", label: "India" }, /* ... other countries */ ];
-const activityLevels = [ { value: "sedentary", label: "Sedentary (little or no exercise)" }, { value: 'lightly_active', label: 'Lightly Active (1-3 days/week)' }, { value: 'moderately_active', label: 'Moderately Active (3-5 days/week)' }, { value: 'very_active', label: 'Very Active (6-7 days/week)' }, { value: 'extra_active', label: 'Extra Active (physical job/training)' }];
-const goals = [ { value: "lose_weight", label: "Lose Weight" }, { value: 'maintain_weight', label: 'Maintain Weight' }, { value: 'gain_weight', 'label': 'Gain Weight'}, { value: 'build_muscle', label: 'Build Muscle' }, { value: 'improve_health', label: 'Improve General Health' } ];
-const dietTypeOptions = [ { value: "vegetarian", label: "Vegetarian" }, { value: 'non_vegetarian', label: 'Non-Vegetarian' }, { value: 'vegan', label: 'Vegan' }, { value: 'eggetarian', label: 'Eggetarian' } ];
+const countryOptions = [
+  { value: "India", label: "India" },
+  { value: "United States", label: "United States" },
+  { value: "Canada", label: "Canada" },
+  { value: "United Kingdom", label: "United Kingdom" },
+  { value: "Australia", label: "Australia" },
+  { value: "Germany", label: "Germany" },
+  { value: "Japan", label: "Japan" },
+  { value: "Brazil", label: "Brazil" },
+  { value: "South Africa", label: "South Africa" },
+  { value: "United Arab Emirates", label: "United Arab Emirates" },
+];
+const activityLevels = [
+  { value: "sedentary", label: "Sedentary (little or no exercise)" },
+  { value: 'lightly_active', label: 'Lightly Active (light exercise/sports 1-3 days/week)' },
+  { value: 'moderately_active', label: 'Moderately Active (moderate exercise/sports 3-5 days/week)' },
+  { value: 'very_active', label: 'Very Active (hard exercise/sports 6-7 days a week)' },
+  { value: 'extra_active', label: 'Extra Active (very hard exercise/physical job)' }
+];
+// FIX: Corrected the 'value' for "Maintain Weight" to match the backend model ("maintain")
+const goals = [
+  { value: "lose_weight", label: "Lose Weight" },
+  { value: "maintain", label: "Maintain Weight" },
+  { value: "gain_weight", label: "Gain Weight" }
+];
+const dietTypeOptions = [
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: 'non_vegetarian', label: 'Non-Vegetarian' },
+  { value: 'vegan', label: 'Vegan' },
+  { value: 'eggetarian', label: 'Eggetarian' },
+  { value: 'keto', label: 'Keto' },
+  { value: 'other', label: 'Other' }
+];
 const genderOptions = [ { value: "male", label: "Male" }, { value: "female", label: "Female" }, { value: "other", label: "Other" } ];
 
 // --- THEMED STYLES FOR REACT-SELECT ---

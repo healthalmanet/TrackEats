@@ -19,7 +19,7 @@ const useMealLogger = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
-  const unitOptions = [ "Gram", "Kilogram", "Milliliters", "Liters", "Cup", "Bowl", "Piece", "Tbsp", "Tsp", "Plate", "Handful", "Pinch", "Other" ];
+  const unitOptions = [ "Gram", , "Milliliters", , "Cup", "Bowl", "Piece", "Tbsp", "Tsp", "Plate",  ];
   const mealTypeOptions = [ "Early-Morning", "Breakfast", "Mid-Morning Snack", "Lunch", "Afternoon Snack", "Dinner", "Bedtime" ];
   
   const baseApiUrl = import.meta.env.VITE_API_URL || "https://trackeats.onrender.com/api/logmeals/";

@@ -1,3 +1,5 @@
+// src/pages/nutritionist/PatientDetailsPage.jsx
+
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
@@ -257,31 +259,38 @@ const PatientDetailsPage = () => {
     }
     setIsSaving(true);
     try {
-      // The API call is made. We will not use its response or refetch.
+      // Step 1: Send the edit request to the backend.
       await editDiet(dietId, id, day, updatedDayMeals);
-
-      // --- Optimistic UI Update ---
-      let updatedDiet = null;
-
-      const newAllDietPlans = allDietPlans.map(plan => {
-        if (plan.id === dietId) {
-          updatedDiet = {
-            ...plan,
-            meals: {
-              ...plan.meals,
-              [day]: updatedDayMeals,
-            },
-          };
-          return updatedDiet;
-        }
-        return plan;
-      });
-
-      if (!updatedDiet) throw new Error("Could not find diet in state to update.");
       
-      setAllDietPlans(newAllDietPlans);
-      setDiets([updatedDiet]);
+      toast.info("Changes saved. Refreshing diet plan...");
 
+      // Step 2: Refetch all diet plans for the patient to get the updated data.
+      const updatedDietPlansRes = await getDietByPatientId(id);
+      const allDietsData = (updatedDietPlansRes.data.results || []).sort((a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting));
+      
+      // Step 3: Update the entire state with the new "ground truth" from the server.
+      setAllDietPlans(allDietsData);
+
+      // Find the specific plan that was just edited to keep it in view.
+      const planJustEdited = allDietsData.find(p => p.id === dietId);
+      setDiets(planJustEdited ? [planJustEdited] : []);
+
+      // Keep the dropdown selection consistent.
+      setSelectedPlanId(dietId);
+      
+      // Also update the dropdown options.
+      const latestPlanForOptions = findLatestValidPlan(allDietsData);
+      const options = [];
+      if (latestPlanForOptions) {
+          options.push({ id: latestPlanForOptions.id, label: 'Current Active Plan' });
+          const historicalPlans = allDietsData.filter(p => p.id !== latestPlanForOptions.id && p.status !== 'rejected');
+          historicalPlans.forEach(p => {
+              options.push({ id: p.id, label: `Plan: ${new Date(p.for_week_starting + 'T00:00:00').toLocaleDateString()} (${p.status})` });
+          });
+      }
+      setPlanOptions(options);
+
+      // Step 4: Clean up the local editing state.
       setEditStates(prev => {
           const newEditStates = { ...prev };
           if (newEditStates[dietId]) {

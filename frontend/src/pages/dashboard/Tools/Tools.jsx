@@ -26,7 +26,7 @@ const Tools = () => {
     { id: "fat-calculator", title: "Body Fat Calculator", description: "Analyze your body composition and fat percentage.", icon: <FiTarget className="h-6 w-6" />, route: "/dashboard/tools/fat-calculator", bg: 'bg-[var(--color-accent-1-bg-subtle)]', text: 'text-[var(--color-accent-1-text)]' },
     { id: "water-tracker", title: "Water Tracker", description: "Stay hydrated with daily water intake tracking.", icon: <FiDroplet className="h-6 w-6" />, route: "/dashboard/tools/water-tracker", bg: 'bg-[var(--color-info-bg-subtle)]', text: 'text-[var(--color-info-text)]' },
     { id: "health-reminders", title: "Custom Reminders", description: "Set personalized alerts for health activities.", icon: <FiBell className="h-6 w-6" />, route: "/dashboard/tools/custom-reminder", bg: 'bg-[var(--color-accent-3-bg-subtle)]', text: 'text-[var(--color-accent-3-text)]' },
-    { id: "health-dashboard", title: "Health Dashboard", description: "View your lab reports and health trends.", icon: <FiHeart className="h-6 w-6" />, route: "/dashboard/health", bg: 'bg-[var(--color-danger-bg-subtle)]', text: 'text-[var(--color-danger-text)]' },
+    
   ];
 
   const containerVariants = {

@@ -73,14 +73,31 @@ const themedSelectStyles = {
   menu: (provided) => ({ ...provided, backgroundColor: 'var(--color-bg-surface)', border: '2px solid var(--color-border-default)', zIndex: 50 }),
 };
 
+// --- INITIAL FORM STATE STRUCTURE ---
+const initialFormData = {
+  date_of_birth: "",
+  gender: "",
+  height_cm: "",
+  weight_kg: "",
+  mobile_number: "",
+  occupation: "",
+  activity_level: "",
+  goal: "",
+  country: "",
+  diet_type: "",
+  allergies: "",
+  is_diabetic: false,
+  is_hypertensive: false,
+  has_heart_condition: false,
+  has_thyroid_disorder: false,
+  has_arthritis: false,
+  has_gastric_issues: false,
+  other_chronic_condition: "",
+  family_history: "",
+};
+
 const UserProfileForm = () => {
-  const [formData, setFormData] = useState({
-    date_of_birth: "", gender: "", height_cm: "", weight_kg: "", mobile_number: "",
-    occupation: "", activity_level: "", goal: "", country: "", diet_type: "",
-    allergies: "", is_diabetic: false, is_hypertensive: false, has_heart_condition: false,
-    has_thyroid_disorder: false, has_arthritis: false, has_gastric_issues: false,
-    other_chronic_condition: "", family_history: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -88,13 +105,32 @@ const UserProfileForm = () => {
     const fetchProfile = async () => {
       try {
         const data = await getUserProfile();
-        if (data && Object.keys(data).length > 1) { // Check if profile is not empty
-          const sanitizedData = { ...data, is_diabetic: !!data.is_diabetic, is_hypertensive: !!data.is_hypertensive, has_heart_condition: !!data.has_heart_condition, has_thyroid_disorder: !!data.has_thyroid_disorder, has_arthritis: !!data.has_arthritis, has_gastric_issues: !!data.has_gastric_issues };
-          setFormData(sanitizedData);
+        // Check if a profile exists (API might return empty object or minimal data)
+        if (data && Object.keys(data).length > 1) {
+          // Force a complete and sanitized data structure for the form.
+          // This merges fetched data with the default structure, ensuring all fields are present.
+          const profileData = {
+            ...initialFormData, // Start with the complete default structure
+            ...data,           // Override with fetched data
+            // Explicitly sanitize boolean fields to ensure they are strictly true/false
+            is_diabetic: !!data.is_diabetic,
+            is_hypertensive: !!data.is_hypertensive,
+            has_heart_condition: !!data.has_heart_condition,
+            has_thyroid_disorder: !!data.has_thyroid_disorder,
+            has_arthritis: !!data.has_arthritis,
+            has_gastric_issues: !!data.has_gastric_issues,
+          };
+          setFormData(profileData);
           setIsEditing(true);
+        } else {
+            // If no profile data, ensure form is reset to its initial clean state.
+            setFormData(initialFormData);
+            setIsEditing(false);
         }
       } catch (error) {
           console.log("No profile found. Ready to create a new one.");
+          // On error (e.g., 404), also reset to a clean state for profile creation.
+          setFormData(initialFormData);
           setIsEditing(false);
       }
     };

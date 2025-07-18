@@ -5,10 +5,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Sum
 from django.utils import timezone
 from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q, Case, When, IntegerField, Sum
+from django.db.models.functions import Length
 from rest_framework.generics import ListAPIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import BasePermission
+
+from utils.gemini import fetch_nutrition_from_gemini
 from .models import WeightLog, WaterIntakeLog, CustomReminder, Message, Blog
 from .serializers import WeightLogSerializer, WaterIntakeLogSerializer, CustomReminderSerializer, MessageSerializer, FoodItemSerializer2, BlogSerializer
 from django.conf import settings
@@ -155,12 +159,109 @@ class MessageListView(generics.ListAPIView):
         ).order_by('-timestamp')        
 
 
+
+
+
 class FoodItemListView(ListAPIView):
     queryset = FoodItem.objects.all()
     serializer_class = FoodItemSerializer2
     filter_backends = [SearchFilter, DjangoFilterBackend]
-    search_fields = ['name']  # ✅ Allows ?search=Apple
-    pagination_class = StandardResultsSetPagination
+    search_fields = ['name']
+
+    def list(self, request, *args, **kwargs):
+        search_term = request.query_params.get('search', None)
+        if not search_term:
+            return super().list(request, *args, **kwargs)
+
+        cleaned_search_term = search_term.strip().lower()
+
+        # --- TIER 1: Exact Match ---
+        exact_queryset = FoodItem.objects.filter(name__iexact=cleaned_search_term)
+        if exact_queryset.exists():
+            print(f"✅ Exact Found: '{cleaned_search_term}'")
+            return self.get_paginated_response_for_queryset(exact_queryset)
+
+        # --- TIER 2: Substring Match (optional fallback) ---
+        substring_queryset = FoodItem.objects.filter(name__icontains=cleaned_search_term)
+        if substring_queryset.exists():
+            print(f"✅ Substring Found: '{cleaned_search_term}'")
+            return self.get_paginated_response_for_queryset(substring_queryset)
+
+        # --- TIER 3: Gemini External API Fallback ---
+        print(f"🔥 No DB match for '{cleaned_search_term}' -> Gemini fallback")
+        try:
+            nutrition_data = fetch_nutrition_from_gemini(search_term)
+
+            if nutrition_data and nutrition_data.get('name'):
+                food, created = FoodItem.objects.get_or_create(
+                    name__iexact=nutrition_data.get('name'),
+                    defaults=self._map_api_data_to_model_fields(nutrition_data)
+                )
+                if created:
+                    print(f"✅ Gemini Success: '{food.name}' created in DB")
+                new_item_queryset = FoodItem.objects.filter(pk=food.pk)
+                return self.get_paginated_response_for_queryset(new_item_queryset)
+
+            print("❌ Gemini returned no valid data")
+
+        except Exception as e:
+            print(f"❌ Gemini Exception: {e}")
+
+        # --- TIER 4: Return Empty ---
+        print(f"❌ No match found anywhere for '{cleaned_search_term}'")
+        return self.get_paginated_response_for_queryset(FoodItem.objects.none())
+
+    def get_paginated_response_for_queryset(self, queryset):
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def _map_api_data_to_model_fields(self, data: dict) -> dict:
+        """Safe fallback handler for null/empty Gemini fields."""
+
+        def safe_float(val):
+            try:
+                return float(val) if val is not None else 0.0
+            except (ValueError, TypeError):
+                return 0.0
+
+        return {
+            'name': data.get('name'),
+            'default_quantity': safe_float(data.get('default_quantity')),
+            'default_unit': data.get('default_unit') or "piece",
+            'gram_equivalent': safe_float(data.get('gram_equivalent')),
+            'calories': safe_float(data.get('calories')),
+            'protein': safe_float(data.get('protein')),
+            'carbs': safe_float(data.get('carbohydrates')),
+            'fats': safe_float(data.get('fats')),
+            'sugar': safe_float(data.get('sugar')),
+            'fiber': safe_float(data.get('fiber')),
+            'saturated_fat_g': safe_float(data.get('saturated_fat_g')),
+            'trans_fat_g': safe_float(data.get('trans_fat_g')),
+            'estimated_gi': safe_float(data.get('glycemic_index')),
+            'glycemic_load': safe_float(data.get('glycemic_load')),
+            'sodium_mg': safe_float(data.get('sodium_mg')),
+            'potassium_mg': safe_float(data.get('potassium_mg')),
+            'iron_mg': safe_float(data.get('iron_mg')),
+            'calcium_mg': safe_float(data.get('calcium_mg')),
+            'iodine_mcg': safe_float(data.get('iodine_mcg')),
+            'zinc_mg': safe_float(data.get('zinc_mg')),
+            'magnesium_mg': safe_float(data.get('magnesium_mg')),
+            'selenium_mcg': safe_float(data.get('selenium_mcg')),
+            'cholesterol_mg': safe_float(data.get('cholesterol_mg')),
+            'omega_3_g': safe_float(data.get('omega_3_g')),
+            'vitamin_d_mcg': safe_float(data.get('vitamin_d_mcg')),
+            'vitamin_b12_mcg': safe_float(data.get('vitamin_b12_mcg')),
+            'food_type': data.get('food_type') or "Unknown",
+            'meal_type': data.get('meal_type') or [],
+            'fodmap_level': data.get('fodmap_level') or "unknown",
+            'spice_level': data.get('spice_level') or "medium",
+            'purine_level': data.get('purine_level') or "medium",
+            'allergens': "/".join(data.get('allergens') or []),
+        }
 
 
 

@@ -73,14 +73,31 @@ const themedSelectStyles = {
   menu: (provided) => ({ ...provided, backgroundColor: 'var(--color-bg-surface)', border: '2px solid var(--color-border-default)', zIndex: 50 }),
 };
 
+// --- INITIAL FORM STATE STRUCTURE ---
+const initialFormData = {
+  date_of_birth: "",
+  gender: "",
+  height_cm: "",
+  weight_kg: "",
+  mobile_number: "",
+  occupation: "",
+  activity_level: "",
+  goal: "",
+  country: "",
+  diet_type: "",
+  allergies: "",
+  is_diabetic: false,
+  is_hypertensive: false,
+  has_heart_condition: false,
+  has_thyroid_disorder: false,
+  has_arthritis: false,
+  has_gastric_issues: false,
+  other_chronic_condition: "",
+  family_history: "",
+};
+
 const UserProfileForm = () => {
-  const [formData, setFormData] = useState({
-    date_of_birth: "", gender: "", height_cm: "", weight_kg: "", mobile_number: "",
-    occupation: "", activity_level: "", goal: "", country: "", diet_type: "",
-    allergies: "", is_diabetic: false, is_hypertensive: false, has_heart_condition: false,
-    has_thyroid_disorder: false, has_arthritis: false, has_gastric_issues: false,
-    other_chronic_condition: "", family_history: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -88,13 +105,32 @@ const UserProfileForm = () => {
     const fetchProfile = async () => {
       try {
         const data = await getUserProfile();
-        if (data && Object.keys(data).length > 1) { // Check if profile is not empty
-          const sanitizedData = { ...data, is_diabetic: !!data.is_diabetic, is_hypertensive: !!data.is_hypertensive, has_heart_condition: !!data.has_heart_condition, has_thyroid_disorder: !!data.has_thyroid_disorder, has_arthritis: !!data.has_arthritis, has_gastric_issues: !!data.has_gastric_issues };
-          setFormData(sanitizedData);
+        // Check if a profile exists (API might return empty object or minimal data)
+        if (data && Object.keys(data).length > 1) {
+          // Force a complete and sanitized data structure for the form.
+          // This merges fetched data with the default structure, ensuring all fields are present.
+          const profileData = {
+            ...initialFormData, // Start with the complete default structure
+            ...data,           // Override with fetched data
+            // Explicitly sanitize boolean fields to ensure they are strictly true/false
+            is_diabetic: !!data.is_diabetic,
+            is_hypertensive: !!data.is_hypertensive,
+            has_heart_condition: !!data.has_heart_condition,
+            has_thyroid_disorder: !!data.has_thyroid_disorder,
+            has_arthritis: !!data.has_arthritis,
+            has_gastric_issues: !!data.has_gastric_issues,
+          };
+          setFormData(profileData);
           setIsEditing(true);
+        } else {
+            // If no profile data, ensure form is reset to its initial clean state.
+            setFormData(initialFormData);
+            setIsEditing(false);
         }
       } catch (error) {
           console.log("No profile found. Ready to create a new one.");
+          // On error (e.g., 404), also reset to a clean state for profile creation.
+          setFormData(initialFormData);
           setIsEditing(false);
       }
     };
@@ -110,17 +146,29 @@ const UserProfileForm = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      // --- FIX: Define mappedData from the formData state ---
+      // This creates the object to be sent to the API.
+      // We also ensure numeric fields are correctly formatted as numbers.
+      const mappedData = {
+        ...formData,
+        height_cm: formData.height_cm ? parseFloat(formData.height_cm) : null,
+        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : null,
+      };
+
       if (isEditing) {
-        await updateUserProfile(formData);
+        await updateUserProfile(mappedData);
         toast.success("✅ Profile updated successfully!");
       } else {
-        await createUserProfile(formData);
+        await createUserProfile(mappedData);
         toast.success("🎉 Profile created successfully!");
         setIsEditing(true);
       }
+
     } catch (err) {
       console.error("Error:", err);
-      toast.error("❌ Something went wrong. Please check your inputs.");
+      // Attempt to provide more specific error feedback if available
+      const errorMessage = err.response?.data?.detail || "Something went wrong. Please check your inputs.";
+      toast.error(`❌ ${errorMessage}`);
     } finally {
         setLoading(false);
     }

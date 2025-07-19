@@ -191,16 +191,21 @@ export const searchUsersByName = async (name) => {
   return axiosInstance.get(`/users/?search=${encodeURIComponent(name)}`);
 };
 
-export const editDiet = async (dietId, patientId, date, updatedMeals) => {
-  await delay(500);
-  return axiosInstance.patch(`/diet/${dietId}/edit/`, {
-    patient_id: patientId,
-    meals: {
-      [date]: {
-        meals: updatedMeals,
-      },
-    },
-  });
+// export const editDiet = async (dietId, patientId, date, updatedMeals) => {
+//   await delay(500);
+//   return axiosInstance.patch(`/diet/${dietId}/edit/`, {
+//     patient_id: patientId,
+//     meals: {
+//       [date]: {
+//         meals: updatedMeals,
+//       },
+//     },
+//   });
+// };
+
+export const editDiet = async (dietId, payload) => {
+  // It just sends the payload it receives.
+  return axiosInstance.patch(`/diet/${dietId}/edit/`, payload);
 };
 
 export const reviewDietPlan = async (dietId, action, comment) => {

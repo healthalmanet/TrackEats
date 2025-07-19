@@ -1,5 +1,3 @@
-// src/pages/reports/Reports.jsx
-
 import React, { useState, useEffect } from 'react';
 // --- RECHARTS IMPORTS ---
 import {
@@ -47,6 +45,34 @@ const MEAL_LOG_ICON_CLASSES = [
     { bg: 'bg-[var(--color-info-bg-subtle)]', text: 'text-[var(--color-info-text)]' },
 ];
 
+// --- DATE HELPER FUNCTIONS (THE DEFINITIVE FIX) ---
+
+/**
+ * ✅ Gets the user's local date as a 'YYYY-MM-DD' string, guaranteed to be correct for any timezone.
+ * This uses the browser's built-in Internationalization API, which is the gold standard for this task.
+ * The 'en-CA' locale reliably formats the date to 'YYYY-MM-DD' based on the user's local clock.
+ * @param {Date} date The local date object to format.
+ * @returns {string} The formatted date string (e.g., "2024-07-19").
+ */
+const getLocalDateString = (date) => {
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+};
+
+/**
+ * ✅ Parses a 'YYYY-MM-DD' string from the API as a local date.
+ * Appending 'T00:00:00' ensures the browser interprets it in the user's local timezone,
+ * not UTC, preventing off-by-one-day display errors in charts.
+ * @param {string} dateString The date string from the API.
+ * @returns {Date} The parsed local date object.
+ */
+const parseDateStringAsLocal = (dateString) => {
+    return new Date(`${dateString}T00:00:00`);
+};
+
 const Reports = () => {
   const [macroData, setMacroData] = useState([]);
   const [calorieProgress, setCalorieProgress] = useState([]);
@@ -58,22 +84,36 @@ const Reports = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // ... (Your data fetching logic remains the same)
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
         const token = localStorage.getItem('token');
         if (!token) { throw new Error("Authentication token not found. Please log in."); }
-        const apiDate = new Date().toISOString().split('T')[0];
+
+        // --- PERFECT DATE SYNCHRONIZATION ---
+        const today = new Date();
+        const apiDate = getLocalDateString(today); // Use the new, robust function
+        setTodayDate(today.toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        }));
+        
+        // Pass the accurate user's local date string (apiDate) to each API call.
         const [recommendedResponse, progressResponse, weeklyDataResponse, mealLogResponse] = await Promise.all([
-          targetApi(), targetProgressApi(), weeklyTrack(), getMealsByDate(token, apiDate)
+          targetApi(apiDate),
+          targetProgressApi(apiDate),
+          weeklyTrack(apiDate),
+          getMealsByDate(token, apiDate)
         ]);
+
         setGoalCalories(recommendedResponse.recommended_calories || 0);
-        const date = new Date(progressResponse.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-        setTodayDate(date);
         setMacroData([{ name: "Protein", value: progressResponse.protein || 0 }, { name: "Carbs", value: progressResponse.carbs || 0 }, { name: "Fats", value: progressResponse.fats || 0 }]);
-        setCalorieProgress(weeklyDataResponse.map(day => ({ name: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric'}), calories: day.calories })));
+        setCalorieProgress(weeklyDataResponse.map(day => ({
+            name: parseDateStringAsLocal(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            calories: day.calories
+        })));
         setNutrientProgress([
           { title: "Calories", current: progressResponse.calories, goal: recommendedResponse.recommended_calories, value: `${Math.round(progressResponse.calories)} kcal`, goalFormatted: `${Math.round(recommendedResponse.recommended_calories)} kcal`, percentage: Math.round((progressResponse.calories / recommendedResponse.recommended_calories) * 100) || 0, icon: <FaFireAlt className="text-xl text-[var(--color-primary)]" /> },
           { title: "Protein", current: progressResponse.protein, goal: recommendedResponse.macronutrients.protein_g, value: `${progressResponse.protein.toFixed(1)}g`, goalFormatted: `${recommendedResponse.macronutrients.protein_g}g`, percentage: Math.round((progressResponse.protein / recommendedResponse.macronutrients.protein_g) * 100) || 0, icon: <FaDrumstickBite className="text-xl text-[var(--color-primary)]" /> },
@@ -95,7 +135,6 @@ const Reports = () => {
 
   const barChartData = nutrientProgress.filter(item => item.title !== "Calories").map((item) => ({ name: item.title, "Current (g)": item.current, "Goal (g)": item.goal }));
   const getIcon = (title) => ({ "breakfast": <FaCoffee />, "snack": <FaAppleAlt />, "lunch": <FaHamburger />, "dinner": <FaDrumstickBite /> }[title.toLowerCase()] || <FaAppleAlt />);
-  
   
   if (isLoading) { return <div className="flex flex-col justify-center items-center h-screen bg-[var(--color-bg-app)]"><Loader className="w-16 h-16 animate-spin text-[var(--color-primary)]" /></div>; }
   if (error) { return <div className="flex justify-center items-center h-screen bg-[var(--color-bg-app)]"><p className="text-xl text-[var(--color-danger-text)] font-[var(--font-primary)]">{error}</p></div>; }
@@ -137,7 +176,6 @@ const Reports = () => {
           <div className="lg:col-span-2 bg-[var(--color-bg-surface)] p-6 rounded-2xl border border-[var(--color-border-default)] shadow-md transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 hover:border-[var(--color-primary)] opacity-0 animate-fade-up" style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}>
             <h2 className="text-[var(--color-text-strong)] font-[var(--font-primary)] font-semibold text-xl text-center mb-4">Macronutrient Breakdown</h2>
             <ResponsiveContainer width="100%" height={250}>
-                {/* Chart content remains the same */}
                 <PieChart>
                     <Pie data={macroData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => { const radius = innerRadius + (outerRadius - innerRadius) * 1.2; const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180)); const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180)); return (<text x={x} y={y} fill={THEME_VALUES.textDefault} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>); }}>
                         {macroData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_CHART_COLORS[index % PIE_CHART_COLORS.length]} />)}
@@ -151,7 +189,6 @@ const Reports = () => {
           <div className="lg:col-span-3 bg-[var(--color-bg-surface)] p-6 rounded-2xl border border-[var(--color-border-default)] shadow-md transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 hover:border-[var(--color-primary)] opacity-0 animate-fade-up" style={{ animationDelay: '600ms', animationFillMode: 'forwards' }}>
             <h2 className="text-[var(--color-text-strong)] font-[var(--font-primary)] font-semibold text-xl text-center mb-4">Weekly Calorie Progress</h2>
             <ResponsiveContainer width="100%" height={250}>
-                {/* Chart content remains the same */}
                 <LineChart data={calorieProgress} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={THEME_VALUES.borderDefault} />
                     <XAxis dataKey="name" stroke={THEME_VALUES.textDefault} />
@@ -170,7 +207,6 @@ const Reports = () => {
             <div className="lg:col-span-3 bg-[var(--color-bg-surface)] p-6 rounded-2xl border border-[var(--color-border-default)] shadow-md transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 hover:border-[var(--color-primary)] opacity-0 animate-fade-up" style={{ animationDelay: '700ms', animationFillMode: 'forwards' }}>
               <h2 className="text-[var(--color-text-strong)] font-[var(--font-primary)] font-semibold text-xl text-center mb-4">Macronutrient Intake – Current vs Goal</h2>
               <ResponsiveContainer width="100%" height={300}>
-                {/* Chart content remains the same */}
                 <BarChart data={barChartData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={THEME_VALUES.borderDefault} />
                     <XAxis dataKey="name" stroke={THEME_VALUES.textDefault} />

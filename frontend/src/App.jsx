@@ -71,8 +71,8 @@ function App() {
             { label: "Profile", to: "/dashboard/user-profile" },
             { label: "Tools", to: "/dashboard/tools" },
             { label: "Health", to: "/dashboard/health-section" },
-            { label: "Meals", to: "/dashboard/meals" },
-            { label: "Reports", to: "/dashboard/reports" },
+            { label: "Diet", to: "/dashboard/meals" },
+            { label: "Progress", to: "/dashboard/reports" },
           ]}
           rightContent={<LogoutButton />}
         />

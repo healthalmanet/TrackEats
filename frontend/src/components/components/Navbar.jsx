@@ -8,75 +8,90 @@ import { motion, AnimatePresence } from "framer-motion";
 const Navbar = ({ links = [], rightContent, align = "right" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { pathname } = useLocation();
+  const [activeSection, setActiveSection] = useState('');
+  const { pathname } = useLocation(); // NEW: Hook to detect the current route
+
+  const isHomepage = pathname === '/'; // NEW: Check if we are on the homepage
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
+  // MODIFIED: This effect now handles both the background style and the scroll-spy logic
   useEffect(() => {
     const handleScroll = () => {
+      // 1. Handle background style change on scroll
       setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
-  // --- NEW: Function for smooth scrolling ---
+      // 2. Conditionally run scroll-spy logic ONLY on the homepage
+      if (isHomepage) {
+        let currentSectionId = '';
+        links.forEach(link => {
+          if (!link.to.startsWith('#')) return; // Skip non-anchor links
+
+          const element = document.getElementById(link.to.substring(1));
+          if (element) {
+            const rect = element.getBoundingClientRect();
+            // Check if section is in the viewport (with a 150px top offset)
+            if (rect.top <= 150 && rect.bottom >= 150) {
+              currentSectionId = link.to;
+            }
+          }
+        });
+        setActiveSection(currentSectionId);
+      }
+    };
+
+    handleScroll(); // Check on initial render
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [pathname, links, isHomepage]); // Rerun effect if path or links change
+
+  // Function for smooth scrolling (for anchor links)
   const handleAnchorLinkClick = (e, to) => {
     e.preventDefault();
-    const targetId = to.substring(1); // remove the '#'
+    const targetId = to.substring(1);
     const targetElement = document.getElementById(targetId);
 
     if (targetElement) {
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    setIsOpen(false); // Close mobile menu after clicking
+    setIsOpen(false);
   };
 
   const navLinkStyle =
     "relative font-medium text-[var(--color-text-default)] transition-colors duration-300 focus:outline-none focus:text-[var(--color-primary)]";
   const activeLinkStyle = "text-[var(--color-primary)]";
 
-  // --- MODIFIED: This function now handles both types of links ---
+  // This function renders links with context-aware active states
   const renderNavLink = ({ to, label }) => {
     const isAnchorLink = to.startsWith("#");
 
-    // RENDER ANCHOR LINK (for scrolling on the same page)
+    // RENDER ANCHOR LINK: Active state is based on scroll position (activeSection)
     if (isAnchorLink) {
+      const isActive = isHomepage && activeSection === to;
       return (
         <a
           key={to}
           href={to}
           onClick={(e) => handleAnchorLinkClick(e, to)}
-          className={`${navLinkStyle} hover:text-[var(--color-primary)] group`}
+          className={`${navLinkStyle} ${isActive ? activeLinkStyle : "hover:text-[var(--color-primary)]"}`}
         >
-          <div className="relative">
-            {label}
-            <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[var(--color-primary)] transform scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100 origin-left" />
-          </div>
+          {label}
         </a>
       );
     }
 
-    // RENDER ROUTER LINK (for navigating to different pages)
-    const isActive = pathname === to;
+    // RENDER ROUTER LINK: Active state is based on the URL (handled by NavLink)
     return (
       <NavLink
         key={to}
         to={to}
+        end={to === '/'} // Ensures "Home" link is only active on the exact root path
         onClick={() => setIsOpen(false)}
-        className={`${navLinkStyle} ${isActive ? activeLinkStyle : "hover:text-[var(--color-primary)] group"}`}
+        className={({ isActive }) =>
+          `${navLinkStyle} ${isActive ? activeLinkStyle : "hover:text-[var(--color-primary)]"}`
+        }
       >
-        <div className="relative">
-          {label}
-          <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[var(--color-primary)] transform scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100 origin-left" />
-          {isActive && (
-            <motion.div
-              className="absolute -bottom-1 left-0 w-full h-0.5 bg-[var(--color-primary)]"
-              layoutId="underline"
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            />
-          )}
-        </div>
+        {label}
       </NavLink>
     );
   };

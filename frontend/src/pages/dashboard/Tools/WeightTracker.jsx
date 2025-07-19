@@ -196,7 +196,7 @@ const WeightTracker = () => {
                     <div className="relative">
                       <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" size={16}/>
                       <input type="date" value={quickLogDate} 
-                      max={new Date().toISOString().split("T")[0]} onChange={(e) => setQuickLogDate(e.target.value)} 
+                      max={new Date().toLocaleDateString('en-CA')}onChange={(e) => setQuickLogDate(e.target.value)} 
                         className="w-full bg-[var(--color-bg-app)] text-[var(--color-text-strong)] border-2 border-[var(--color-border-default)] rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"/>
                     </div>
                     <button onClick={handleSaveEntry} disabled={isSubmitting}

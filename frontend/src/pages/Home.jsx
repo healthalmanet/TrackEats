@@ -63,6 +63,13 @@ const AnimatedSection = ({ children, className }) => {
         </motion.div>
     );
 };
+ const links = [
+    { label: "Home", to: "#home" },
+    { label: "About", to: "#about" },
+    { label: "Features", to: "#features" },
+    { label: "Blogs", to: "#blogs" },
+    { label: "Contact", to: "#contact" },
+  ];
 
 const itemFadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -109,18 +116,19 @@ const Home = () => {
   ];
   
   return (
-    <div id="home" className="min-h-screen font-[var(--font-secondary)] text-[var(--color-text-default)] bg-[var(--color-bg-app)] overflow-x-hidden">
+    
+       <div id="home" className="scroll-smooth font-[var(--font-secondary)] text-[var(--color-text-default)] bg-[var(--color-bg-app)]">
+      {/* Navbar */}
       <Navbar
-        logo={<img src={logo} alt="logo" className="h-10 w-auto" />}
+        links={links}
         align="right"
-        links={[
-          { label: "Home", to: "#home" }, { label: "About", to: "#about" }, { label: "Features", to: "#features" },
-          { label: "Blogs", to: "#blogs" }, { label: "Contact", to: "#contact" },
-        ]}
         rightContent={
-         <button onClick={openRegister} className="ml-5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-text-on-primary)] text-sm font-semibold px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-primary-glow">
-  Sign In
-</button>
+          <button
+            onClick={openRegister}
+            className="ml-5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-text-on-primary)] text-sm font-semibold px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-primary-glow"
+          >
+            Sign In
+          </button>
         }
       />
 

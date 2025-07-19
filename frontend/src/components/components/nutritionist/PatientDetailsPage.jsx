@@ -245,40 +245,46 @@ const PatientDetailsPage = () => {
     }
   };
 
-  // *** UPDATED AND CORRECTED LOGIC STARTS HERE ***
+  // *** CORRECTED SAVE LOGIC ***
   const handleSave = async (dietId, day) => {
     setIsSaving(true);
   
-    // Find the original diet and the specific day's meals from the master list
+    // Find the original diet from the master list to get the full, unchanged data
     const originalDiet = allDietPlans.find(p => p.id === dietId);
     if (!originalDiet || !originalDiet.meals || !originalDiet.meals[day]) {
       toast.error("Could not find the original diet plan to edit.");
       setIsSaving(false);
       return;
     }
-    const originalMealsForDay = originalDiet.meals[day];
   
-    // Get the changes from the temporary edit state
+    // This object contains the full meal plan for the specific day being edited
+    const originalMealsForDay = originalDiet.meals[day];
+    // This object contains only the fields that were changed in the UI
     const dayChanges = editStates[dietId]?.[day];
   
-    // 1. Construct the complete payload for the day to avoid data loss
-    const apiDayKey = day.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); // "day_1" -> "Day 1"
+    // 1. Format the day key for the API (e.g., 'day_1' -> 'Day 1')
+    const apiDayKey = day.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     const apiMealsForDay = {};
   
-    // Iterate over the *original* meals to ensure all meals are included in the payload
+    // 2. Build the payload for the day, ensuring no data is lost
+    // Iterate over the *original* meals to make sure we include every meal type
     for (const mealType in originalMealsForDay) {
       const originalMeal = originalMealsForDay[mealType];
       const changedMeal = dayChanges?.[mealType];
   
-      // Use the new food_name if it was changed, otherwise use the original
+      // Use the edited food name if it exists, otherwise fall back to the original
       const finalFoodName = changedMeal?.food_name ?? originalMeal.food_name;
       
+      // Format the meal type key (e.g., 'early-morning' -> 'Early Morning')
       const apiMealKey = mealType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+      // Construct the meal object in the format the API expects
       apiMealsForDay[apiMealKey] = {
         item: finalFoodName
       };
     }
   
+    // 3. Construct the final payload object in the required structure
     const payload = {
       meals: {
         [apiDayKey]: apiMealsForDay
@@ -286,59 +292,38 @@ const PatientDetailsPage = () => {
     };
   
     try {
-      // 2. Call the API with the correctly formatted payload.
+      // 4. Call the API.
+      // IMPORTANT: Your `editDiet` function in `nutritionistApi.js` must be changed
+      // to accept `(dietId, payload)` and send the payload directly.
       await editDiet(dietId, payload); 
-      toast.success("Changes saved! Refreshing diet plan...");
+      toast.success("Changes saved successfully!");
   
-      // 3. Directly re-fetch all plans to get the guaranteed latest version from the server.
-      const dietRes = await getDietByPatientId(id);
-      const newMasterPlanList = (dietRes.data.results || []).sort((a, b) => new Date(b.for_week_starting) - new Date(a.for_week_starting));
+      // 5. Re-fetch all plans from the server to get the updated data
+      const { allDietsData } = await fetchAndSetAllPlans();
       
-      // 4. Update the master list state
-      setAllDietPlans(newMasterPlanList);
+      // Find the specific plan we just edited from the newly fetched list
+      const updatedPlan = allDietsData.find(p => p.id === dietId);
   
-      // 5. Update the dropdown options based on the new master list
-      const latestPlan = findLatestValidPlan(newMasterPlanList);
-      const displayablePlans = newMasterPlanList.filter(plan => plan.status === 'approved' || plan.status === 'pending');
-      const options = displayablePlans.map(plan => {
-        let label = `Plan: ${new Date(plan.for_week_starting + 'T00:00:00').toLocaleDateString()} (${plan.status})`;
-        if (latestPlan && plan.id === latestPlan.id) {
-          label = 'Current Active Plan';
-        }
-        return { id: plan.id, label: label };
-      });
-      setPlanOptions(options);
-      
-      // 6. Find the specific plan we just edited from the newly fetched list
-      const planJustEdited = newMasterPlanList.find(p => p.id === dietId);
-  
-      // 7. Update the `diets` state to re-render the view with the fresh data
-      if (planJustEdited) {
-          setDiets([planJustEdited]);
-      } else {
-          // Fallback if the edited plan somehow disappears
-          const newLatest = findLatestValidPlan(newMasterPlanList);
-          setDiets(newLatest ? [newLatest] : []);
-          setSelectedPlanId(newLatest ? newLatest.id : null);
+      // 6. Update the UI to display the freshly saved plan
+      if (updatedPlan) {
+          setDiets([updatedPlan]);
       }
       
-      // 8. Clean up local editing state
+      // 7. Reset editing state
       setEditingDay(null);
       setEditStates(prev => {
           const newEditStates = { ...prev };
-          if (newEditStates[dietId] && newEditStates[dietId][day]) {
-            delete newEditStates[dietId][day];
-          }
+          if (newEditStates[dietId]) delete newEditStates[dietId][day];
           return newEditStates;
       });
   
     } catch (err) {
-      toast.error("Failed to save changes. Please try again.");
+      console.error("Save failed:", err.response?.data || err.message);
+      toast.error("Failed to save changes. Please check the data and try again.");
     } finally {
       setIsSaving(false);
     }
   };
-  // *** UPDATED AND CORRECTED LOGIC ENDS HERE ***
 
   const handleInputChange = (dietId, day, mealType, field, value) => {
     const diet = allDietPlans.find(d => d.id === dietId);
@@ -533,50 +518,49 @@ const PatientDetailsPage = () => {
 
                                 <div className="pb-4 px-4"><div className="border-t-2 border-dashed border-[var(--color-border-default)] pt-4">
                                     <table className="min-w-full text-sm align-middle">
-  <thead className="bg-[var(--color-bg-app)]">
-    <tr>
-      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold  text-[var(--color-text-muted)] sm:pl-6">Meal Type</th>
-      <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold  text-[var(--color-text-muted)]">Food Item</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Quantity</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Unit</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Calories</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Protein (g)</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Carbs (g)</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Fats (g)</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Date</th>
-      <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold text-[var(--color-text-muted)]">Time</th>
-    </tr>
-  </thead>
-  <tbody>
-    {[...mealsForDay]
-      .sort((a, b) => new Date(a.consumed_at) - new Date(b.consumed_at))
-      .map((item) => (
-        <tr key={item.id} className="transition-colors duration-200 hover:bg-[var(--color-bg-app)]">
-          <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
-            <span className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full capitalize border-2 ${mealTypeStyles[item.meal_type?.toLowerCase() || "uncategorized"]}`}>
-              {item.meal_type?.replace(/-/g, " ") || "Uncategorized"}
-            </span>
-          </td>
-          <td className="whitespace-nowrap px-3 py-4 font-semibold text-[var(--color-text-strong)]">{item.food_name}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.quantity}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.unit}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.calories}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.protein}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.carbs}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.fats}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.date}</td>
-          <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">
-            {new Date(item.consumed_at).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            })}
-          </td>
-        </tr>
-      ))}
-  </tbody>
-</table>
-
+                                      <thead className="bg-[var(--color-bg-app)]">
+                                        <tr>
+                                          <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold  text-[var(--color-text-muted)] sm:pl-6">Meal Type</th>
+                                          <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold  text-[var(--color-text-muted)]">Food Item</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Quantity</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Unit</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Calories</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Protein (g)</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Carbs (g)</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Fats (g)</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold  text-[var(--color-text-muted)]">Date</th>
+                                          <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold text-[var(--color-text-muted)]">Time</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {[...mealsForDay]
+                                          .sort((a, b) => new Date(a.consumed_at) - new Date(b.consumed_at))
+                                          .map((item) => (
+                                            <tr key={item.id} className="transition-colors duration-200 hover:bg-[var(--color-bg-app)]">
+                                              <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
+                                                <span className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full capitalize border-2 ${mealTypeStyles[item.meal_type?.toLowerCase() || "uncategorized"]}`}>
+                                                  {item.meal_type?.replace(/-/g, " ") || "Uncategorized"}
+                                                </span>
+                                              </td>
+                                              <td className="whitespace-nowrap px-3 py-4 font-semibold text-[var(--color-text-strong)]">{item.food_name}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.quantity}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.unit}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.calories}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.protein}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.carbs}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.fats}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">{item.date}</td>
+                                              <td className="whitespace-nowrap px-3 py-4 text-center text-[var(--color-text-default)]">
+                                                {new Date(item.consumed_at).toLocaleTimeString("en-IN", {
+                                                  hour: "2-digit",
+                                                  minute: "2-digit",
+                                                  hour12: true,
+                                                })}
+                                              </td>
+                                            </tr>
+                                          ))}
+                                      </tbody>
+                                    </table>
                                 </div></div>
                                 </div>
                             </div>
@@ -770,4 +754,4 @@ const PatientDetailsPage = () => {
   );
 };
 
-export default PatientDetailsPage;                 
+export default PatientDetailsPage;

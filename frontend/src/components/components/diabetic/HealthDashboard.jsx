@@ -1,5 +1,3 @@
-// src/pages/dashboard/HealthDashboard.jsx
-
 import React, { useState, useEffect } from 'react';
 // --- RECHARTS & ICONS ---
 import {
@@ -102,7 +100,10 @@ const HealthDashboard = () => {
     const [modalOpen, setModalOpen] = useState(false);
     
     const fetchReportData = async () => { 
-        setIsLoading(true); 
+        // Do not set loading to true here if we already have data, to prevent screen flash
+        if (!latestReport) {
+            setIsLoading(true);
+        } 
         setError(null); 
         try { 
             const response = await getDiabeticProfile(); 
@@ -141,11 +142,9 @@ const HealthDashboard = () => {
                 ))}
             </div>
             <AddInfoButton onClick={() => setModalOpen(true)} />
-            <AddDiabeticInfoModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSubmit={() => { setTimeout(fetchReportData, 500); setModalOpen(false); }} />
         </div>
     );
     
-    // --- CHART RENDER FUNCTIONS ---
     const renderDiabetesCharts = () => {
         const chartData = allReports.map(r => ({ date: formatDate(r.report_date), 'HbA1c': r.hba1c }));
         const latestSugarData = [{ name: 'Fasting', value: latestReport.fasting_blood_sugar }, { name: 'Post-Meal', value: latestReport.postprandial_sugar }];
@@ -204,7 +203,24 @@ const HealthDashboard = () => {
     };
 
     if (isLoading) { return <div className="flex flex-col justify-center items-center h-screen bg-[var(--color-bg-app)]"><Loader className="w-16 h-16 animate-spin text-[var(--color-primary)]" /></div>; }
-    if (error) { return ( <div className="flex flex-col justify-center items-center h-screen bg-[var(--color-bg-app)] text-center p-4 opacity-0 animate-fade-up"> <p className="text-xl text-[var(--color-danger-text)] font-[var(--font-primary)] mb-6">{error}</p> <AddInfoButton onClick={() => setModalOpen(true)} /> <AddDiabeticInfoModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSubmit={() => { setTimeout(fetchReportData, 500); setModalOpen(false); }} /> </div> ); }
+    
+    if (error) { 
+        return ( 
+            <>
+                <div className="flex flex-col justify-center items-center h-screen bg-[var(--color-bg-app)] text-center p-4"> 
+                    <div className="opacity-0 animate-fade-up" style={{animationFillMode: 'forwards'}}>
+                        <p className="text-xl text-[var(--color-danger-text)] font-[var(--font-primary)] mb-6">{error}</p> 
+                        <AddInfoButton onClick={() => setModalOpen(true)} />
+                    </div>
+                </div>
+                <AddDiabeticInfoModal 
+                    isOpen={modalOpen} 
+                    onClose={() => setModalOpen(false)} 
+                    onSubmit={() => { setTimeout(fetchReportData, 500); setModalOpen(false); }} 
+                />
+            </>
+        ); 
+    }
 
     const viewToChartMap = {
       'diabetes': renderDiabetesCharts, 'thyroid': renderThyroidCharts,
@@ -212,25 +228,39 @@ const HealthDashboard = () => {
     };
     
     return (
-        <div className="bg-[var(--color-bg-app)] min-h-screen">
-            <main className="text-[var(--color-text-default)] p-4 sm:p-6 lg:p-8 font-[var(--font-secondary)] max-w-7xl mx-auto">
-                <header className="mb-8 opacity-0 animate-fade-up" style={{ animationFillMode: 'forwards' }}>
-                    <h1 className="text-4xl font-[var(--font-primary)] font-bold text-[var(--color-text-strong)]">Health Dashboard</h1>
-                    <p className="text-[var(--color-text-default)] mt-2 text-lg">Your consolidated health report. Track your progress over time.</p>
-                </header>
-                <Navigation />
-                <KeyMetricsOverview key={activeView} latestReport={latestReport} activeView={activeView}/>
-                <div className="opacity-0 animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}>
-                    <h2 className="text-2xl font-[var(--font-primary)] font-bold text-[var(--color-text-strong)] mb-5 mt-10">Historical Trends</h2>
-                    <div className="mt-4" key={activeView}>
-                        {viewToChartMap[activeView]()}
+        <>
+            <div className="bg-[var(--color-bg-app)] min-h-screen">
+                <main className="text-[var(--color-text-default)] p-4 sm:p-6 lg:p-8 font-[var(--font-secondary)] max-w-7xl mx-auto">
+                    <header className="mb-8 opacity-0 animate-fade-up" style={{ animationFillMode: 'forwards' }}>
+                        <h1 className="text-4xl font-[var(--font-primary)] font-bold text-[var(--color-text-strong)]">Health Dashboard</h1>
+                        <p className="text-[var(--color-text-default)] mt-2 text-lg">Your consolidated health report. Track your progress over time.</p>
+                    </header>
+                    <Navigation />
+                    
+                    {/* ✅ THE FIX (Part 2): The key now uses the latest report's unique ID, forcing a re-render on data change. */}
+                    <KeyMetricsOverview key={latestReport?.id || activeView} latestReport={latestReport} activeView={activeView}/>
+
+                    <div className="opacity-0 animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}>
+                        <h2 className="text-2xl font-[var(--font-primary)] font-bold text-[var(--color-text-strong)] mb-5 mt-10">Historical Trends</h2>
+                        <div className="mt-4" key={activeView}>
+                            {viewToChartMap[activeView]()}
+                        </div>
                     </div>
-                </div>
-                <div className="text-center mt-12 text-xs text-[var(--color-text-muted)] opacity-0 animate-fade-up" style={{ animationDelay: '800ms', animationFillMode: 'forwards' }}>
-                    Showing {allReports.length} report(s). Last updated on: {latestReport ? new Date(latestReport.report_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
-                </div>
-            </main>
-        </div>
+                    <div className="text-center mt-12 text-xs text-[var(--color-text-muted)] opacity-0 animate-fade-up" style={{ animationDelay: '800ms', animationFillMode: 'forwards' }}>
+                        Showing {allReports.length} report(s). Last updated on: {latestReport ? new Date(latestReport.report_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
+                    </div>
+                </main>
+            </div>
+
+            <AddDiabeticInfoModal 
+                isOpen={modalOpen} 
+                onClose={() => setModalOpen(false)} 
+                onSubmit={() => { 
+                    setTimeout(fetchReportData, 500); 
+                    setModalOpen(false); 
+                }} 
+            />
+        </>
     );
 };
 

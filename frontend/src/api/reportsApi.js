@@ -12,30 +12,49 @@ axiosRetry(axios, {
 // Function to return headers with Authorization token
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
+  // Throw an error if token is missing to prevent unnecessary API calls
+  if (!token) {
+    throw new Error("Authentication token not found. Please log in.");
+  }
   return {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    timeout: 15000, // ✅ 15 seconds timeout for slow responses (increase if needed)
+    timeout: 15000, // ✅ 15 seconds timeout
   };
 };
 
-// GET /recommend-calories/
-export const targetApi = async () => {
-  const response = await axios.get(`${BASE_URL}/recommend-calories/`, getAuthHeaders());
+/**
+ * GET /recommend-calories/
+ * Fetches user's calorie and macronutrient recommendations.
+ * @param {string} currentDate - The user's current local date in 'YYYY-MM-DD' format.
+ * This is passed to the backend to ensure accurate age calculation.
+ */
+export const targetApi = async (currentDate) => {
+  if (!currentDate) throw new Error("currentDate is required for targetApi.");
+  const response = await axios.get(`${BASE_URL}/recommend-calories/?current_date=${currentDate}`, getAuthHeaders());
   return response.data;
 };
 
-// GET /daily-calorie-summary/
-export const targetProgressApi = async () => {
-  const response = await axios.get(`${BASE_URL}/daily-calorie-summary/`, getAuthHeaders());
+/**
+ * GET /daily-calorie-summary/
+ * Fetches the calorie and macronutrient summary for a specific day.
+ * @param {string} date - The target date in 'YYYY-MM-DD' format.
+ */
+export const targetProgressApi = async (date) => {
+  if (!date) throw new Error("date is required for targetProgressApi.");
+  const response = await axios.get(`${BASE_URL}/daily-calorie-summary/?date=${date}`, getAuthHeaders());
   return response.data;
 }
 
-export const weeklyTrack = async () => {
-  const response = await axios.get(`${BASE_URL}/nutrition7day/`, getAuthHeaders());
+/**
+ * GET /nutrition7day/
+ * Fetches nutritional data for the 7-day period ending on the given date.
+ * @param {string} endDate - The end date for the 7-day range in 'YYYY-MM-DD' format.
+ */
+export const weeklyTrack = async (endDate) => {
+  if (!endDate) throw new Error("endDate is required for weeklyTrack.");
+  const response = await axios.get(`${BASE_URL}/nutrition7day/?end_date=${endDate}`, getAuthHeaders());
   return response.data;
 };
-
-

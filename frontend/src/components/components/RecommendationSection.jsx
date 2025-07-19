@@ -4,6 +4,7 @@ import React from 'react';
 import { sampleMeals } from "../../api/recommendation";
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from 'react-router-dom';
 
 const DietRecommendations = () => {
   const containerVariants = {
@@ -75,10 +76,11 @@ const DietRecommendations = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }} className="text-center mt-16">
-            <button className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] font-semibold px-8 py-3 rounded-lg shadow-lg hover:bg-[var(--color-primary-hover)] transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 active:scale-100 flex items-center gap-2 mx-auto">
-                View More Recipes
+            <Link to= "/dashboard/meals" ><button className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] font-semibold px-8 py-3 rounded-lg shadow-lg hover:bg-[var(--color-primary-hover)] transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 active:scale-100 flex items-center gap-2 mx-auto">
+                View Full Diet Plan
                 <ArrowRight size={20} />
             </button>
+            </Link>
         </motion.div>
       </div>
     </section>

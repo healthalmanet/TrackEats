@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Select from "react-select";
 import {
   createUserPatient,
-  getAllUsers,
+  getAssignedPatients,
   searchUsersByName,
   getPatientProfile,
 } from "../../../api/nutritionistApi";
@@ -59,7 +59,7 @@ const NutritionistDashboard = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await getAllUsers();
+      const res = await getAssignedPatients();
       const users = res.data.results || res.data;
       const enhancedUsers = await Promise.all(
         users.map(async (user) => {

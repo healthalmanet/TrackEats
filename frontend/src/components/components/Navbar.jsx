@@ -20,13 +20,45 @@ const Navbar = ({ links = [], rightContent, align = "right" }) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // --- NEW: Function for smooth scrolling ---
+  const handleAnchorLinkClick = (e, to) => {
+    e.preventDefault();
+    const targetId = to.substring(1); // remove the '#'
+    const targetElement = document.getElementById(targetId);
+
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setIsOpen(false); // Close mobile menu after clicking
+  };
+
   const navLinkStyle =
     "relative font-medium text-[var(--color-text-default)] transition-colors duration-300 focus:outline-none focus:text-[var(--color-primary)]";
   const activeLinkStyle = "text-[var(--color-primary)]";
 
+  // --- MODIFIED: This function now handles both types of links ---
   const renderNavLink = ({ to, label }) => {
-    const isActive = pathname === to;
+    const isAnchorLink = to.startsWith("#");
 
+    // RENDER ANCHOR LINK (for scrolling on the same page)
+    if (isAnchorLink) {
+      return (
+        <a
+          key={to}
+          href={to}
+          onClick={(e) => handleAnchorLinkClick(e, to)}
+          className={`${navLinkStyle} hover:text-[var(--color-primary)] group`}
+        >
+          <div className="relative">
+            {label}
+            <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-[var(--color-primary)] transform scale-x-0 transition-transform duration-300 ease-out group-hover:scale-x-100 origin-left" />
+          </div>
+        </a>
+      );
+    }
+
+    // RENDER ROUTER LINK (for navigating to different pages)
+    const isActive = pathname === to;
     return (
       <NavLink
         key={to}
@@ -62,9 +94,10 @@ const Navbar = ({ links = [], rightContent, align = "right" }) => {
           : "bg-transparent"
       }`}
     >
-      <NavLink to="/" className="flex items-center space-x-3">
-        <span className="pl-5 text-[var(--color-primary)] font-extrabold text-2xl tracking-wide font-[var(--font-primary)]">
-          TrackEats
+      <NavLink to="/" className="flex items-center">
+        <span className="font-extrabold text-3xl tracking-wide font-[var(--font-primary)]">
+          <span className="text-[var(--color-primary)]">Track</span>
+          <span className="text-[var(--color-text-strong)]">Eats</span>
         </span>
       </NavLink>
 
@@ -73,7 +106,9 @@ const Navbar = ({ links = [], rightContent, align = "right" }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="hidden md:block">{rightContent}</div>
+        <div className="hidden md:flex items-center gap-4 text-sm font-medium">
+          {rightContent}
+        </div>
         <div className="md:hidden text-[var(--color-primary)]">
           <button onClick={toggleMenu} aria-label="Toggle menu" className="p-1">
             {isOpen ? <X size={26} /> : <Menu size={26} />}
@@ -103,7 +138,9 @@ const Navbar = ({ links = [], rightContent, align = "right" }) => {
               ))}
             </motion.div>
             <div className="block md:hidden mt-4 pt-4 border-t border-[var(--color-border-default)] w-full text-center">
-              {rightContent}
+              <div className="flex justify-center items-center gap-4 text-sm font-medium">
+                {rightContent}
+              </div>
             </div>
           </motion.div>
         )}

@@ -20,9 +20,15 @@ const Footer = () => {
           
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-5">
-              <span className="text-[var(--color-primary)] font-bold text-xl tracking-wide font-[var(--font-primary)]">TrackEats</span>
-            </div>
+                  
+<div className="flex items-center gap-3 mb-5">
+  <span className="font-bold text-xl tracking-wide font-[var(--font-primary)]">
+    <span className="text-[var(--color-primary)]">Track</span>
+    <span className="text-[var(--color-text-strong)]">Eats</span>
+  </span>
+</div>
+
+    
 
             <p className="text-[var(--color-text-default)] leading-relaxed mb-6 max-w-md">
               Smart nutrition tracking for a healthier lifestyle. Monitor, analyze, and optimize your daily nutrition intake.
@@ -82,11 +88,25 @@ const Footer = () => {
 
         {/* Footer Note */}
         <div className="text-center text-sm text-[var(--color-text-muted)] mt-16 pt-8 border-t-2 border-dashed border-[var(--color-border-default)]">
-          <p className="flex items-center justify-center gap-1.5">
-            <span>© {new Date().getFullYear()} <span className="text-[var(--color-primary)] font-medium">TrackEats</span>. All rights reserved.</span>
-            <span>Made with <Heart className="inline-block text-[var(--color-danger-text)] h-4 w-4" fill="currentColor" />.</span>
-          </p>
-        </div>
+  <p className="flex items-center justify-center gap-1.5">
+    <span>
+      © {new Date().getFullYear()}{" "}
+      <span className="font-medium">
+        <span className="text-[var(--color-primary)]">Track</span>
+        <span className="text-[var(--color-text-strong)]">Eats</span>
+      </span>
+      . All rights reserved.
+    </span>
+    <span>
+      Made with{" "}
+      <Heart
+        className="inline-block text-[var(--color-danger-text)] h-4 w-4"
+        fill="currentColor"
+      />
+      .
+    </span>
+  </p>
+</div>
       </div>
     </footer>
   );

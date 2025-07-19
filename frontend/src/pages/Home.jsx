@@ -118,9 +118,9 @@ const Home = () => {
           { label: "Blogs", to: "#blogs" }, { label: "Contact", to: "#contact" },
         ]}
         rightContent={
-          <button onClick={openRegister} className="ml-5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-text-on-primary)] font-semibold px-5 py-2.5 rounded-full shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-primary-glow">
-            Sign In
-          </button>
+         <button onClick={openRegister} className="ml-5 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-text-on-primary)] text-sm font-semibold px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-primary-glow">
+  Sign In
+</button>
         }
       />
 
@@ -165,7 +165,12 @@ const Home = () => {
       {/* Why Choose Section */}
       <section id="about" className="bg-[var(--color-bg-surface-alt)] py-20 lg:py-24 px-6 lg:px-8 text-center">
         <AnimatedSection className="max-w-7xl mx-auto">
-            <motion.h2 variants={itemFadeUp} className="text-4xl md:text-5xl font-bold mb-6 text-[var(--color-text-strong)]">Why Choose <span className="text-[var(--color-primary)]">TrackEats</span>?</motion.h2>
+                  
+<motion.h2 variants={itemFadeUp} className="text-4xl md:text-5xl font-bold mb-6 text-[var(--color-text-strong)]">
+  Why Choose <span className="text-[var(--color-primary)]">Track</span>Eats?
+</motion.h2>
+
+    
             <motion.p variants={itemFadeUp} className="text-lg text-[var(--color-text-default)] max-w-3xl mx-auto mb-16">We’re revolutionizing nutrition tracking with smart technology that adapts to your lifestyle, making healthy eating effortless and enjoyable.</motion.p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
@@ -281,8 +286,18 @@ const Home = () => {
         <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-br from-[var(--color-accent-1-bg-subtle)] to-transparent opacity-30 blur-3xl -translate-x-1/3"></div>
         <div className="absolute bottom-0 right-0 w-1/2 h-full bg-gradient-to-tl from-[var(--color-primary-bg-subtle)] to-transparent opacity-30 blur-3xl translate-x-1/3"></div>
         <div className="relative z-10">
-          <h2 className="text-4xl md:text-5xl font-extrabold mb-5 leading-tight text-[var(--color-text-strong)]">Ready to Transform Your <br /><span className="text-[var(--color-success-text)]">Health Journey</span><span className="text-[var(--color-danger-text)]">?</span></h2>
-          <p className="text-lg text-[var(--color-text-muted)] mb-10 max-w-2xl mx-auto">Join thousands of users who have already improved their nutrition and wellness with <strong className="font-semibold text-[var(--color-primary)]">TrackEats</strong>.</p>
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-5 leading-tight text-[var(--color-text-strong)]">Ready to Transform Your <br /><span className="text-[var(--color-success-text)] pr-1">Health Journey</span><span className="text-[var(--color-text-strong)]">?</span></h2>
+                
+<p className="text-lg text-[var(--color-text-muted)] mb-10 max-w-2xl mx-auto">
+  Join thousands of users who have already improved their nutrition and wellness with{" "}
+  <strong className="font-semibold">
+    <span className="text-[var(--color-primary)]">Track</span>
+    <span className="text-[var(--color-text-strong)]">Eats</span>
+  </strong>
+  .
+</p>
+
+    
           <button 
              onClick={openRegister} 
              className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] font-semibold py-4 px-10 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-primary-glow"

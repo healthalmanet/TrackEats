@@ -20,7 +20,7 @@ from .serializers import WeightLogSerializer, WaterIntakeLogSerializer, CustomRe
 from django.conf import settings
 from nutritionist.models import PatientAssignment
 from userFood.models import FoodItem
-from utils.pagination import StandardResultsSetPagination
+from utils.pagination import BlogPagination, StandardResultsSetPagination
 
 
 
@@ -306,8 +306,6 @@ class FoodItemListView(ListAPIView):
 
 
 
-
-
 class BlogListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -316,6 +314,17 @@ class BlogListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = StandardResultsSetPagination
 
+
+
+# ✅ List View with No Authentication
+class BlogListView(generics.ListAPIView):
+    queryset = Blog.objects.all()
+    serializer_class = BlogSerializer
+    permission_classes = [permissions.AllowAny]
+    pagination_class = BlogPagination
+
+
+
 class BlogDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Blog.objects.all()
     serializer_class = BlogSerializer
@@ -323,10 +332,12 @@ class BlogDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         if self.request.user != self.get_object().author:
+            from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You can only edit your own blogs.")
         serializer.save()
 
     def perform_destroy(self, instance):
         if self.request.user != instance.author:
+            from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You can only delete your own blogs.")
         instance.delete()

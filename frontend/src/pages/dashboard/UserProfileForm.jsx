@@ -142,26 +142,33 @@ const UserProfileForm = () => {
     setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
-  
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-     
+      // --- FIX: Define mappedData from the formData state ---
+      // This creates the object to be sent to the API.
+      // We also ensure numeric fields are correctly formatted as numbers.
+      const mappedData = {
+        ...formData,
+        height_cm: formData.height_cm ? parseFloat(formData.height_cm) : null,
+        weight_kg: formData.weight_kg ? parseFloat(formData.weight_kg) : null,
+      };
 
-if (isEditing) {
-  await updateUserProfile(mappedData);
-  toast.success("✅ Profile updated successfully!");
-} else {
-  await createUserProfile(mappedData);
-  toast.success("🎉 Profile created successfully!");
-  setIsEditing(true);
-}
+      if (isEditing) {
+        await updateUserProfile(mappedData);
+        toast.success("✅ Profile updated successfully!");
+      } else {
+        await createUserProfile(mappedData);
+        toast.success("🎉 Profile created successfully!");
+        setIsEditing(true);
+      }
 
     } catch (err) {
       console.error("Error:", err);
-      toast.error("❌ Something went wrong. Please check your inputs.");
+      // Attempt to provide more specific error feedback if available
+      const errorMessage = err.response?.data?.detail || "Something went wrong. Please check your inputs.";
+      toast.error(`❌ ${errorMessage}`);
     } finally {
         setLoading(false);
     }

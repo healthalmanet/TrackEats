@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 // Import the water API
 import { getTotalWaterForDate } from "../../../api/WaterTracker";
-// --- ADDED: Import the targetApi to get the dynamic calorie goal ---
-import { targetApi } from "../../../api/reportsApi";
+// --- UPDATED: Import both target and progress APIs ---
+import { targetApi, targetProgressApi } from "../../../api/reportsApi";
 import {
   FaFireAlt,
   FaBreadSlice,
@@ -54,26 +54,42 @@ const MealLogger = () => {
     isFetching,
   } = useMealLogger();
 
-  // Dynamic Calculation for Daily Summary
-  const dailySummary = useMemo(() => {
-    return loggedMeals.reduce(
-      (acc, meal) => {
-        acc.calories += meal.calories || 0;
-        acc.carbs += meal.carbs || 0;
-        acc.protein += meal.protein || 0;
-        acc.fat += meal.fats || 0; // The API response uses 'fats'
-        return acc;
-      },
-      { calories: 0, carbs: 0, protein: 0, fat: 0 }
-    );
-  }, [loggedMeals]);
-
+  // --- UPDATED: State to hold the summary fetched from the API ---
+  const [dailySummary, setDailySummary] = useState({
+    calories: 0,
+    carbs: 0,
+    protein: 0,
+    fat: 0,
+  });
   const [waterLogged, setWaterLogged] = useState(0);
-  // --- ADDED: State for the dynamic calorie goal ---
   const [calorieGoal, setCalorieGoal] = useState(2000); // Start with a default fallback
+
+  const todayDate = useMemo(() => new Date().toISOString().split("T")[0], []);
+
+  // --- UPDATED: useEffect to fetch the daily summary data using targetProgressApi ---
+  useEffect(() => {
+    const fetchDailySummary = async () => {
+      if (!searchDate) return;
+      try {
+        const summaryData = await targetProgressApi(searchDate);
+        setDailySummary({
+          calories: summaryData.calories || 0,
+          carbs: summaryData.carbs || 0,
+          protein: summaryData.protein || 0,
+          fat: summaryData.fats || 0, // Note: API sends 'fats', component uses 'fat'
+        });
+      } catch (error) {
+        console.error("Failed to fetch daily summary:", error);
+        // Reset on error to avoid showing stale data
+        setDailySummary({ calories: 0, carbs: 0, protein: 0, fat: 0 });
+      }
+    };
+    fetchDailySummary();
+  }, [searchDate, loggedMeals]); // Refreshes when date changes or a meal is updated
 
   useEffect(() => {
     const fetchWaterData = async () => {
+      if (!searchDate) return;
       try {
         const data = await getTotalWaterForDate(searchDate);
         const totalMl = data?.total_water_ml || 0;
@@ -86,11 +102,12 @@ const MealLogger = () => {
     fetchWaterData();
   }, [searchDate, loggedMeals]);
 
-  // --- ADDED: useEffect to fetch the dynamic calorie goal on component mount ---
+  // --- UPDATED: useEffect to fetch the dynamic calorie goal, now with date ---
   useEffect(() => {
     const fetchCalorieGoal = async () => {
       try {
-        const data = await targetApi();
+        // Pass the current date to the API call
+        const data = await targetApi(todayDate);
         if (data && data.recommended_calories) {
           setCalorieGoal(data.recommended_calories);
         }
@@ -100,7 +117,7 @@ const MealLogger = () => {
       }
     };
     fetchCalorieGoal();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, [todayDate]); // Dependency array updated
 
   const waterGlasses = Math.floor((waterLogged || 0) / 250);
 
@@ -144,8 +161,6 @@ const MealLogger = () => {
     if (!target || target === 0) return 0;
     return Math.min((value / target) * 100, 100);
   };
-
-  const todayDate = new Date().toISOString().split("T")[0];
 
   return (
     <div className="bg-[var(--color-bg-app)] min-h-screen text-[var(--color-text-default)] font-[var(--font-secondary)]">
@@ -328,7 +343,7 @@ const MealLogger = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-40 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-text-on-primary)] py-2.5 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:transform-none disabled:shadow-md"
+                    className="w-full sm:w-40 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-text-on-primary)] py-2.5 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:transform-none disabled:shadow-md"
                   >
                     {isSubmitting ? (
                       <Loader className="animate-spin" />
@@ -506,7 +521,6 @@ const MealLogger = () => {
                     {dailySummary.calories?.toFixed(0) || 0} kcal
                   </p>
                   <p className="text-sm text-[var(--color-text-default)]">
-                    {/* --- UPDATED: Using the new dynamic calorieGoal state --- */}
                     of {calorieGoal?.toFixed(0) || 2000} goal
                   </p>
                 </div>

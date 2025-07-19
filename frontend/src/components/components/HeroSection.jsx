@@ -4,9 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Flame, Droplet, Weight } from "lucide-react";
 import heroImage from "../../assets/heroImage.png";
 import { getUserProfile } from "../../api/userProfile";
-import { getMeals } from "../../api/mealLog";
 import { getWater } from "../../api/WaterTracker";
-import { targetApi } from "../../api/reportsApi";
+import { targetApi, targetProgressApi } from "../../api/reportsApi";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 
@@ -26,7 +25,7 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [profileData, goalData] = await Promise.all([getUserProfile(), targetApi()]);
+        const [profileData, goalData] = await Promise.all([getUserProfile(), targetApi(today)]);
         setWeight(profileData.weight_kg);
         setCalorieGoal(goalData.recommended_calories || 2000);
         setWaterGoalML(goalData.water?.recommended_ml || 3000);
@@ -36,18 +35,13 @@ const HeroSection = ({ waterUpdateTrigger = 0, mealUpdateTrigger = 0 }) => {
       }
     };
     fetchAllData();
-  }, []);
+  }, [today]);
 
   useEffect(() => {
     const fetchTodayCalories = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const allData = await getMeals(token, null);
-        const meals = allData.results || [];
-        const todayMeals = meals.filter(
-          (meal) => meal.date === today && typeof meal.calories === "number"
-        );
-        const totalCalories = todayMeals.reduce((acc, meal) => acc + meal.calories, 0);
+        const summaryData = await targetProgressApi(today);
+        const totalCalories = summaryData.calories || 0;
         setCaloriesToday(Number(totalCalories.toFixed(0)));
       } catch (error) {
         console.error("Failed to load today's calorie data:", error);

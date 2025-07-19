@@ -158,7 +158,10 @@ const NutritionistDashboard = () => {
     <div className="min-h-screen bg-[var(--color-bg-app)] font-[var(--font-primary)]">
       <Toaster position="top-right" />
       <nav className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 bg-[var(--color-bg-surface)] border-b border-[var(--color-border-default)] sticky top-0 z-20 shadow-lg">
-        <h1 className="text-3xl font-bold text-[var(--color-primary)] font-[var(--font-secondary)]">TrackEats</h1>
+        <span className="font-extrabold text-3xl tracking-wide font-[var(--font-primary)]">
+          <span className="text-[var(--color-primary)]">Track</span>
+          <span className="text-[var(--color-text-strong)]">Eats</span>
+        </span>
         <button onClick={() => { localStorage.removeItem("token"); window.location.href = "/"; }} className="bg-[var(--color-primary)] text-[var(--color-text-on-primary)] px-5 py-2 rounded-full font-semibold transition-all hover:bg-[var(--color-primary-hover)] hover:shadow-lg hover:-translate-y-0.5">
           Logout
         </button>

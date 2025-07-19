@@ -48,7 +48,8 @@ const WaterIntakeWidget = ({ onWaterLogged }) => {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            max={new Date().toISOString().split("T")[0]}
+            max={new Date().toLocaleDateString('en-CA')}
+
             className="bg-[var(--color-bg-app)] text-[var(--color-text-strong)] border-2 border-[var(--color-border-default)] px-4 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none focus:border-[var(--color-primary)] transition-all"
           />
         </div>

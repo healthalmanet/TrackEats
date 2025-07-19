@@ -65,9 +65,6 @@ const AddDiabeticInfoModal = ({ isOpen, onClose, onSubmit, initialMode = "create
       const res = await getDiabeticProfile();
       const latest = res?.results?.sort((a, b) => new Date(b.report_date) - new Date(a.report_date))[0];
       
-      // For debugging: Check if the API keys match your form fields
-      // console.log("Latest API data:", latest);
-
       if (latest) {
         const id = latest.id || latest._id;
         if (!id) {
@@ -77,18 +74,13 @@ const AddDiabeticInfoModal = ({ isOpen, onClose, onSubmit, initialMode = "create
           return;
         }
 
-        // *** FIX #1: ROBUST DATA MAPPING ***
-        // Create a new object to guarantee keys match the form state.
         const populatedForm = {};
         for (const key of Object.keys(defaultForm)) {
           if (key === 'date') {
-            // Special handling for the date field
             populatedForm.date = getLocalDateString(latest.report_date);
           } else if (latest[key] !== null && latest[key] !== undefined) {
-            // For all other fields, use the value from 'latest' if it exists.
             populatedForm[key] = latest[key];
           } else {
-            // Otherwise, keep it as an empty string.
             populatedForm[key] = "";
           }
         }
@@ -233,12 +225,12 @@ const AddDiabeticInfoModal = ({ isOpen, onClose, onSubmit, initialMode = "create
                   <input
                     id={field}
                     name={field}
-                    // *** FIX #2: CORRECT VALUE BINDING ***
-                    // Use `??` to handle null/undefined correctly without affecting the number 0.
                     value={formData[field] ?? ""}
                     onChange={handleChange}
                     placeholder=" "
                     type={field === "date" ? "date" : "number"}
+                    // *** UPDATED: Prevent future dates from being selected ***
+                    max={field === "date" ? getLocalDateString(new Date()) : undefined}
                     step="any"
                     className="peer block w-full bg-[var(--color-bg-app)] border-2 border-[var(--color-border-default)] px-3 py-3 rounded-lg text-[var(--color-text-default)] transition-colors duration-300 focus:outline-none focus:border-[var(--color-primary)] placeholder-transparent"
                     required={field === "date"}

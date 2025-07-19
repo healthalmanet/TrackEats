@@ -11,6 +11,8 @@ from rest_framework.generics import ListAPIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import BasePermission
+from django.db.models.functions import Lower, Replace
+from django.db.models import Value
 
 from utils.gemini import fetch_nutrition_from_gemini
 from .models import WeightLog, WaterIntakeLog, CustomReminder, Message, Blog
@@ -160,45 +162,84 @@ class MessageListView(generics.ListAPIView):
 
 
 
-
-
 class FoodItemListView(ListAPIView):
     queryset = FoodItem.objects.all()
     serializer_class = FoodItemSerializer2
-    filter_backends = [SearchFilter, DjangoFilterBackend]
-    search_fields = ['name']
+    # We are handling filtering manually, so we can remove the default filter_backends
+    # filter_backends = [SearchFilter, DjangoFilterBackend]
+    # search_fields = ['name']
+
+    def _normalize_text(self, text: str) -> str:
+        """A helper to consistently normalize text for comparison."""
+        if not text:
+            return ""
+        # Lowercase, then remove spaces, dashes, and colons
+        return text.lower().replace(' ', '').replace('-', '').replace(':', '')
 
     def list(self, request, *args, **kwargs):
         search_term = request.query_params.get('search', None)
+
+        # If no search term, return the full (paginated) list
         if not search_term:
             return super().list(request, *args, **kwargs)
 
-        cleaned_search_term = search_term.strip().lower()
+        # 1. Normalize the user's search input using our helper
+        normalized_search_term = self._normalize_text(search_term)
+        print(f"🔍 Normalized search for: '{normalized_search_term}'")
 
-        # --- TIER 1: Exact Match ---
-        exact_queryset = FoodItem.objects.filter(name__iexact=cleaned_search_term)
-        if exact_queryset.exists():
-            print(f"✅ Exact Found: '{cleaned_search_term}'")
-            return self.get_paginated_response_for_queryset(exact_queryset)
+        # 2. Perform a strict, normalized search in the database
+        # We create a temporary, normalized version of the 'name' field in the DB
+        # and compare it against our normalized search term.
+        queryset = FoodItem.objects.annotate(
+            normalized_name=Replace(
+                Replace(
+                    Replace(Lower('name'), Value(' '), Value('')), # remove spaces
+                    Value('-'), Value('')                         # remove dashes
+                ),
+                Value(':'), Value('')                             # remove colons
+            )
+        ).filter(
+            normalized_name=normalized_search_term
+        )
 
-        # --- TIER 2: Substring Match (optional fallback) ---
-        substring_queryset = FoodItem.objects.filter(name__icontains=cleaned_search_term)
-        if substring_queryset.exists():
-            print(f"✅ Substring Found: '{cleaned_search_term}'")
-            return self.get_paginated_response_for_queryset(substring_queryset)
+        # --- TIER 1: Strict Normalized DB Match ---
+        if queryset.exists():
+            print(f"✅ DB Match Found for '{normalized_search_term}'")
+            return self.get_paginated_response_for_queryset(queryset)
 
-        # --- TIER 3: Gemini External API Fallback ---
-        print(f"🔥 No DB match for '{cleaned_search_term}' -> Gemini fallback")
+        # --- TIER 2: Gemini External API Fallback ---
+        print(f"🔥 No DB match for '{search_term}' -> Gemini fallback")
         try:
+            # Use the original search term for the API call for better context
             nutrition_data = fetch_nutrition_from_gemini(search_term)
 
             if nutrition_data and nutrition_data.get('name'):
-                food, created = FoodItem.objects.get_or_create(
-                    name__iexact=nutrition_data.get('name'),
-                    defaults=self._map_api_data_to_model_fields(nutrition_data)
-                )
+                # Important: Use get_or_create with a normalized lookup to avoid duplicates
+                # For example, if Gemini returns "Peanut-Butter" and "Peanut Butter" already exists.
+                normalized_api_name = self._normalize_text(nutrition_data.get('name'))
+                
+                # We need to query using the same normalization logic
+                existing_item_qs = FoodItem.objects.annotate(
+                    normalized_name=Replace(
+                        Replace(Lower('name'), Value(' '), Value('')),
+                        Value('-'), Value('')
+                    )
+                ).filter(normalized_name=normalized_api_name)
+
+                if existing_item_qs.exists():
+                    food = existing_item_qs.first()
+                    created = False
+                    print(f"✅ Gemini found an item that already exists in DB: '{food.name}'")
+                else:
+                    food, created = FoodItem.objects.get_or_create(
+                        # We use iexact here for the final check before creation
+                        name__iexact=nutrition_data.get('name'), 
+                        defaults=self._map_api_data_to_model_fields(nutrition_data)
+                    )
+
                 if created:
                     print(f"✅ Gemini Success: '{food.name}' created in DB")
+                
                 new_item_queryset = FoodItem.objects.filter(pk=food.pk)
                 return self.get_paginated_response_for_queryset(new_item_queryset)
 
@@ -207,8 +248,8 @@ class FoodItemListView(ListAPIView):
         except Exception as e:
             print(f"❌ Gemini Exception: {e}")
 
-        # --- TIER 4: Return Empty ---
-        print(f"❌ No match found anywhere for '{cleaned_search_term}'")
+        # --- TIER 3: Return Empty ---
+        print(f"❌ No match found anywhere for '{search_term}'")
         return self.get_paginated_response_for_queryset(FoodItem.objects.none())
 
     def get_paginated_response_for_queryset(self, queryset):
@@ -220,8 +261,8 @@ class FoodItemListView(ListAPIView):
         return Response(serializer.data)
 
     def _map_api_data_to_model_fields(self, data: dict) -> dict:
-        """Safe fallback handler for null/empty Gemini fields."""
-
+        # Your existing _map_api_data_to_model_fields method is fine, no changes needed here.
+        # ... (keep the same implementation) ...
         def safe_float(val):
             try:
                 return float(val) if val is not None else 0.0
@@ -262,6 +303,8 @@ class FoodItemListView(ListAPIView):
             'purine_level': data.get('purine_level') or "medium",
             'allergens': "/".join(data.get('allergens') or []),
         }
+
+
 
 
 

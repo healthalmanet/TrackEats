@@ -210,7 +210,10 @@ const QuickMealLogger = ({ onMealLogged }) => {
                 <input
                   type="date"
                   value={logDate}
-                    max={new Date().toISOString().split("T")[0]}
+                    max={new Date().toLocaleDateString('en-CA')}
+
+
+
                   onChange={(e) => setLogDate(e.target.value)}
                   className="flex-1 bg-[var(--color-bg-app)] text-[var(--color-text-strong)] border-2 border-[var(--color-border-default)] rounded-lg px-3 py-2 text-sm placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] transition"
                   required
@@ -292,7 +295,8 @@ const QuickMealLogger = ({ onMealLogged }) => {
                 <input
                   type="date"
                   value={searchDate}
-                  max={new Date().toISOString().split("T")[0]}
+                  max={new Date().toLocaleDateString('en-CA')}
+
                   onChange={(e) => {
                     const newDate = e.target.value;
                     setSearchDate(newDate);

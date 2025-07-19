@@ -286,7 +286,7 @@ const MealLogger = () => {
                     type="date"
                     id="logDate"
                     value={logDate}
-                    max={todayDate}
+                    max={new Date().toLocaleDateString('en-CA')}
                     onChange={(e) => setLogDate(e.target.value)}
                     className="w-full bg-[var(--color-bg-app)] border-2 border-[var(--color-border-default)] rounded-lg px-3 py-2.5 text-[var(--color-text-default)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                     required
@@ -373,7 +373,8 @@ const MealLogger = () => {
                     <input
                       type="date"
                       value={searchDate}
-                      max={new Date().toISOString().split("T")[0]}
+                      max={new Date().toLocaleDateString('en-CA')}
+
                       onChange={(e) => {
                         const newDate = e.target.value;
                         setSearchDate(newDate);

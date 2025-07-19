@@ -33,7 +33,6 @@ Thumbs.db
 
 # Logs and local media
 *.log
-media/
 staticfiles/
 static_root/
 tmp/

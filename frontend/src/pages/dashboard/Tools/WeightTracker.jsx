@@ -24,6 +24,8 @@ import {
 } from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import { getWeight, postWeight } from "../../../api/Weight";
+// --- ADDED: Import the updateUserProfile function ---
+import { updateUserProfile } from '../../../api/userProfile';
 
 // --- Themed Helper Components ---
 const Card = ({ children, className = '', delay = 0 }) => (
@@ -136,15 +138,24 @@ const WeightTracker = () => {
 
   useEffect(() => { fetchWeight(); }, []);
 
+  // --- UPDATED: Modified handleSaveEntry function ---
   const handleSaveEntry = async () => {
     const newWeight = parseFloat(quickLogWeight);
     if (!quickLogWeight || !quickLogDate || isNaN(newWeight) || newWeight <= 0) return;
     setIsSubmitting(true);
     try {
+      // First, post the new weight entry to the weight tracker
       await postWeight({ date: quickLogDate, weight_kg: newWeight });
+
+      // Then, send a patch request to update the weight in the user's profile
+      await updateUserProfile({ weight_kg: newWeight });
+      
+      // Finally, clear the input and refetch the weight history to update the UI
       setQuickLogWeight("");
       await fetchWeight();
-    } catch (error) { console.error("Failed to post weight:", error); }
+    } catch (error) { 
+        console.error("Failed to post weight or update profile:", error); 
+    }
     finally { setIsSubmitting(false); }
   };
 
